@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
+import { getJugador } from '../data/jugadores'
 
 export default function DuplicatesPage() {
   const { user } = useAuth()
@@ -83,11 +84,14 @@ export default function DuplicatesPage() {
             <strong>{rows.length}</strong> números distintos.
           </p>
           <ul className="dup-list">
-            {rows.map((r) => (
+            {rows.map((r) => {
+              const j = getJugador(r.card_number)
+              return (
               <li key={r.card_number} className="dup-row">
                 <div>
                   <span className="dup-row__num">Carta #{r.card_number}</span>
-                  <span className="dup-row__qty">{r.quantity} copias</span>
+                  <span className="dup-row__player">{j.nombre}</span>
+                  <span className="dup-row__qty">{r.quantity} copias · {j.pais}</span>
                 </div>
                 <button
                   type="button"
@@ -97,7 +101,8 @@ export default function DuplicatesPage() {
                   Quitar una copia extra
                 </button>
               </li>
-            ))}
+              )
+            })}
           </ul>
         </>
       )}

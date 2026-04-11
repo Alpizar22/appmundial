@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { TOTAL_CARDS } from '../constants'
+import { buscarJugadores, getJugador } from '../data/jugadores'
 
 function buildMap(rows) {
   const m = new Map()
@@ -61,8 +62,15 @@ export default function CollectionPage() {
   const numbers = useMemo(() => {
     const q = filter.trim()
     if (!q) return Array.from({ length: TOTAL_CARDS }, (_, i) => i + 1)
-    const n = parseInt(q, 10)
-    if (!Number.isNaN(n) && n >= 1 && n <= TOTAL_CARDS) return [n]
+    if (/^\d+$/.test(q)) {
+      const n = parseInt(q, 10)
+      if (!Number.isNaN(n) && n >= 1 && n <= TOTAL_CARDS) return [n]
+      return Array.from({ length: TOTAL_CARDS }, (_, i) => i + 1).filter((num) =>
+        String(num).includes(q)
+      )
+    }
+    const byName = buscarJugadores(q)
+    if (byName?.length) return byName
     return Array.from({ length: TOTAL_CARDS }, (_, i) => i + 1).filter((num) =>
       String(num).includes(q)
     )
@@ -135,13 +143,16 @@ export default function CollectionPage() {
 
       <div className="collection-toolbar">
         <label className="field field--inline">
-          <span>Buscar número</span>
+          <span>Buscar número o jugador</span>
           <input
             type="search"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Ej. 42 o 420"
-            maxLength={4}
+            placeholder="Ej. 42, Messi, México…"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={48}
           />
         </label>
         <button type="button" className="btn btn--ghost" onClick={() => refresh()}>
@@ -154,6 +165,7 @@ export default function CollectionPage() {
       <div className="card-grid" role="list">
         {numbers.map((n) => {
           const q = qtyByCard.get(n) || 0
+          const j = getJugador(n)
           const cls = [
             'card-cell',
             q === 1 ? 'card-cell--owned' : '',
@@ -162,6 +174,7 @@ export default function CollectionPage() {
           ]
             .filter(Boolean)
             .join(' ')
+          const tip = `${j.nombre} (${j.pais}) · #${n}`
           return (
             <button
               key={n}
@@ -171,13 +184,14 @@ export default function CollectionPage() {
               onClick={(e) => handleCellClick(n, e)}
               title={
                 q === 0
-                  ? `Marcar carta ${n}`
+                  ? `${tip} — marcar`
                   : q === 1
-                    ? `Quitar carta ${n} · Mayús+clic: añadir duplicado`
-                    : `${q} copias · clic: una menos · Mayús+clic: +1`
+                    ? `${tip} — quitar · Mayús+clic: duplicado`
+                    : `${tip} — ${q} copias`
               }
             >
               <span className="card-cell__num">{n}</span>
+              <span className="card-cell__name">{j.nombre}</span>
               {q > 1 && <span className="card-cell__badge">{q}</span>}
             </button>
           )

@@ -3,10 +3,16 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 
+function safeReturnPath(raw) {
+  if (typeof raw !== 'string' || !raw.startsWith('/') || raw.startsWith('//')) return '/'
+  if (raw.startsWith('/auth')) return '/'
+  return /^\/($|coleccion|duplicados|intercambios|chat(\/.*)?)$/.test(raw) ? raw : '/'
+}
+
 export default function AuthPage() {
   const { user, loading } = useAuth()
   const location = useLocation()
-  const from = location.state?.from?.pathname || '/'
+  const from = safeReturnPath(location.state?.from?.pathname) || '/'
 
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
@@ -100,6 +106,10 @@ export default function AuthPage() {
             <input
               type="email"
               autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -111,6 +121,9 @@ export default function AuthPage() {
             <input
               type="password"
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

@@ -3,6 +3,7 @@ import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { TOTAL_CARDS } from '../constants'
 import { formatDistanceKm, haversineKm, requestCurrentPosition } from '../lib/geo'
+import { getJugador } from '../data/jugadores'
 
 const TradesMap = lazy(() => import('../components/TradesMap.jsx'))
 
@@ -22,6 +23,17 @@ export default function TradesPage() {
   const [saveLocationOnPublish, setSaveLocationOnPublish] = useState(true)
   const [geoHint, setGeoHint] = useState('')
   const [myPos, setMyPos] = useState(null)
+  const [dupes, setDupes] = useState([])
+
+  const loadDupes = useCallback(async () => {
+    const { data, error: err } = await supabase
+      .from('user_cards')
+      .select('card_number, quantity')
+      .eq('user_id', user.id)
+      .gt('quantity', 1)
+      .order('card_number')
+    if (!err) setDupes(data || [])
+  }, [user.id])
 
   const refresh = useCallback(async () => {
     const { data, error: err } = await supabase
@@ -41,12 +53,15 @@ export default function TradesPage() {
     ;(async () => {
       setLoading(true)
       await refresh()
-      if (alive) setLoading(false)
+      if (alive) {
+        await loadDupes()
+        setLoading(false)
+      }
     })()
     return () => {
       alive = false
     }
-  }, [refresh])
+  }, [refresh, loadDupes])
 
   useEffect(() => {
     let cancelled = false
@@ -121,13 +136,17 @@ export default function TradesPage() {
       setOffer('')
       setWant('')
       await refresh()
+      await loadDupes()
     }
   }
 
   async function retirePost(id) {
     const { error: err } = await supabase.from('trade_posts').delete().eq('id', id).eq('user_id', user.id)
     if (err) setError(err.message)
-    else await refresh()
+    else {
+      await refresh()
+      await loadDupes()
+    }
   }
 
   if (loading) {
@@ -151,9 +170,35 @@ export default function TradesPage() {
       <section className="trade-form-section">
         <h2>Nueva publicación</h2>
         <form className="trade-form" onSubmit={handlePublish}>
+          {dupes.length > 0 && (
+            <div className="trade-dup-pick">
+              <p className="trade-dup-pick__title">Elegí una carta que tenés duplicada (ofrecés)</p>
+              <div className="trade-dup-chips" role="list">
+                {dupes.map((d) => {
+                  const j = getJugador(d.card_number)
+                  const active = offer === String(d.card_number)
+                  return (
+                    <button
+                      key={d.card_number}
+                      type="button"
+                      role="listitem"
+                      className={`trade-dup-chip${active ? ' trade-dup-chip--active' : ''}`}
+                      onClick={() => setOffer(String(d.card_number))}
+                    >
+                      <span className="trade-dup-chip__num">#{d.card_number}</span>
+                      <span className="trade-dup-chip__name">{j.nombre}</span>
+                      <span className="trade-dup-chip__meta">
+                        ×{d.quantity} · {j.pais}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           <div className="trade-form__row">
             <label className="field">
-              <span>Ofrezco la carta n.º</span>
+              <span>{dupes.length ? 'O escribí el n.º que ofrecés' : 'Ofrezco la carta n.º'}</span>
               <input
                 type="number"
                 min={1}
@@ -162,6 +207,7 @@ export default function TradesPage() {
                 onChange={(e) => setOffer(e.target.value)}
                 required
                 placeholder="Ej. 120"
+                inputMode="numeric"
               />
             </label>
             <span className="trade-form__arrow" aria-hidden="true">
@@ -177,6 +223,7 @@ export default function TradesPage() {
                 onChange={(e) => setWant(e.target.value)}
                 required
                 placeholder="Ej. 305"
+                inputMode="numeric"
               />
             </label>
           </div>
@@ -232,11 +279,17 @@ export default function TradesPage() {
               return (
                 <li key={p.id} className={`trade-card${mine ? ' trade-card--mine' : ''}`}>
                   <div className="trade-card__body">
-                    <p className="trade-card__deal">
-                      <strong>Ofrezco #{p.offer_card}</strong>
+                    <div className="trade-card__deal">
+                      <div className="trade-card__line">
+                        <strong>Ofrezco #{p.offer_card}</strong>
+                        <span className="trade-card__player">{getJugador(p.offer_card).nombre}</span>
+                      </div>
                       <span className="trade-card__sep">por</span>
-                      <strong>busco #{p.want_card}</strong>
-                    </p>
+                      <div className="trade-card__line">
+                        <strong>Busco #{p.want_card}</strong>
+                        <span className="trade-card__player">{getJugador(p.want_card).nombre}</span>
+                      </div>
+                    </div>
                     <p className="trade-card__meta">
                       {mine ? (
                         <span className="trade-card__badge">Tu publicación</span>
