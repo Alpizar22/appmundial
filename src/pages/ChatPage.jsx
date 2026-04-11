@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
+import { useProStatuses } from '../hooks/useProStatuses'
 
 const MAX_BODY = 2000
 
@@ -58,6 +59,16 @@ export default function ChatPage() {
     () => compatiblePartnerIds(myTrades, allTrades, user.id),
     [myTrades, allTrades, user.id]
   )
+
+  const allPartnerIds = useMemo(() => {
+    const ids = new Set()
+    for (const c of conversations) {
+      ids.add(c.participant_small === user.id ? c.participant_large : c.participant_small)
+    }
+    for (const pid of partners) ids.add(pid)
+    return [...ids]
+  }, [conversations, partners, user.id])
+  const proStatuses = useProStatuses(allPartnerIds)
 
   const convByPartner = useMemo(() => {
     const m = new Map()
@@ -350,6 +361,9 @@ export default function ChatPage() {
                   <div className="chat-row__body">
                     <span className="chat-row__name">
                       {t('user_prefix')} {shortUser(other)}
+                      {proStatuses[other] && (
+                        <span className="pro-badge">{t('pro_badge')}</span>
+                      )}
                     </span>
                     <span className="chat-row__preview">
                       {last
@@ -380,6 +394,9 @@ export default function ChatPage() {
                     <div className="chat-row__body">
                       <span className="chat-row__name">
                         {t('user_prefix')} {shortUser(pid)}
+                        {proStatuses[pid] && (
+                          <span className="pro-badge">{t('pro_badge')}</span>
+                        )}
                       </span>
                       <span className="chat-row__preview">
                         {starting === pid ? t('opening') : t('tap_to_chat')}
@@ -412,6 +429,9 @@ export default function ChatPage() {
                       {threadPartner
                         ? `${t('user_prefix')} ${shortUser(threadPartner)}`
                         : 'Chat'}
+                      {threadPartner && proStatuses[threadPartner] && (
+                        <span className="pro-badge">{t('pro_badge')}</span>
+                      )}
                     </strong>
                     <span className="chat-main__peer-status">{t('chat_compatible')}</span>
                   </div>

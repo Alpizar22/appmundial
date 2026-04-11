@@ -166,6 +166,40 @@ const en = {
   premium_secure: 'Secure payment with Stripe',
   premium_err_fallback: 'Could not start payment. Please try again.',
 
+  // Themes
+  theme_picker_title: 'Visual theme',
+  theme_picker_desc: 'Change the colors of the entire app.',
+  theme_default: 'Default',
+  theme_gold: 'Gold',
+  theme_green: 'Green',
+  theme_galaxy: 'Galaxy',
+  theme_locked: 'Pro required to change theme',
+
+  // Badges
+  pro_badge: '⭐ Pro',
+
+  // Dashboard Pro
+  pro_dashboard_title: 'Advanced dashboard',
+  pro_hardest_title: 'Hardest card you are missing',
+  pro_hardest_none: 'You have all rare cards 🏆',
+  pro_packs_title: 'Estimated packs to complete',
+  pro_packs_value: '~{n} packs',
+  pro_packs_complete: 'Album complete!',
+  pro_rarity_title: 'Common vs Rare',
+  pro_rarity_common: 'Common ({pct}%)',
+  pro_rarity_rare: 'Rare ({pct}%)',
+  pro_streak_title: 'Active days streak',
+  pro_streak_days: '{n} day',
+  pro_streak_days_plural: '{n} days',
+  pro_countries_title: 'Teams with most left to complete',
+  pro_locked_title: 'Pro features',
+  pro_locked_desc: 'Unlock the advanced dashboard, exclusive themes and more.',
+  pro_locked_btn: 'Get Pro',
+
+  // Collection mobile fix
+  tip_add_dup: 'Add duplicate',
+  collection_subtitle_mobile: 'Tap to mark · Hold or tap + to add duplicate',
+
   // TradesMap
   map_no_locations:
     'Nobody with a location on the map yet. When posting, enable "Save my location" to appear here.',

@@ -5,6 +5,7 @@ import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { useProfile } from '../hooks/useProfile'
+import { THEMES, useTheme } from '../hooks/useTheme'
 
 // Preload Stripe.js early for fraud-signal capture
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY ?? '')
@@ -23,6 +24,8 @@ export default function PremiumPage() {
   const { isPro, loading: profileLoading, profile } = useProfile()
   const [searchParams] = useSearchParams()
   const justPaid = searchParams.get('success') === 'true'
+
+  const { theme, setTheme } = useTheme(isPro)
 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -113,6 +116,33 @@ export default function PremiumPage() {
             {isPro && <span className="premium-feature-card__check">✓</span>}
           </article>
         ))}
+      </section>
+
+      {/* —— Theme picker —— */}
+      <section className="theme-picker">
+        <h2 className="theme-picker__title">{t('theme_picker_title')}</h2>
+        <p className="theme-picker__desc">{t('theme_picker_desc')}</p>
+        <div className="theme-picker__grid">
+          {Object.entries(THEMES).map(([key, info]) => {
+            const active = theme === key
+            const disabled = !isPro && key !== 'default'
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`theme-swatch${active ? ' theme-swatch--active' : ''}${disabled ? ' theme-swatch--locked' : ''}`}
+                onClick={() => isPro && setTheme(key)}
+                disabled={disabled}
+                title={disabled ? t('theme_locked') : info.label}
+              >
+                <span className="theme-swatch__emoji">{info.emoji}</span>
+                <span className="theme-swatch__label">{t(`theme_${key}`)}</span>
+                {active && <span className="theme-swatch__check">✓</span>}
+                {disabled && <span className="theme-swatch__lock">🔒</span>}
+              </button>
+            )
+          })}
+        </div>
       </section>
 
       {/* —— CTA / Pro status —— */}

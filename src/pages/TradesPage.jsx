@@ -2,6 +2,8 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
+import { useProfile } from '../hooks/useProfile'
+import { useProStatuses } from '../hooks/useProStatuses'
 import { TOTAL_CARDS } from '../constants'
 import { formatDistanceKm, haversineKm, requestCurrentPosition } from '../lib/geo'
 import { getJugador } from '../data/jugadores'
@@ -16,6 +18,7 @@ function shortUser(id) {
 export default function TradesPage() {
   const { user } = useAuth()
   const { t, locale } = useLang()
+  const { isPro } = useProfile()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -92,6 +95,12 @@ export default function TradesPage() {
     () => posts.filter((p) => p.lat != null && p.lng != null).length,
     [posts]
   )
+
+  const otherUserIds = useMemo(
+    () => posts.filter((p) => p.user_id !== user.id).map((p) => p.user_id),
+    [posts, user.id]
+  )
+  const proStatuses = useProStatuses(otherUserIds)
 
   async function handlePublish(e) {
     e.preventDefault()
@@ -304,10 +313,16 @@ export default function TradesPage() {
                     </div>
                     <p className="trade-card__meta">
                       {mine ? (
-                        <span className="trade-card__badge">{t('my_post_badge')}</span>
+                        <span className="trade-card__badge">
+                          {t('my_post_badge')}
+                          {isPro && <span className="pro-badge">{t('pro_badge')}</span>}
+                        </span>
                       ) : (
                         <span>
                           {t('user_prefix')} {shortUser(p.user_id)}
+                          {proStatuses[p.user_id] && (
+                            <span className="pro-badge">{t('pro_badge')}</span>
+                          )}
                         </span>
                       )}
                       <span>{date}</span>

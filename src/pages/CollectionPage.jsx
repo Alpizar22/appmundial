@@ -5,6 +5,8 @@ import { useLang } from '../context/LangContext'
 import { TOTAL_CARDS } from '../constants'
 import { buscarJugadores, getJugador } from '../data/jugadores'
 
+const LONG_PRESS_MS = 600
+
 function buildMap(rows) {
   const m = new Map()
   for (const r of rows) {
@@ -22,6 +24,8 @@ export default function CollectionPage() {
   const [error, setError] = useState('')
   const [tapAnim, setTapAnim] = useState(null)
   const tapTimerRef = useRef(null)
+  const longPressTimerRef = useRef(null)
+  const didLongPressRef = useRef(false)
 
   const bumpTap = useCallback((n) => {
     setTapAnim(n)
@@ -57,9 +61,31 @@ export default function CollectionPage() {
   useEffect(
     () => () => {
       if (tapTimerRef.current) window.clearTimeout(tapTimerRef.current)
+      if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current)
     },
     []
   )
+
+  const handleLongPressStart = useCallback(
+    (cardNumber) => {
+      longPressTimerRef.current = window.setTimeout(async () => {
+        const current = qtyByCard.get(cardNumber) || 0
+        if (current > 0) {
+          didLongPressRef.current = true
+          bumpTap(cardNumber)
+          await setQuantity(cardNumber, current + 1)
+        }
+      }, LONG_PRESS_MS)
+    },
+    [qtyByCard, bumpTap]
+  )
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+  }, [])
 
   const numbers = useMemo(() => {
     const q = filter.trim()
@@ -114,6 +140,10 @@ export default function CollectionPage() {
   }
 
   async function handleCellClick(cardNumber, e) {
+    if (didLongPressRef.current) {
+      didLongPressRef.current = false
+      return
+    }
     bumpTap(cardNumber)
     const current = qtyByCard.get(cardNumber) || 0
     if (e.shiftKey && current > 0) {
@@ -123,6 +153,16 @@ export default function CollectionPage() {
     if (current === 0) await setQuantity(cardNumber, 1)
     else if (current === 1) await setQuantity(cardNumber, 0)
     else await setQuantity(cardNumber, current - 1)
+  }
+
+  async function handleAddDup(e, cardNumber) {
+    e.stopPropagation()
+    e.preventDefault()
+    const current = qtyByCard.get(cardNumber) || 0
+    if (current > 0) {
+      bumpTap(cardNumber)
+      await setQuantity(cardNumber, current + 1)
+    }
   }
 
   if (loading) {
@@ -137,10 +177,11 @@ export default function CollectionPage() {
     <div className="page collection">
       <header className="page-header">
         <h1>{t('collection_title')}</h1>
-        <p>
+        <p className="collection-subtitle-desktop">
           {t('collection_subtitle_p1')} <kbd>{t('collection_kbd')}</kbd>{' '}
           {t('collection_subtitle_p2')}
         </p>
+        <p className="collection-subtitle-mobile">{t('collection_subtitle_mobile')}</p>
       </header>
 
       <div className="collection-toolbar">
@@ -184,6 +225,10 @@ export default function CollectionPage() {
               role="listitem"
               className={cls}
               onClick={(e) => handleCellClick(n, e)}
+              onTouchStart={() => handleLongPressStart(n)}
+              onTouchEnd={handleLongPressEnd}
+              onTouchMove={handleLongPressEnd}
+              onContextMenu={(e) => e.preventDefault()}
               title={
                 q === 0
                   ? `${tip} — ${t('tip_mark')}`
@@ -195,6 +240,19 @@ export default function CollectionPage() {
               <span className="card-cell__num">{n}</span>
               <span className="card-cell__name">{j.nombre}</span>
               {q > 1 && <span className="card-cell__badge">{q}</span>}
+              {q > 0 && (
+                <span
+                  className="card-cell__add-dup"
+                  role="button"
+                  aria-label={t('tip_add_dup')}
+                  onPointerDown={(e) => {
+                    e.stopPropagation()
+                  }}
+                  onClick={(e) => handleAddDup(e, n)}
+                >
+                  +
+                </span>
+              )}
             </button>
           )
         })}

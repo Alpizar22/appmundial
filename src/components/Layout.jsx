@@ -2,6 +2,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { useProfile } from '../hooks/useProfile'
+import { useTheme } from '../hooks/useTheme'
 import { IconChat, IconGrid, IconHome, IconLayers, IconStar, IconSwap } from './NavIcons'
 
 export default function Layout() {
@@ -10,6 +11,7 @@ export default function Layout() {
   const location = useLocation()
 
   const { isPro } = useProfile()
+  useTheme(isPro) // applies theme CSS vars globally
 
   const nav = [
     { to: '/', label: t('nav_home'), end: true, Icon: IconHome },
@@ -59,6 +61,7 @@ export default function Layout() {
         <div className="app-header__user">
           <span className="app-header__email" title={user?.email}>
             {user?.email}
+            {isPro && <span className="pro-badge">{t('pro_badge')}</span>}
           </span>
           <div className="lang-toggle" role="group" aria-label="Language / Idioma">
             <button

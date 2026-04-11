@@ -166,6 +166,40 @@ const es = {
   premium_secure: 'Pago seguro con Stripe',
   premium_err_fallback: 'No se pudo iniciar el pago. Intentá de nuevo.',
 
+  // Temas
+  theme_picker_title: 'Tema visual',
+  theme_picker_desc: 'Cambiá los colores de toda la app.',
+  theme_default: 'Default',
+  theme_gold: 'Dorado',
+  theme_green: 'Verde',
+  theme_galaxy: 'Galaxia',
+  theme_locked: 'Requiere Pro para cambiar de tema',
+
+  // Badges
+  pro_badge: '⭐ Pro',
+
+  // Dashboard Pro
+  pro_dashboard_title: 'Dashboard avanzado',
+  pro_hardest_title: 'Carta más difícil que te falta',
+  pro_hardest_none: 'Tenés todas las cartas raras 🏆',
+  pro_packs_title: 'Sobres estimados para completar',
+  pro_packs_value: '~{n} sobres',
+  pro_packs_complete: '¡Álbum completo!',
+  pro_rarity_title: 'Comunes vs Raras',
+  pro_rarity_common: 'Comunes ({pct}%)',
+  pro_rarity_rare: 'Raras ({pct}%)',
+  pro_streak_title: 'Racha de días activo',
+  pro_streak_days: '{n} día',
+  pro_streak_days_plural: '{n} días',
+  pro_countries_title: 'Selecciones con más por completar',
+  pro_locked_title: 'Funciones Pro',
+  pro_locked_desc: 'Desbloqueá el dashboard avanzado, temas exclusivos y más.',
+  pro_locked_btn: 'Obtener Pro',
+
+  // Collection mobile fix
+  tip_add_dup: 'Sumar duplicado',
+  collection_subtitle_mobile: 'Toca para marcar · Mantén pulsado o toca + para duplicar',
+
   // TradesMap
   map_no_locations:
     'Nadie con ubicación en mapa todavía. Al publicar, activá "Guardar mi ubicación" para aparecer aquí.',
