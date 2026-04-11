@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(node -e \"require\\('vite-plugin-pwa'\\); console.log\\('ok'\\)\")",
+      "Bash(node -e \"import\\('vite-plugin-pwa'\\).then\\(\\(\\)=>console.log\\('ok'\\)\\).catch\\(e=>console.log\\(e.message\\)\\)\")",
+      "Bash(node -e \"const {createCanvas}=require\\('canvas'\\);console.log\\('canvas ok'\\)\")",
+      "Bash(node -e \"const sharp=require\\('sharp'\\);console.log\\('sharp ok'\\)\")",
+      "Bash(node scripts/gen-icons.mjs)"
     ]
   }
 }
