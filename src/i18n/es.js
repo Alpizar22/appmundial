@@ -44,7 +44,11 @@ const es = {
   action_trades: 'Intercambios',
   action_trades_desc: 'Ofrezco X, busco Y',
   action_chat: 'Chat',
-  action_chat_desc: 'Hablá con otros coleccionistas',
+  action_chat_desc: 'Habla con otros coleccionistas',
+  action_pro: 'Obtener Pro',
+  action_pro_desc: 'Temas, dashboard avanzado y más',
+  action_pro_active: 'Mi cuenta Pro',
+  action_pro_active_desc: 'Temas, estadísticas y beneficios activos',
 
   // Collection
   collection_title: 'Colección',
@@ -76,10 +80,10 @@ const es = {
   // Trades
   trades_title: 'Intercambios',
   trades_subtitle:
-    'Publicá con tu ubicación (opcional) para ver distancias y mapa. El navegador pedirá permiso al publicar si activás guardar ubicación.',
+    'Publica con tu ubicación (opcional) para ver distancias y mapa. El navegador pedirá permiso al publicar si activas guardar ubicación.',
   new_post: 'Nueva publicación',
-  dupe_pick_title: 'Elegí una carta que tenés duplicada (ofrecés)',
-  label_offer_alt: 'O escribí el n.º que ofrecés',
+  dupe_pick_title: 'Elige una carta que tienes duplicada (ofreces)',
+  label_offer_alt: 'O escribe el n.º que ofreces',
   label_offer: 'Ofrezco la carta n.º',
   placeholder_offer: 'Ej. 120',
   label_want: 'Busco la carta n.º',
@@ -96,7 +100,7 @@ const es = {
   map_with_location: 'con ubicación',
   map_loading: 'Cargando mapa…',
   map_footnote:
-    'Permití ubicación en el navegador para centrar el mapa en vos y ver distancias en la lista.',
+    'Permite la ubicación en el navegador para centrar el mapa en ti y ver distancias en la lista.',
   active_posts: 'Anuncios activos',
   no_posts: 'Aún no hay publicaciones.',
   offer_prefix: 'Ofrezco',
@@ -110,17 +114,17 @@ const es = {
 
   // Chat
   chats_title: 'Chats',
-  chats_subtitle: 'Solo con quien tengáis un intercambio compatible.',
+  chats_subtitle: 'Solo con quienes tengan un intercambio compatible.',
   chat_empty:
     'Publica en Intercambios; cuando alguien encaje oferta ↔ búsqueda, aparecerá aquí.',
   no_messages: 'Sin mensajes aún',
   my_message_prefix: 'Tú',
   compatible_section: 'Compatibles — iniciar chat',
   opening: 'Abriendo…',
-  tap_to_chat: 'Tocá para chatear',
-  chat_placeholder: 'Elegí una conversación o iniciá un chat con un usuario compatible.',
+  tap_to_chat: 'Toca para chatear',
+  chat_placeholder: 'Elige una conversación o inicia un chat con un usuario compatible.',
   chat_compatible: 'Intercambio compatible',
-  msg_placeholder: 'Escribí un mensaje…',
+  msg_placeholder: 'Escribe un mensaje…',
   btn_send: 'Enviar',
   err_open_chat: 'No se pudo abrir el chat',
   err_load_data: 'No se pudieron cargar los datos',
@@ -134,10 +138,10 @@ const es = {
 
   // Verificación de email
   verified_title: '¡Correo verificado!',
-  verified_body: 'Tu cuenta está lista. Ya podés iniciar sesión y empezar tu colección.',
+  verified_body: 'Tu cuenta está lista. Ya puedes iniciar sesión y empezar tu colección.',
   verified_btn: 'Ir al inicio de sesión',
   verified_error_title: 'Algo salió mal',
-  verified_error_body: 'El enlace puede haber expirado. Intentá iniciar sesión de todas formas.',
+  verified_error_body: 'El enlace puede haber expirado. Intenta iniciar sesión de todas formas.',
   verified_error_btn: 'Ir al inicio de sesión',
 
   // Premium / Pro
@@ -147,28 +151,28 @@ const es = {
   premium_price: '$2.99',
   premium_btn_buy: 'Obtener Pro por $2.99',
   premium_btn_busy: 'Redirigiendo…',
-  premium_already_pro: '¡Ya sos Pro!',
+  premium_already_pro: '¡Ya eres Pro!',
   premium_pro_since: 'Pro desde {date}',
   premium_active_benefits: 'Tus beneficios activos',
   premium_feature_themes: 'Temas exclusivos',
-  premium_feature_themes_desc: 'Personalizá los colores del álbum',
+  premium_feature_themes_desc: 'Personaliza los colores del álbum',
   premium_feature_badges: 'Badges de coleccionista',
-  premium_feature_badges_desc: 'Mostrá tu rango a otros jugadores',
+  premium_feature_badges_desc: 'Muestra tu rango a otros jugadores',
   premium_feature_dashboard: 'Dashboard avanzado',
   premium_feature_dashboard_desc: 'Estadísticas detalladas de tu colección',
   premium_feature_odds: 'Probabilidades de cartas',
-  premium_feature_odds_desc: 'Calculá cuántos sobres necesitás',
+  premium_feature_odds_desc: 'Calcula cuántos sobres necesitas',
   premium_feature_priority: 'Acceso prioritario',
   premium_feature_priority_desc: 'Primero en nuevas funciones y mejoras',
   premium_success_title: '¡Bienvenido a Pro!',
-  premium_success_body: 'Tu pago fue procesado. Ya podés disfrutar todos los beneficios.',
+  premium_success_body: 'Tu pago fue procesado. Ya puedes disfrutar todos los beneficios.',
   premium_one_time: 'Pago único, sin suscripción',
   premium_secure: 'Pago seguro con Stripe',
-  premium_err_fallback: 'No se pudo iniciar el pago. Intentá de nuevo.',
+  premium_err_fallback: 'No se pudo iniciar el pago. Intenta de nuevo.',
 
   // Temas
   theme_picker_title: 'Tema visual',
-  theme_picker_desc: 'Cambiá los colores de toda la app.',
+  theme_picker_desc: 'Cambia los colores de toda la app.',
   theme_default: 'Default',
   theme_gold: 'Dorado',
   theme_green: 'Verde',
@@ -181,7 +185,7 @@ const es = {
   // Dashboard Pro
   pro_dashboard_title: 'Dashboard avanzado',
   pro_hardest_title: 'Carta más difícil que te falta',
-  pro_hardest_none: 'Tenés todas las cartas raras 🏆',
+  pro_hardest_none: 'Tienes todas las cartas raras 🏆',
   pro_packs_title: 'Sobres estimados para completar',
   pro_packs_value: '~{n} sobres',
   pro_packs_complete: '¡Álbum completo!',
@@ -193,7 +197,7 @@ const es = {
   pro_streak_days_plural: '{n} días',
   pro_countries_title: 'Selecciones con más por completar',
   pro_locked_title: 'Funciones Pro',
-  pro_locked_desc: 'Desbloqueá el dashboard avanzado, temas exclusivos y más.',
+  pro_locked_desc: 'Desbloquea el dashboard avanzado, temas exclusivos y más.',
   pro_locked_btn: 'Obtener Pro',
 
   // Collection mobile fix
@@ -202,7 +206,7 @@ const es = {
 
   // TradesMap
   map_no_locations:
-    'Nadie con ubicación en mapa todavía. Al publicar, activá "Guardar mi ubicación" para aparecer aquí.',
+    'Nadie con ubicación en mapa todavía. Al publicar, activa "Guardar mi ubicación" para aparecer aquí.',
   map_my_pos: 'Tu posición',
   map_distances_hint: 'Así calculamos distancias en la lista.',
   map_offer: 'Ofrezco',

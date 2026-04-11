@@ -720,6 +720,32 @@ kbd {
   background: linear-gradient(155deg, rgba(10, 49, 97, 0.85) 0%, rgba(6, 20, 40, 0.92) 50%, rgba(147, 197, 253, 0.12) 100%);
 }
 
+.action-card--pro::before {
+  background: linear-gradient(150deg, rgba(212, 160, 23, 0.25) 0%, rgba(6, 20, 40, 0.9) 60%, rgba(245, 197, 24, 0.08) 100%);
+}
+
+.action-card--pro {
+  border-color: rgba(245, 197, 24, 0.35);
+}
+
+.action-card--pro .action-card__svg {
+  color: #f5c518;
+}
+
+.action-card--pro-active {
+  border-color: rgba(245, 197, 24, 0.55);
+}
+
+.action-card--pro-active::before {
+  background: linear-gradient(150deg, rgba(212, 160, 23, 0.4) 0%, rgba(6, 20, 40, 0.88) 60%, rgba(245, 197, 24, 0.12) 100%);
+}
+
+.action-card__pro-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.68rem;
+}
+
 .action-card:hover {
   border-color: rgba(248, 250, 252, 0.28);
   transform: translateY(-4px);
@@ -1783,11 +1809,24 @@ kbd {
 }
 
 /* —— Nav Pro item —— */
+.app-nav__link--pro {
+  color: #f5c518;
+  border: 1px solid rgba(245, 197, 24, 0.35);
+  background: rgba(245, 197, 24, 0.07);
+}
+.app-nav__link--pro:hover {
+  background: rgba(245, 197, 24, 0.14) !important;
+  color: #f5c518 !important;
+}
 .app-nav__link--pro .app-nav__icon {
   color: #f5c518;
 }
+.app-nav__link--pro.app-nav__link--active {
+  background: linear-gradient(180deg, #f5c518, #d4a017) !important;
+  color: #111 !important;
+}
 .app-nav__link--pro.app-nav__link--active .app-nav__icon {
-  color: #f5c518;
+  color: #111;
 }
 .app-nav__pro-dot {
   display: inline-block;

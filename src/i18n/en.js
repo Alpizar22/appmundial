@@ -45,6 +45,10 @@ const en = {
   action_trades_desc: 'I offer X, I want Y',
   action_chat: 'Chat',
   action_chat_desc: 'Talk with other collectors',
+  action_pro: 'Get Pro',
+  action_pro_desc: 'Themes, advanced dashboard and more',
+  action_pro_active: 'My Pro account',
+  action_pro_active_desc: 'Themes, stats and active benefits',
 
   // Collection
   collection_title: 'Collection',

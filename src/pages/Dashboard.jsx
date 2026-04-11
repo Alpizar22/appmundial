@@ -7,7 +7,7 @@ import { useProfile } from '../hooks/useProfile'
 import { TOTAL_CARDS } from '../constants'
 import { celebrateAlbumComplete } from '../lib/celebrateAlbum'
 import { getJugador } from '../data/jugadores'
-import { IconChat, IconGrid, IconLayers, IconSwap } from '../components/NavIcons'
+import { IconChat, IconGrid, IconLayers, IconStar, IconSwap } from '../components/NavIcons'
 
 const COMMON_THRESHOLD = 600 // cards 1-600 common, 601-800 rare
 
@@ -348,6 +348,21 @@ export default function Dashboard() {
               <strong>{t('action_chat')}</strong>
               <p>{t('action_chat_desc')}</p>
             </div>
+          </Link>
+          <Link
+            className={`action-card action-card--pro${isPro ? ' action-card--pro-active' : ''}`}
+            to="/premium"
+          >
+            <span className="action-card__icon-wrap" aria-hidden="true">
+              <IconStar className="action-card__svg" />
+            </span>
+            <div>
+              <strong>
+                {isPro ? t('action_pro_active') : t('action_pro')}
+              </strong>
+              <p>{isPro ? t('action_pro_active_desc') : t('action_pro_desc')}</p>
+            </div>
+            {isPro && <span className="pro-badge action-card__pro-badge">{t('pro_badge')}</span>}
           </Link>
         </div>
       </section>
