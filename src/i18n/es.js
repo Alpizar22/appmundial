@@ -22,6 +22,8 @@ const es = {
   nav_trades: 'Intercambios',
   nav_chat: 'Chat',
   nav_aria: 'Principal',
+  nav_open_menu: 'Abrir menú',
+  nav_close_menu: 'Cerrar menú',
   header_brand: 'SoccerSticker',
   header_subtitle: 'Tu colección de stickers',
   btn_logout: 'Salir',

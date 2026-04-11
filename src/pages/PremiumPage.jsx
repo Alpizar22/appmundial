@@ -25,7 +25,7 @@ export default function PremiumPage() {
   const [searchParams] = useSearchParams()
   const justPaid = searchParams.get('success') === 'true'
 
-  const { theme, setTheme } = useTheme(isPro)
+  const { theme, setTheme } = useTheme({ isPro, userId: user?.id, savedTheme: profile?.tema })
 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')

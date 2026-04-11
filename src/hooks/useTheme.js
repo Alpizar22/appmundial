@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { supabase } from '../supabase'
 
 export const THEMES = {
   // ── Base themes ─────────────────────────────────────────────────
@@ -147,21 +148,37 @@ function applyThemeVars(themeKey) {
   }
 }
 
-export function useTheme(isPro) {
+export function useTheme({ isPro = false, userId = null, savedTheme = null } = {}) {
+  const hasLocalChange = useRef(false)
   const [theme, setThemeState] = useState(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
     return THEMES[stored] ? stored : 'default'
   })
 
+  // Sync from Supabase savedTheme on first load (before any local change this session)
+  useEffect(() => {
+    if (savedTheme && THEMES[savedTheme] && !hasLocalChange.current) {
+      localStorage.setItem(STORAGE_KEY, savedTheme)
+      setThemeState(savedTheme)
+    }
+  }, [savedTheme])
+
   useEffect(() => {
     applyThemeVars(isPro ? theme : 'default')
   }, [theme, isPro])
 
-  const setTheme = useCallback((newTheme) => {
-    if (!THEMES[newTheme]) return
-    localStorage.setItem(STORAGE_KEY, newTheme)
-    setThemeState(newTheme)
-  }, [])
+  const setTheme = useCallback(
+    (newTheme) => {
+      if (!THEMES[newTheme]) return
+      hasLocalChange.current = true
+      localStorage.setItem(STORAGE_KEY, newTheme)
+      setThemeState(newTheme)
+      if (userId && isPro) {
+        supabase.from('profiles').update({ tema: newTheme }).eq('id', userId).then(() => {})
+      }
+    },
+    [userId, isPro]
+  )
 
   return { theme: isPro ? theme : 'default', setTheme, themes: THEMES }
 }

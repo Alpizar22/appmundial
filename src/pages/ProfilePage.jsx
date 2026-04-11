@@ -26,8 +26,8 @@ const AVATAR_EMOJIS = [
 export default function ProfilePage() {
   const { user } = useAuth()
   const { t } = useLang()
-  const { isPro, titulo: savedTitulo, avatarEmoji: savedAvatar, loading } = useProfile()
-  const { theme, setTheme, themes } = useTheme(isPro)
+  const { isPro, titulo: savedTitulo, avatarEmoji: savedAvatar, loading, profile } = useProfile()
+  const { theme, setTheme, themes } = useTheme({ isPro, userId: user?.id, savedTheme: profile?.tema })
 
   const [titulo, setTitulo] = useState('')
   const [avatarEmoji, setAvatarEmoji] = useState('⚽')
