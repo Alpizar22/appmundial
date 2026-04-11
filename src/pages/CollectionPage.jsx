@@ -249,7 +249,7 @@ export default function CollectionPage() {
             >
               <span className="card-cell__num">{n}</span>
               <span className="card-cell__name">{j.nombre}</span>
-              {q > 1 && <span className="card-cell__badge">{q}</span>}
+              {q > 0 && <span className="card-cell__badge">×{q}</span>}
               {q > 0 && (
                 <>
                   {/* Desktop: hover + button */}
