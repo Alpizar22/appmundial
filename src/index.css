@@ -2354,3 +2354,91 @@ kbd {
     display: block;
   }
 }
+
+/* ================================================================
+   PRO GATE (locks in Trades/Chat for non-Pro)
+   ================================================================ */
+.pro-gate {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(245, 197, 24, 0.4);
+  border-radius: var(--radius);
+}
+
+.pro-gate--compact {
+  padding: 1rem;
+  margin: 0.5rem 0;
+}
+
+.pro-gate__icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.pro-gate__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pro-gate__title {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--wc-white);
+  margin-bottom: 0.2rem;
+}
+
+.pro-gate__desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.pro-gate__btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ================================================================
+   NAV LOCK INDICATOR
+   ================================================================ */
+.app-nav__lock {
+  font-size: 0.65em;
+  margin-left: 3px;
+  vertical-align: middle;
+  opacity: 0.75;
+}
+
+/* ================================================================
+   CHAT ROW LOCKED STATE
+   ================================================================ */
+.chat-row--locked {
+  opacity: 0.55;
+  cursor: default;
+  pointer-events: none;
+}
+
+.chat-row__preview--locked {
+  color: #f5c518;
+}
+
+/* ================================================================
+   CHAT PLACEHOLDER LOCKED STATE
+   ================================================================ */
+.chat-placeholder--locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.chat-placeholder__lock {
+  font-size: 3rem;
+  line-height: 1;
+}

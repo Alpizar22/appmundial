@@ -200,6 +200,16 @@ const en = {
   pro_locked_desc: 'Unlock the advanced dashboard, exclusive themes and more.',
   pro_locked_btn: 'Get Pro',
 
+  // Pro gate (Trades / Chat locked for non-Pro)
+  trades_pro_title: 'Post a trade',
+  trades_pro_desc: 'Upgrade to Pro to post and receive trade proposals.',
+  trades_pro_btn: 'Get Pro for $2.99',
+  chat_pro_title: 'Start a conversation',
+  chat_pro_desc: 'Upgrade to Pro to chat with compatible collectors.',
+  chat_pro_btn: 'Get Pro for $2.99',
+  chat_pro_locked_view: 'Only Pro users can open conversations.',
+  nav_pro_feature: 'Pro required to publish',
+
   // Collection mobile fix
   tip_add_dup: 'Add duplicate',
   collection_subtitle_mobile: 'Tap to mark · Hold or tap + to add duplicate',

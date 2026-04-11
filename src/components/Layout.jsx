@@ -17,8 +17,8 @@ export default function Layout() {
     { to: '/', label: t('nav_home'), end: true, Icon: IconHome },
     { to: '/coleccion', label: t('nav_collection'), Icon: IconGrid },
     { to: '/duplicados', label: t('nav_duplicates'), Icon: IconLayers },
-    { to: '/intercambios', label: t('nav_trades'), Icon: IconSwap },
-    { to: '/chat', label: t('nav_chat'), prefix: true, Icon: IconChat },
+    { to: '/intercambios', label: t('nav_trades'), Icon: IconSwap, proFeature: true },
+    { to: '/chat', label: t('nav_chat'), prefix: true, Icon: IconChat, proFeature: true },
     { to: '/premium', label: t('nav_premium'), Icon: IconStar, pro: true },
   ]
 
@@ -35,7 +35,7 @@ export default function Layout() {
           </div>
         </div>
         <nav className="app-nav" aria-label={t('nav_aria')}>
-          {nav.map(({ to, label, end, prefix, Icon, pro }) => (
+          {nav.map(({ to, label, end, prefix, Icon, pro, proFeature }) => (
             <NavLink
               key={to}
               to={to}
@@ -52,6 +52,9 @@ export default function Layout() {
                   {label}
                   {pro && isPro && (
                     <span className="app-nav__pro-dot" aria-label="Pro activo" />
+                  )}
+                  {proFeature && !isPro && (
+                    <span className="app-nav__lock" aria-label={t('nav_pro_feature')}>🔒</span>
                   )}
                 </span>
               </span>

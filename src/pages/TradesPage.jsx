@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
@@ -182,78 +183,91 @@ export default function TradesPage() {
 
       <section className="trade-form-section">
         <h2>{t('new_post')}</h2>
-        <form className="trade-form" onSubmit={handlePublish}>
-          {dupes.length > 0 && (
-            <div className="trade-dup-pick">
-              <p className="trade-dup-pick__title">{t('dupe_pick_title')}</p>
-              <div className="trade-dup-chips" role="list">
-                {dupes.map((d) => {
-                  const j = getJugador(d.card_number)
-                  const active = offer === String(d.card_number)
-                  return (
-                    <button
-                      key={d.card_number}
-                      type="button"
-                      role="listitem"
-                      className={`trade-dup-chip${active ? ' trade-dup-chip--active' : ''}`}
-                      onClick={() => setOffer(String(d.card_number))}
-                    >
-                      <span className="trade-dup-chip__num">#{d.card_number}</span>
-                      <span className="trade-dup-chip__name">{j.nombre}</span>
-                      <span className="trade-dup-chip__meta">
-                        ×{d.quantity} · {j.pais}
-                      </span>
-                    </button>
-                  )
-                })}
+        {isPro ? (
+          <form className="trade-form" onSubmit={handlePublish}>
+            {dupes.length > 0 && (
+              <div className="trade-dup-pick">
+                <p className="trade-dup-pick__title">{t('dupe_pick_title')}</p>
+                <div className="trade-dup-chips" role="list">
+                  {dupes.map((d) => {
+                    const j = getJugador(d.card_number)
+                    const active = offer === String(d.card_number)
+                    return (
+                      <button
+                        key={d.card_number}
+                        type="button"
+                        role="listitem"
+                        className={`trade-dup-chip${active ? ' trade-dup-chip--active' : ''}`}
+                        onClick={() => setOffer(String(d.card_number))}
+                      >
+                        <span className="trade-dup-chip__num">#{d.card_number}</span>
+                        <span className="trade-dup-chip__name">{j.nombre}</span>
+                        <span className="trade-dup-chip__meta">
+                          ×{d.quantity} · {j.pais}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
+            )}
+            <div className="trade-form__row">
+              <label className="field">
+                <span>{dupes.length ? t('label_offer_alt') : t('label_offer')}</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={TOTAL_CARDS}
+                  value={offer}
+                  onChange={(e) => setOffer(e.target.value)}
+                  required
+                  placeholder={t('placeholder_offer')}
+                  inputMode="numeric"
+                />
+              </label>
+              <span className="trade-form__arrow" aria-hidden="true">
+                →
+              </span>
+              <label className="field">
+                <span>{t('label_want')}</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={TOTAL_CARDS}
+                  value={want}
+                  onChange={(e) => setWant(e.target.value)}
+                  required
+                  placeholder={t('placeholder_want')}
+                  inputMode="numeric"
+                />
+              </label>
             </div>
-          )}
-          <div className="trade-form__row">
-            <label className="field">
-              <span>{dupes.length ? t('label_offer_alt') : t('label_offer')}</span>
+            <label className="trade-form__check field field--row">
               <input
-                type="number"
-                min={1}
-                max={TOTAL_CARDS}
-                value={offer}
-                onChange={(e) => setOffer(e.target.value)}
-                required
-                placeholder={t('placeholder_offer')}
-                inputMode="numeric"
+                type="checkbox"
+                checked={saveLocationOnPublish}
+                onChange={(e) => setSaveLocationOnPublish(e.target.checked)}
               />
+              <span>{t('check_location')}</span>
             </label>
-            <span className="trade-form__arrow" aria-hidden="true">
-              →
-            </span>
-            <label className="field">
-              <span>{t('label_want')}</span>
-              <input
-                type="number"
-                min={1}
-                max={TOTAL_CARDS}
-                value={want}
-                onChange={(e) => setWant(e.target.value)}
-                required
-                placeholder={t('placeholder_want')}
-                inputMode="numeric"
-              />
-            </label>
+            {error && <p className="form-error">{error}</p>}
+            {geoHint && <p className="form-success trade-geo-hint">{geoHint}</p>}
+            <button type="submit" className="btn btn--primary" disabled={submitting}>
+              {submitting ? t('btn_publishing') : t('btn_publish')}
+            </button>
+          </form>
+        ) : (
+          <div className="pro-gate">
+            <span className="pro-gate__icon">🔒</span>
+            <div className="pro-gate__body">
+              <strong className="pro-gate__title">{t('trades_pro_title')}</strong>
+              <p className="pro-gate__desc">{t('trades_pro_desc')}</p>
+            </div>
+            <Link to="/premium" className="btn btn--primary btn--sm pro-gate__btn">
+              {t('trades_pro_btn')}
+            </Link>
           </div>
-          <label className="trade-form__check field field--row">
-            <input
-              type="checkbox"
-              checked={saveLocationOnPublish}
-              onChange={(e) => setSaveLocationOnPublish(e.target.checked)}
-            />
-            <span>{t('check_location')}</span>
-          </label>
-          {error && <p className="form-error">{error}</p>}
-          {geoHint && <p className="form-success trade-geo-hint">{geoHint}</p>}
-          <button type="submit" className="btn btn--primary" disabled={submitting}>
-            {submitting ? t('btn_publishing') : t('btn_publish')}
-          </button>
-        </form>
+        )}
       </section>
 
       <section className="trade-map-section">

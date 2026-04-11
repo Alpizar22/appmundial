@@ -200,6 +200,16 @@ const es = {
   pro_locked_desc: 'Desbloquea el dashboard avanzado, temas exclusivos y más.',
   pro_locked_btn: 'Obtener Pro',
 
+  // Pro gate (Intercambios / Chat bloqueados para no-Pro)
+  trades_pro_title: 'Publica tu intercambio',
+  trades_pro_desc: 'Actualiza a Pro para publicar y recibir propuestas de intercambio.',
+  trades_pro_btn: 'Obtener Pro por $2.99',
+  chat_pro_title: 'Inicia una conversación',
+  chat_pro_desc: 'Actualiza a Pro para chatear con coleccionistas compatibles.',
+  chat_pro_btn: 'Obtener Pro por $2.99',
+  chat_pro_locked_view: 'Solo usuarios Pro pueden abrir conversaciones.',
+  nav_pro_feature: 'Requiere Pro para publicar',
+
   // Collection mobile fix
   tip_add_dup: 'Sumar duplicado',
   collection_subtitle_mobile: 'Toca para marcar · Mantén pulsado o toca + para duplicar',

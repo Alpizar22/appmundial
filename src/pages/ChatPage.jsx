@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
+import { useProfile } from '../hooks/useProfile'
 import { useProStatuses } from '../hooks/useProStatuses'
 
 const MAX_BODY = 2000
@@ -40,6 +41,7 @@ export default function ChatPage() {
   const { conversationId } = useParams()
   const { user } = useAuth()
   const { t, locale } = useLang()
+  const { isPro } = useProfile()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const messagesEndRef = useRef(null)
@@ -349,6 +351,30 @@ export default function ChatPage() {
               const other = otherParticipant(c, user.id)
               const last = convPreviews[c.id]
               const active = c.id === conversationId
+              if (!isPro) {
+                return (
+                  <div
+                    key={c.id}
+                    className="chat-row chat-row--locked"
+                    aria-disabled="true"
+                  >
+                    <div className="chat-row__avatar" aria-hidden="true">
+                      {other.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="chat-row__body">
+                      <span className="chat-row__name">
+                        {t('user_prefix')} {shortUser(other)}
+                        {proStatuses[other] && (
+                          <span className="pro-badge">{t('pro_badge')}</span>
+                        )}
+                      </span>
+                      <span className="chat-row__preview chat-row__preview--locked">
+                        🔒 Pro
+                      </span>
+                    </div>
+                  </div>
+                )
+              }
               return (
                 <Link
                   key={c.id}
@@ -380,37 +406,71 @@ export default function ChatPage() {
             {partnersWithoutRoom.length > 0 && (
               <>
                 <p className="chat-list__section">{t('compatible_section')}</p>
-                {partnersWithoutRoom.map((pid) => (
-                  <button
-                    key={pid}
-                    type="button"
-                    className="chat-row chat-row--action"
-                    disabled={starting === pid}
-                    onClick={() => openOrCreateChat(pid)}
-                  >
-                    <div className="chat-row__avatar chat-row__avatar--new" aria-hidden="true">
-                      +
+                {isPro ? (
+                  partnersWithoutRoom.map((pid) => (
+                    <button
+                      key={pid}
+                      type="button"
+                      className="chat-row chat-row--action"
+                      disabled={starting === pid}
+                      onClick={() => openOrCreateChat(pid)}
+                    >
+                      <div className="chat-row__avatar chat-row__avatar--new" aria-hidden="true">
+                        +
+                      </div>
+                      <div className="chat-row__body">
+                        <span className="chat-row__name">
+                          {t('user_prefix')} {shortUser(pid)}
+                          {proStatuses[pid] && (
+                            <span className="pro-badge">{t('pro_badge')}</span>
+                          )}
+                        </span>
+                        <span className="chat-row__preview">
+                          {starting === pid ? t('opening') : t('tap_to_chat')}
+                        </span>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="pro-gate pro-gate--compact">
+                    <span className="pro-gate__icon">🔒</span>
+                    <div className="pro-gate__body">
+                      <strong className="pro-gate__title">{t('chat_pro_title')}</strong>
+                      <p className="pro-gate__desc">{t('chat_pro_desc')}</p>
                     </div>
-                    <div className="chat-row__body">
-                      <span className="chat-row__name">
-                        {t('user_prefix')} {shortUser(pid)}
-                        {proStatuses[pid] && (
-                          <span className="pro-badge">{t('pro_badge')}</span>
-                        )}
-                      </span>
-                      <span className="chat-row__preview">
-                        {starting === pid ? t('opening') : t('tap_to_chat')}
-                      </span>
-                    </div>
-                  </button>
-                ))}
+                    <Link to="/premium" className="btn btn--primary btn--sm pro-gate__btn">
+                      {t('chat_pro_btn')}
+                    </Link>
+                  </div>
+                )}
               </>
+            )}
+
+            {!isPro && conversations.length === 0 && partnersWithoutRoom.length === 0 && (
+              <div className="pro-gate pro-gate--compact">
+                <span className="pro-gate__icon">🔒</span>
+                <div className="pro-gate__body">
+                  <strong className="pro-gate__title">{t('chat_pro_title')}</strong>
+                  <p className="pro-gate__desc">{t('chat_pro_desc')}</p>
+                </div>
+                <Link to="/premium" className="btn btn--primary btn--sm pro-gate__btn">
+                  {t('chat_pro_btn')}
+                </Link>
+              </div>
             )}
           </div>
         </aside>
 
         <section className="chat-main" aria-label={t('messages_aria')}>
-          {!conversationId ? (
+          {!isPro && conversationId ? (
+            <div className="chat-placeholder chat-placeholder--locked">
+              <span className="chat-placeholder__lock">🔒</span>
+              <p>{t('chat_pro_locked_view')}</p>
+              <Link to="/premium" className="btn btn--primary btn--sm">
+                {t('chat_pro_btn')}
+              </Link>
+            </div>
+          ) : !conversationId ? (
             <div className="chat-placeholder">
               <p>{t('chat_placeholder')}</p>
             </div>
