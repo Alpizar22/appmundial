@@ -1917,3 +1917,46 @@ kbd {
 .premium-pro-status strong { display: block; font-size: 1.4rem; color: #f5c518; margin-bottom: 0.3rem; }
 .premium-pro-status__since { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 0.75rem; }
 .premium-pro-status__label { color: var(--text-muted); font-size: 0.8rem; margin: 0; }
+
+/* —— Verified page —— */
+.verified-page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--wc-navy);
+}
+
+.verified-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2.5rem 2rem;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.verified-card__icon {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
+.verified-card__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--wc-white);
+  margin: 0;
+}
+
+.verified-card__body {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: 0;
+  line-height: 1.6;
+}

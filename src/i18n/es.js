@@ -132,6 +132,14 @@ const es = {
   // ProtectedRoute
   loading: 'Cargando…',
 
+  // Verificación de email
+  verified_title: '¡Correo verificado!',
+  verified_body: 'Tu cuenta está lista. Ya podés iniciar sesión y empezar tu colección.',
+  verified_btn: 'Ir al inicio de sesión',
+  verified_error_title: 'Algo salió mal',
+  verified_error_body: 'El enlace puede haber expirado. Intentá iniciar sesión de todas formas.',
+  verified_error_btn: 'Ir al inicio de sesión',
+
   // Premium / Pro
   nav_premium: 'Pro',
   premium_title: 'SoccerSticker Pro',

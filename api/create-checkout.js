@@ -9,11 +9,20 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
+  // ── Validate env vars first so misconfiguration is obvious in logs ────────
+  const missing = ['STRIPE_SECRET_KEY', 'STRIPE_PRICE_ID', 'SUPABASE_URL', 'SUPABASE_ANON_KEY']
+    .filter((k) => !process.env[k])
+
+  if (missing.length) {
+    console.error('[create-checkout] Missing env vars:', missing.join(', '))
+    return res.status(500).json({ error: `Server misconfigured: ${missing.join(', ')} not set` })
+  }
+
   try {
     const authHeader = req.headers.authorization
     if (!authHeader) return res.status(401).json({ error: 'No authorization header' })
 
-    // Verify the user's JWT using their own token (anon key + user JWT)
+    // Verify the caller's JWT via Supabase
     const supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_ANON_KEY,
@@ -25,9 +34,12 @@ export default async function handler(req, res) {
       error: userError,
     } = await supabase.auth.getUser()
 
-    if (userError || !user) return res.status(401).json({ error: 'Unauthorized' })
+    if (userError || !user) {
+      console.error('[create-checkout] Auth error:', userError?.message)
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
 
-    // Guard: don't create a session if already Pro
+    // Guard: skip if already Pro
     const { data: profile } = await supabase
       .from('profiles')
       .select('is_pro')
@@ -36,7 +48,9 @@ export default async function handler(req, res) {
 
     if (profile?.is_pro) return res.status(400).json({ error: 'already_pro' })
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-06-20',
+    })
 
     const origin = req.headers.origin ?? `https://${req.headers.host}`
 
@@ -49,9 +63,10 @@ export default async function handler(req, res) {
       cancel_url: `${origin}/premium`,
     })
 
+    console.log(`[create-checkout] Session created for user ${user.id}`)
     return res.status(200).json({ url: session.url })
   } catch (err) {
-    console.error('[create-checkout]', err)
+    console.error('[create-checkout] Error:', err.message, err.type ?? '')
     return res.status(500).json({ error: err.message ?? 'Internal error' })
   }
 }

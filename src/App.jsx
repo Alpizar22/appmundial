@@ -11,6 +11,7 @@ import DuplicatesPage from './pages/DuplicatesPage'
 import TradesPage from './pages/TradesPage'
 import ChatPage from './pages/ChatPage'
 import PremiumPage from './pages/PremiumPage'
+import VerificadoPage from './pages/VerificadoPage'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/verificado" element={<VerificadoPage />} />
           <Route
             path="/"
             element={
