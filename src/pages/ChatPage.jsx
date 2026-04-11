@@ -4,7 +4,7 @@ import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { useProfile } from '../hooks/useProfile'
-import { useProStatuses } from '../hooks/useProStatuses'
+import { useUserProfiles } from '../hooks/useUserProfiles'
 
 const MAX_BODY = 2000
 
@@ -70,7 +70,7 @@ export default function ChatPage() {
     for (const pid of partners) ids.add(pid)
     return [...ids]
   }, [conversations, partners, user.id])
-  const proStatuses = useProStatuses(allPartnerIds)
+  const userProfiles = useUserProfiles(allPartnerIds)
 
   const convByPartner = useMemo(() => {
     const m = new Map()
@@ -351,6 +351,10 @@ export default function ChatPage() {
               const other = otherParticipant(c, user.id)
               const last = convPreviews[c.id]
               const active = c.id === conversationId
+              const otherProfile = userProfiles[other]
+              const avatarChar = otherProfile?.isPro
+                ? otherProfile.avatarEmoji
+                : other.slice(0, 2).toUpperCase()
               if (!isPro) {
                 return (
                   <div
@@ -358,19 +362,17 @@ export default function ChatPage() {
                     className="chat-row chat-row--locked"
                     aria-disabled="true"
                   >
-                    <div className="chat-row__avatar" aria-hidden="true">
-                      {other.slice(0, 2).toUpperCase()}
-                    </div>
+                    <div className="chat-row__avatar" aria-hidden="true">{avatarChar}</div>
                     <div className="chat-row__body">
                       <span className="chat-row__name">
-                        {t('user_prefix')} {shortUser(other)}
-                        {proStatuses[other] && (
-                          <span className="pro-badge">{t('pro_badge')}</span>
-                        )}
+                        {otherProfile?.isPro ? (
+                          <span className="user-identity">
+                            <span>{otherProfile.titulo}</span>
+                            <span className="pro-badge">{t('pro_badge')}</span>
+                          </span>
+                        ) : <>{t('user_prefix')} {shortUser(other)}</>}
                       </span>
-                      <span className="chat-row__preview chat-row__preview--locked">
-                        🔒 Pro
-                      </span>
+                      <span className="chat-row__preview chat-row__preview--locked">🔒 Pro</span>
                     </div>
                   </div>
                 )
@@ -381,15 +383,15 @@ export default function ChatPage() {
                   to={`/chat/${c.id}`}
                   className={`chat-row${active ? ' chat-row--active' : ''}`}
                 >
-                  <div className="chat-row__avatar" aria-hidden="true">
-                    {other.slice(0, 2).toUpperCase()}
-                  </div>
+                  <div className="chat-row__avatar" aria-hidden="true">{avatarChar}</div>
                   <div className="chat-row__body">
                     <span className="chat-row__name">
-                      {t('user_prefix')} {shortUser(other)}
-                      {proStatuses[other] && (
-                        <span className="pro-badge">{t('pro_badge')}</span>
-                      )}
+                      {otherProfile?.isPro ? (
+                        <span className="user-identity">
+                          <span>{otherProfile.titulo}</span>
+                          <span className="pro-badge">{t('pro_badge')}</span>
+                        </span>
+                      ) : <>{t('user_prefix')} {shortUser(other)}</>}
                     </span>
                     <span className="chat-row__preview">
                       {last
@@ -407,30 +409,36 @@ export default function ChatPage() {
               <>
                 <p className="chat-list__section">{t('compatible_section')}</p>
                 {isPro ? (
-                  partnersWithoutRoom.map((pid) => (
-                    <button
-                      key={pid}
-                      type="button"
-                      className="chat-row chat-row--action"
-                      disabled={starting === pid}
-                      onClick={() => openOrCreateChat(pid)}
-                    >
-                      <div className="chat-row__avatar chat-row__avatar--new" aria-hidden="true">
-                        +
-                      </div>
-                      <div className="chat-row__body">
-                        <span className="chat-row__name">
-                          {t('user_prefix')} {shortUser(pid)}
-                          {proStatuses[pid] && (
-                            <span className="pro-badge">{t('pro_badge')}</span>
-                          )}
-                        </span>
-                        <span className="chat-row__preview">
-                          {starting === pid ? t('opening') : t('tap_to_chat')}
-                        </span>
-                      </div>
-                    </button>
-                  ))
+                  partnersWithoutRoom.map((pid) => {
+                    const pp = userProfiles[pid]
+                    const pAvatar = pp?.isPro ? pp.avatarEmoji : pid.slice(0, 2).toUpperCase()
+                    return (
+                      <button
+                        key={pid}
+                        type="button"
+                        className="chat-row chat-row--action"
+                        disabled={starting === pid}
+                        onClick={() => openOrCreateChat(pid)}
+                      >
+                        <div className="chat-row__avatar chat-row__avatar--new" aria-hidden="true">
+                          {starting === pid ? '…' : pAvatar}
+                        </div>
+                        <div className="chat-row__body">
+                          <span className="chat-row__name">
+                            {pp?.isPro ? (
+                              <span className="user-identity">
+                                <span>{pp.titulo}</span>
+                                <span className="pro-badge">{t('pro_badge')}</span>
+                              </span>
+                            ) : <>{t('user_prefix')} {shortUser(pid)}</>}
+                          </span>
+                          <span className="chat-row__preview">
+                            {starting === pid ? t('opening') : t('tap_to_chat')}
+                          </span>
+                        </div>
+                      </button>
+                    )
+                  })
                 ) : (
                   <div className="pro-gate pro-gate--compact">
                     <span className="pro-gate__icon">🔒</span>
@@ -482,16 +490,20 @@ export default function ChatPage() {
                 </Link>
                 <div className="chat-main__peer">
                   <div className="chat-row__avatar" aria-hidden="true">
-                    {(threadPartner || '').slice(0, 2).toUpperCase()}
+                    {threadPartner && userProfiles[threadPartner]?.isPro
+                      ? userProfiles[threadPartner].avatarEmoji
+                      : (threadPartner || '').slice(0, 2).toUpperCase()}
                   </div>
                   <div>
                     <strong className="chat-main__peer-name">
-                      {threadPartner
-                        ? `${t('user_prefix')} ${shortUser(threadPartner)}`
-                        : 'Chat'}
-                      {threadPartner && proStatuses[threadPartner] && (
-                        <span className="pro-badge">{t('pro_badge')}</span>
-                      )}
+                      {threadPartner && userProfiles[threadPartner]?.isPro ? (
+                        <span className="user-identity">
+                          <span>{userProfiles[threadPartner].titulo}</span>
+                          <span className="pro-badge">{t('pro_badge')}</span>
+                        </span>
+                      ) : threadPartner ? (
+                        `${t('user_prefix')} ${shortUser(threadPartner)}`
+                      ) : 'Chat'}
                     </strong>
                     <span className="chat-main__peer-status">{t('chat_compatible')}</span>
                   </div>

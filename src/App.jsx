@@ -11,6 +11,7 @@ import DuplicatesPage from './pages/DuplicatesPage'
 import TradesPage from './pages/TradesPage'
 import ChatPage from './pages/ChatPage'
 import PremiumPage from './pages/PremiumPage'
+import ProfilePage from './pages/ProfilePage'
 import VerificadoPage from './pages/VerificadoPage'
 
 export default function App() {
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="chat" element={<ChatPage />} />
             <Route path="chat/:conversationId" element={<ChatPage />} />
             <Route path="premium" element={<PremiumPage />} />
+            <Route path="perfil" element={<ProfilePage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

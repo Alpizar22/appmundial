@@ -3,14 +3,14 @@ import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { useProfile } from '../hooks/useProfile'
 import { useTheme } from '../hooks/useTheme'
-import { IconChat, IconGrid, IconHome, IconLayers, IconStar, IconSwap } from './NavIcons'
+import { IconChat, IconGrid, IconHome, IconLayers, IconStar, IconSwap, IconUser } from './NavIcons'
 
 export default function Layout() {
   const { signOut, user } = useAuth()
   const { lang, setLang, t } = useLang()
   const location = useLocation()
 
-  const { isPro } = useProfile()
+  const { isPro, titulo, avatarEmoji } = useProfile()
   useTheme(isPro) // applies theme CSS vars globally
 
   const nav = [
@@ -20,6 +20,7 @@ export default function Layout() {
     { to: '/intercambios', label: t('nav_trades'), Icon: IconSwap, proFeature: true },
     { to: '/chat', label: t('nav_chat'), prefix: true, Icon: IconChat, proFeature: true },
     { to: '/premium', label: t('nav_premium'), Icon: IconStar, pro: true },
+    ...(isPro ? [{ to: '/perfil', label: t('nav_profile'), Icon: IconUser }] : []),
   ]
 
   return (
@@ -62,10 +63,17 @@ export default function Layout() {
           ))}
         </nav>
         <div className="app-header__user">
-          <span className="app-header__email" title={user?.email}>
-            {user?.email}
-            {isPro && <span className="pro-badge">{t('pro_badge')}</span>}
-          </span>
+          {isPro ? (
+            <span className="app-header__identity" title={user?.email}>
+              <span className="app-header__avatar" aria-hidden="true">{avatarEmoji}</span>
+              <span className="app-header__titulo">{titulo}</span>
+              <span className="pro-badge">{t('pro_badge')}</span>
+            </span>
+          ) : (
+            <span className="app-header__email" title={user?.email}>
+              {user?.email}
+            </span>
+          )}
           <div className="lang-toggle" role="group" aria-label="Language / Idioma">
             <button
               type="button"

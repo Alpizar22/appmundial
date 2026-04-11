@@ -58,6 +58,19 @@ export function IconChat({ className }) {
   )
 }
 
+export function IconUser({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+      <path
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+      />
+    </svg>
+  )
+}
+
 export function IconStar({ className }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">

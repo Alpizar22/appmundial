@@ -15,12 +15,14 @@ export function useProfile() {
     let cancelled = false
     supabase
       .from('profiles')
-      .select('is_pro, pro_since')
+      .select('is_pro, pro_since, titulo, avatar_emoji')
       .eq('id', user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (!cancelled) {
-          setProfile(data ?? { is_pro: false, pro_since: null })
+          setProfile(
+            data ?? { is_pro: false, pro_since: null, titulo: 'Coleccionista', avatar_emoji: '⚽' }
+          )
           setLoading(false)
         }
       })
@@ -29,5 +31,11 @@ export function useProfile() {
     }
   }, [user])
 
-  return { profile, loading, isPro: profile?.is_pro ?? false }
+  return {
+    profile,
+    loading,
+    isPro: profile?.is_pro ?? false,
+    titulo: profile?.titulo ?? 'Coleccionista',
+    avatarEmoji: profile?.avatar_emoji ?? '⚽',
+  }
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 export const THEMES = {
+  // ── Base themes ─────────────────────────────────────────────────
   default: {
     label: 'Default',
     emoji: '🔵',
@@ -43,6 +44,95 @@ export const THEMES = {
       '--wc-blue': '#1e1b4b',
       '--wc-blue-light': '#312e81',
       '--wc-navy': '#0f0c29',
+    },
+  },
+  // ── Flag themes ──────────────────────────────────────────────────
+  mexico: {
+    label: 'México',
+    emoji: '🇲🇽',
+    vars: {
+      '--wc-red': '#CE1126',
+      '--wc-red-dark': '#9c0d1e',
+      '--wc-blue': '#006847',
+      '--wc-blue-light': '#009163',
+      '--wc-navy': '#003822',
+    },
+  },
+  brasil: {
+    label: 'Brasil',
+    emoji: '🇧🇷',
+    vars: {
+      '--wc-red': '#F7D116',
+      '--wc-red-dark': '#c4a510',
+      '--wc-blue': '#009C3B',
+      '--wc-blue-light': '#00c44b',
+      '--wc-navy': '#00331a',
+    },
+  },
+  argentina: {
+    label: 'Argentina',
+    emoji: '🇦🇷',
+    vars: {
+      '--wc-red': '#74ACDF',
+      '--wc-red-dark': '#5585b5',
+      '--wc-blue': '#2d6fa8',
+      '--wc-blue-light': '#4a8cc9',
+      '--wc-navy': '#0a1f35',
+    },
+  },
+  alemania: {
+    label: 'Alemania',
+    emoji: '🇩🇪',
+    vars: {
+      '--wc-red': '#DD0000',
+      '--wc-red-dark': '#aa0000',
+      '--wc-blue': '#2a2a2a',
+      '--wc-blue-light': '#404040',
+      '--wc-navy': '#111111',
+    },
+  },
+  francia: {
+    label: 'Francia',
+    emoji: '🇫🇷',
+    vars: {
+      '--wc-red': '#ED2939',
+      '--wc-red-dark': '#c01e2c',
+      '--wc-blue': '#002395',
+      '--wc-blue-light': '#0033c9',
+      '--wc-navy': '#00114a',
+    },
+  },
+  espana: {
+    label: 'España',
+    emoji: '🇪🇸',
+    vars: {
+      '--wc-red': '#AA151B',
+      '--wc-red-dark': '#800f14',
+      '--wc-blue': '#5c3a00',
+      '--wc-blue-light': '#8a5700',
+      '--wc-navy': '#1f1200',
+    },
+  },
+  usa: {
+    label: 'USA',
+    emoji: '🇺🇸',
+    vars: {
+      '--wc-red': '#BF0A30',
+      '--wc-red-dark': '#8f0824',
+      '--wc-blue': '#002868',
+      '--wc-blue-light': '#003d9e',
+      '--wc-navy': '#000d22',
+    },
+  },
+  rainbow: {
+    label: 'Arcoíris',
+    emoji: '🌈',
+    vars: {
+      '--wc-red': '#f72585',
+      '--wc-red-dark': '#c0166a',
+      '--wc-blue': '#7209b7',
+      '--wc-blue-light': '#9b2ddb',
+      '--wc-navy': '#10002b',
     },
   },
 }

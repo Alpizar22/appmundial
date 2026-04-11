@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { loadStripe } from '@stripe/stripe-js'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
@@ -156,6 +156,9 @@ export default function PremiumPage() {
             </p>
           )}
           <p className="premium-pro-status__label">{t('premium_active_benefits')}</p>
+          <Link to="/perfil" className="btn btn--primary btn--sm premium-pro-status__profile-btn">
+            {t('profile_go_btn')}
+          </Link>
         </div>
       ) : (
         <div className="premium-cta">
