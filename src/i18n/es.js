@@ -1,6 +1,6 @@
 const es = {
   // Auth
-  auth_title: 'Mundial 2026',
+  auth_title: 'SoccerSticker',
   auth_subtitle: 'Tu colección de cartas, en un solo lugar.',
   auth_tab_login: 'Entrar',
   auth_tab_register: 'Registro',
@@ -22,13 +22,13 @@ const es = {
   nav_trades: 'Intercambios',
   nav_chat: 'Chat',
   nav_aria: 'Principal',
-  header_brand: 'Mundial 2026',
-  header_subtitle: 'Álbum de cartas',
+  header_brand: 'SoccerSticker',
+  header_subtitle: 'Tu colección de stickers',
   btn_logout: 'Salir',
 
   // Dashboard
   dashboard_title: 'Panel principal',
-  dashboard_subtitle: 'Resumen de tu progreso en el álbum del Mundial 2026.',
+  dashboard_subtitle: 'Resumen de tu progreso en el álbum de SoccerSticker.',
   stat_unique: 'Cartas distintas',
   stat_complete: '¡Álbum completo!',
   stat_pct_of_album: '{pct}% del álbum',

@@ -1,6 +1,6 @@
 const en = {
   // Auth
-  auth_title: 'World Cup 2026',
+  auth_title: 'SoccerSticker',
   auth_subtitle: 'Your card collection, all in one place.',
   auth_tab_login: 'Sign in',
   auth_tab_register: 'Register',
@@ -22,13 +22,13 @@ const en = {
   nav_trades: 'Trades',
   nav_chat: 'Chat',
   nav_aria: 'Main',
-  header_brand: 'World Cup 2026',
-  header_subtitle: 'Sticker album',
+  header_brand: 'SoccerSticker',
+  header_subtitle: 'Your sticker collection',
   btn_logout: 'Sign out',
 
   // Dashboard
   dashboard_title: 'Dashboard',
-  dashboard_subtitle: 'Summary of your World Cup 2026 album progress.',
+  dashboard_subtitle: 'Summary of your SoccerSticker album progress.',
   stat_unique: 'Unique cards',
   stat_complete: 'Album complete!',
   stat_pct_of_album: '{pct}% of album',
