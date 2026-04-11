@@ -239,8 +239,9 @@ const es = {
   nav_pro_feature: 'Requiere Pro para publicar',
 
   // Collection mobile fix
-  tip_add_dup: 'Sumar duplicado',
-  collection_subtitle_mobile: 'Toca para marcar · Mantén pulsado o toca + para duplicar',
+  tip_add_dup: 'Agregar copia',
+  tip_remove_copy: 'Quitar copia',
+  collection_subtitle_mobile: 'Toca para marcar/quitar · Usa + y − para duplicados',
 
   // TradesMap
   map_no_locations:
@@ -251,6 +252,15 @@ const es = {
   map_want: 'Busco',
   map_go_chat: 'Ir al chat',
   map_my_post_hint: 'Tu publicación',
+
+  // How it works (Dashboard)
+  how_title: '¿Cómo funciona?',
+  how_1_label: 'Marca tus cartas',
+  how_1_desc: 'Ve a Colección y toca las que ya tienes',
+  how_2_label: 'Encuentra intercambios',
+  how_2_desc: 'Publica qué ofreces y qué buscas',
+  how_3_label: 'Chatea y queda',
+  how_3_desc: 'Habla con coleccionistas cerca de ti',
 }
 
 export default es

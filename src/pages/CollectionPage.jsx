@@ -165,6 +165,16 @@ export default function CollectionPage() {
     }
   }
 
+  async function handleRemoveDup(e, cardNumber) {
+    e.stopPropagation()
+    e.preventDefault()
+    const current = qtyByCard.get(cardNumber) || 0
+    if (current > 0) {
+      bumpTap(cardNumber)
+      await setQuantity(cardNumber, current - 1)
+    }
+  }
+
   if (loading) {
     return (
       <div className="screen-loading">
@@ -241,17 +251,39 @@ export default function CollectionPage() {
               <span className="card-cell__name">{j.nombre}</span>
               {q > 1 && <span className="card-cell__badge">{q}</span>}
               {q > 0 && (
-                <span
-                  className="card-cell__add-dup"
-                  role="button"
-                  aria-label={t('tip_add_dup')}
-                  onPointerDown={(e) => {
-                    e.stopPropagation()
-                  }}
-                  onClick={(e) => handleAddDup(e, n)}
-                >
-                  +
-                </span>
+                <>
+                  {/* Desktop: hover + button */}
+                  <span
+                    className="card-cell__add-dup"
+                    role="button"
+                    aria-label={t('tip_add_dup')}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => handleAddDup(e, n)}
+                  >
+                    +
+                  </span>
+                  {/* Mobile: visible − and + action bar */}
+                  <span className="card-cell__mob-actions" aria-hidden="true">
+                    <span
+                      className="card-cell__mob-btn card-cell__mob-btn--minus"
+                      role="button"
+                      aria-label={t('tip_remove_copy')}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => handleRemoveDup(e, n)}
+                    >
+                      −
+                    </span>
+                    <span
+                      className="card-cell__mob-btn card-cell__mob-btn--plus"
+                      role="button"
+                      aria-label={t('tip_add_dup')}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => handleAddDup(e, n)}
+                    >
+                      +
+                    </span>
+                  </span>
+                </>
               )}
             </button>
           )

@@ -239,8 +239,9 @@ const en = {
   nav_pro_feature: 'Pro required to publish',
 
   // Collection mobile fix
-  tip_add_dup: 'Add duplicate',
-  collection_subtitle_mobile: 'Tap to mark · Hold or tap + to add duplicate',
+  tip_add_dup: 'Add copy',
+  tip_remove_copy: 'Remove copy',
+  collection_subtitle_mobile: 'Tap to mark/remove · Use + and − for duplicates',
 
   // TradesMap
   map_no_locations:
@@ -251,6 +252,15 @@ const en = {
   map_want: 'I want',
   map_go_chat: 'Go to chat',
   map_my_post_hint: 'Your post',
+
+  // How it works (Dashboard)
+  how_title: 'How does it work?',
+  how_1_label: 'Mark your cards',
+  how_1_desc: 'Go to Collection and tap the ones you have',
+  how_2_label: 'Find trades',
+  how_2_desc: 'Post what you offer and what you need',
+  how_3_label: 'Chat and meet up',
+  how_3_desc: 'Talk with collectors near you',
 }
 
 export default en

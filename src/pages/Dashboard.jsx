@@ -310,6 +310,33 @@ export default function Dashboard() {
         </section>
       ) : null}
 
+      <section className="how-section">
+        <h2 className="how-section__title">{t('how_title')}</h2>
+        <div className="how-steps">
+          <div className="how-step">
+            <span className="how-step__emoji">📋</span>
+            <div>
+              <strong className="how-step__label">{t('how_1_label')}</strong>
+              <p className="how-step__desc">{t('how_1_desc')}</p>
+            </div>
+          </div>
+          <div className="how-step">
+            <span className="how-step__emoji">🔄</span>
+            <div>
+              <strong className="how-step__label">{t('how_2_label')}</strong>
+              <p className="how-step__desc">{t('how_2_desc')}</p>
+            </div>
+          </div>
+          <div className="how-step">
+            <span className="how-step__emoji">💬</span>
+            <div>
+              <strong className="how-step__label">{t('how_3_label')}</strong>
+              <p className="how-step__desc">{t('how_3_desc')}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="dashboard-actions">
         <h2>{t('quick_access')}</h2>
         <div className="action-cards">

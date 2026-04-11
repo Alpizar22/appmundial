@@ -2344,6 +2344,72 @@ kbd {
 }
 
 /* ================================================================
+   CARD CELL MOBILE +/− ACTION BAR
+   ================================================================ */
+.card-cell__mob-actions {
+  display: none; /* hidden on desktop */
+}
+
+@media (hover: none) {
+  /* Make room at bottom for action bar on owned cards */
+  .card-cell--owned,
+  .card-cell--dup {
+    padding-bottom: 48px;
+    min-height: 5.5rem;
+  }
+
+  /* Hide the small hover-only + button */
+  .card-cell__add-dup {
+    display: none;
+  }
+
+  /* Action bar container */
+  .card-cell__mob-actions {
+    display: flex;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 44px;
+    overflow: hidden;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  }
+
+  /* Each button: 50% wide, 44px tall */
+  .card-cell__mob-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.15);
+    user-select: none;
+    transition: filter 0.1s;
+  }
+
+  .card-cell__mob-btn:active {
+    filter: brightness(1.35);
+  }
+
+  .card-cell__mob-btn--minus {
+    background: rgba(0, 0, 0, 0.45);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .card-cell__mob-btn--plus {
+    background: rgba(196, 30, 58, 0.65);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
+}
+
+/* ================================================================
    PRO GATE (locks in Trades/Chat for non-Pro)
    ================================================================ */
 .pro-gate {
@@ -2680,6 +2746,58 @@ kbd {
 /* Premium page profile button */
 .premium-pro-status__profile-btn {
   margin-top: 0.5rem;
+}
+
+/* ================================================================
+   HOW IT WORKS SECTION (Dashboard)
+   ================================================================ */
+.how-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius);
+}
+
+.how-section__title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 0.85rem;
+}
+
+.how-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.how-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.how-step__emoji {
+  font-size: 1.25rem;
+  line-height: 1.3;
+  flex-shrink: 0;
+}
+
+.how-step__label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.how-step__desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
 }
 
 /* ================================================================
