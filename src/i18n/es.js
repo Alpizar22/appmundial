@@ -1,0 +1,146 @@
+const es = {
+  // Auth
+  auth_title: 'Mundial 2026',
+  auth_subtitle: 'Tu colección de cartas, en un solo lugar.',
+  auth_tab_login: 'Entrar',
+  auth_tab_register: 'Registro',
+  auth_label_email: 'Email',
+  auth_placeholder_email: 'tu@email.com',
+  auth_label_password: 'Contraseña',
+  auth_placeholder_password: '••••••••',
+  auth_btn_processing: 'Procesando…',
+  auth_btn_login: 'Entrar',
+  auth_btn_register: 'Crear cuenta',
+  auth_msg_confirm:
+    'Revisa tu correo para confirmar la cuenta (si tienes confirmación activada en Supabase).',
+  auth_err_fallback: 'No se pudo completar la acción',
+
+  // Layout / Nav
+  nav_home: 'Inicio',
+  nav_collection: 'Colección',
+  nav_duplicates: 'Duplicados',
+  nav_trades: 'Intercambios',
+  nav_chat: 'Chat',
+  nav_aria: 'Principal',
+  header_brand: 'Mundial 2026',
+  header_subtitle: 'Álbum de cartas',
+  btn_logout: 'Salir',
+
+  // Dashboard
+  dashboard_title: 'Panel principal',
+  dashboard_subtitle: 'Resumen de tu progreso en el álbum del Mundial 2026.',
+  stat_unique: 'Cartas distintas',
+  stat_complete: '¡Álbum completo!',
+  stat_pct_of_album: '{pct}% del álbum',
+  stat_total_copies: 'Copias en total',
+  stat_includes_dupes: 'Incluye duplicados',
+  stat_extra: 'Copias de más',
+  stat_for_trade: 'Para intercambiar',
+  quick_access: 'Accesos rápidos',
+  action_mark: 'Marcar cartas',
+  action_mark_desc: 'Números del 1 al {total}',
+  action_dupes: 'Duplicados',
+  action_dupes_desc: 'Revisa las que tienes repetidas',
+  action_trades: 'Intercambios',
+  action_trades_desc: 'Ofrezco X, busco Y',
+  action_chat: 'Chat',
+  action_chat_desc: 'Hablá con otros coleccionistas',
+
+  // Collection
+  collection_title: 'Colección',
+  collection_subtitle_p1: 'Pulsa una carta para marcarla o quitarla.',
+  collection_kbd: 'Mayús',
+  collection_subtitle_p2: '+ clic suma un duplicado si ya la tienes.',
+  collection_search_label: 'Buscar número o jugador',
+  collection_search_placeholder: 'Ej. 42, Messi, México…',
+  collection_btn_refresh: 'Actualizar',
+  tip_mark: 'marcar',
+  tip_remove: 'quitar · Mayús+clic: duplicado',
+  tip_copies: '{q} copias',
+
+  // Duplicates
+  duplicates_title: 'Duplicados',
+  duplicates_subtitle:
+    'Cartas con más de una copia. Cada clic en «Quitar una copia extra» deja una sola en el álbum.',
+  duplicates_empty: 'No tienes duplicados registrados.',
+  duplicates_hint_p1: 'En la colección usa',
+  duplicates_kbd: 'Mayús',
+  duplicates_hint_p2: '+ clic en una carta que ya tengas para sumar duplicados.',
+  duplicates_summary: '{extra} copias de más en {count} números distintos.',
+  dup_summary_between: 'copias de más en',
+  dup_summary_suffix: 'números distintos.',
+  card_number: 'Carta #{n}',
+  copies_label: 'copias',
+  btn_remove_extra: 'Quitar una copia extra',
+
+  // Trades
+  trades_title: 'Intercambios',
+  trades_subtitle:
+    'Publicá con tu ubicación (opcional) para ver distancias y mapa. El navegador pedirá permiso al publicar si activás guardar ubicación.',
+  new_post: 'Nueva publicación',
+  dupe_pick_title: 'Elegí una carta que tenés duplicada (ofrecés)',
+  label_offer_alt: 'O escribí el n.º que ofrecés',
+  label_offer: 'Ofrezco la carta n.º',
+  placeholder_offer: 'Ej. 120',
+  label_want: 'Busco la carta n.º',
+  placeholder_want: 'Ej. 305',
+  check_location: 'Guardar mi ubicación en esta publicación (latitud / longitud)',
+  err_offer_range: 'La carta ofrecida debe estar entre 1 y {total}.',
+  err_want_range: 'La carta buscada debe estar entre 1 y {total}.',
+  err_same_card: 'La carta ofrecida y la buscada deben ser distintas.',
+  geo_denied:
+    'No pudimos leer tu ubicación (permiso denegado o no disponible). El anuncio se publica igual, sin coordenadas.',
+  btn_publishing: 'Publicando…',
+  btn_publish: 'Publicar intercambio',
+  map_title: 'Mapa de coleccionistas',
+  map_with_location: 'con ubicación',
+  map_loading: 'Cargando mapa…',
+  map_footnote:
+    'Permití ubicación en el navegador para centrar el mapa en vos y ver distancias en la lista.',
+  active_posts: 'Anuncios activos',
+  no_posts: 'Aún no hay publicaciones.',
+  offer_prefix: 'Ofrezco',
+  want_prefix: 'Busco',
+  trade_sep: 'por',
+  my_post_badge: 'Tu publicación',
+  user_prefix: 'Usuario',
+  location_saved: 'Ubicación guardada',
+  no_location: 'Sin ubicación',
+  btn_remove_post: 'Quitar',
+
+  // Chat
+  chats_title: 'Chats',
+  chats_subtitle: 'Solo con quien tengáis un intercambio compatible.',
+  chat_empty:
+    'Publica en Intercambios; cuando alguien encaje oferta ↔ búsqueda, aparecerá aquí.',
+  no_messages: 'Sin mensajes aún',
+  my_message_prefix: 'Tú',
+  compatible_section: 'Compatibles — iniciar chat',
+  opening: 'Abriendo…',
+  tap_to_chat: 'Tocá para chatear',
+  chat_placeholder: 'Elegí una conversación o iniciá un chat con un usuario compatible.',
+  chat_compatible: 'Intercambio compatible',
+  msg_placeholder: 'Escribí un mensaje…',
+  btn_send: 'Enviar',
+  err_open_chat: 'No se pudo abrir el chat',
+  err_load_data: 'No se pudieron cargar los datos',
+  back_aria: 'Volver al listado',
+  conversations_aria: 'Conversaciones',
+  messages_aria: 'Mensajes',
+  msg_aria: 'Mensaje',
+
+  // ProtectedRoute
+  loading: 'Cargando…',
+
+  // TradesMap
+  map_no_locations:
+    'Nadie con ubicación en mapa todavía. Al publicar, activá "Guardar mi ubicación" para aparecer aquí.',
+  map_my_pos: 'Tu posición',
+  map_distances_hint: 'Así calculamos distancias en la lista.',
+  map_offer: 'Ofrezco',
+  map_want: 'Busco',
+  map_go_chat: 'Ir al chat',
+  map_my_post_hint: 'Tu publicación',
+}
+
+export default es

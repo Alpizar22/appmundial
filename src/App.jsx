@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { LangProvider } from './context/LangContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import AuthPage from './pages/AuthPage'
@@ -12,6 +13,7 @@ import ChatPage from './pages/ChatPage'
 export default function App() {
   return (
     <BrowserRouter>
+      <LangProvider>
       <AuthProvider>
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
@@ -33,6 +35,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
+      </LangProvider>
     </BrowserRouter>
   )
 }

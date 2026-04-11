@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
+import { useLang } from '../context/LangContext'
 import { TOTAL_CARDS } from '../constants'
 import { formatDistanceKm, haversineKm, requestCurrentPosition } from '../lib/geo'
 import { getJugador } from '../data/jugadores'
@@ -14,6 +15,7 @@ function shortUser(id) {
 
 export default function TradesPage() {
   const { user } = useAuth()
+  const { t, locale } = useLang()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -86,22 +88,25 @@ export default function TradesPage() {
     [myPos]
   )
 
-  const geoPostsCount = useMemo(() => posts.filter((p) => p.lat != null && p.lng != null).length, [posts])
+  const geoPostsCount = useMemo(
+    () => posts.filter((p) => p.lat != null && p.lng != null).length,
+    [posts]
+  )
 
   async function handlePublish(e) {
     e.preventDefault()
     const o = parseInt(offer, 10)
     const w = parseInt(want, 10)
     if (Number.isNaN(o) || o < 1 || o > TOTAL_CARDS) {
-      setError(`La carta ofrecida debe estar entre 1 y ${TOTAL_CARDS}.`)
+      setError(t('err_offer_range', { total: TOTAL_CARDS }))
       return
     }
     if (Number.isNaN(w) || w < 1 || w > TOTAL_CARDS) {
-      setError(`La carta buscada debe estar entre 1 y ${TOTAL_CARDS}.`)
+      setError(t('err_want_range', { total: TOTAL_CARDS }))
       return
     }
     if (o === w) {
-      setError('La carta ofrecida y la buscada deben ser distintas.')
+      setError(t('err_same_card'))
       return
     }
     setSubmitting(true)
@@ -112,9 +117,7 @@ export default function TradesPage() {
     if (saveLocationOnPublish) {
       loc = await requestCurrentPosition()
       if (!loc) {
-        setGeoHint(
-          'No pudimos leer tu ubicación (permiso denegado o no disponible). El anuncio se publica igual, sin coordenadas.'
-        )
+        setGeoHint(t('geo_denied'))
       }
     }
 
@@ -141,7 +144,11 @@ export default function TradesPage() {
   }
 
   async function retirePost(id) {
-    const { error: err } = await supabase.from('trade_posts').delete().eq('id', id).eq('user_id', user.id)
+    const { error: err } = await supabase
+      .from('trade_posts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id)
     if (err) setError(err.message)
     else {
       await refresh()
@@ -160,19 +167,16 @@ export default function TradesPage() {
   return (
     <div className="page trades">
       <header className="page-header">
-        <h1>Intercambios</h1>
-        <p>
-          Publicá con tu ubicación (opcional) para ver distancias y mapa. El navegador pedirá permiso al
-          publicar si activás guardar ubicación.
-        </p>
+        <h1>{t('trades_title')}</h1>
+        <p>{t('trades_subtitle')}</p>
       </header>
 
       <section className="trade-form-section">
-        <h2>Nueva publicación</h2>
+        <h2>{t('new_post')}</h2>
         <form className="trade-form" onSubmit={handlePublish}>
           {dupes.length > 0 && (
             <div className="trade-dup-pick">
-              <p className="trade-dup-pick__title">Elegí una carta que tenés duplicada (ofrecés)</p>
+              <p className="trade-dup-pick__title">{t('dupe_pick_title')}</p>
               <div className="trade-dup-chips" role="list">
                 {dupes.map((d) => {
                   const j = getJugador(d.card_number)
@@ -198,7 +202,7 @@ export default function TradesPage() {
           )}
           <div className="trade-form__row">
             <label className="field">
-              <span>{dupes.length ? 'O escribí el n.º que ofrecés' : 'Ofrezco la carta n.º'}</span>
+              <span>{dupes.length ? t('label_offer_alt') : t('label_offer')}</span>
               <input
                 type="number"
                 min={1}
@@ -206,7 +210,7 @@ export default function TradesPage() {
                 value={offer}
                 onChange={(e) => setOffer(e.target.value)}
                 required
-                placeholder="Ej. 120"
+                placeholder={t('placeholder_offer')}
                 inputMode="numeric"
               />
             </label>
@@ -214,7 +218,7 @@ export default function TradesPage() {
               →
             </span>
             <label className="field">
-              <span>Busco la carta n.º</span>
+              <span>{t('label_want')}</span>
               <input
                 type="number"
                 min={1}
@@ -222,7 +226,7 @@ export default function TradesPage() {
                 value={want}
                 onChange={(e) => setWant(e.target.value)}
                 required
-                placeholder="Ej. 305"
+                placeholder={t('placeholder_want')}
                 inputMode="numeric"
               />
             </label>
@@ -233,46 +237,46 @@ export default function TradesPage() {
               checked={saveLocationOnPublish}
               onChange={(e) => setSaveLocationOnPublish(e.target.checked)}
             />
-            <span>Guardar mi ubicación en esta publicación (latitud / longitud)</span>
+            <span>{t('check_location')}</span>
           </label>
           {error && <p className="form-error">{error}</p>}
           {geoHint && <p className="form-success trade-geo-hint">{geoHint}</p>}
           <button type="submit" className="btn btn--primary" disabled={submitting}>
-            {submitting ? 'Publicando…' : 'Publicar intercambio'}
+            {submitting ? t('btn_publishing') : t('btn_publish')}
           </button>
         </form>
       </section>
 
       <section className="trade-map-section">
         <div className="trade-map-section__head">
-          <h2>Mapa de coleccionistas</h2>
-          <span className="trade-map-section__badge">{geoPostsCount} con ubicación</span>
+          <h2>{t('map_title')}</h2>
+          <span className="trade-map-section__badge">
+            {geoPostsCount} {t('map_with_location')}
+          </span>
         </div>
         <Suspense
           fallback={
             <div className="trades-map trades-map--empty" aria-busy="true">
-              Cargando mapa…
+              {t('map_loading')}
             </div>
           }
         >
           <TradesMap posts={posts} myLat={myPos?.lat} myLng={myPos?.lng} currentUserId={user.id} />
         </Suspense>
         {myPos == null && (
-          <p className="trade-map-footnote">
-            Permití ubicación en el navegador para centrar el mapa en vos y ver distancias en la lista.
-          </p>
+          <p className="trade-map-footnote">{t('map_footnote')}</p>
         )}
       </section>
 
       <section className="trade-list-section">
-        <h2>Anuncios activos</h2>
+        <h2>{t('active_posts')}</h2>
         {posts.length === 0 ? (
-          <p className="empty-state">Aún no hay publicaciones.</p>
+          <p className="empty-state">{t('no_posts')}</p>
         ) : (
           <ul className="trade-list">
             {posts.map((p) => {
               const mine = p.user_id === user.id
-              const date = new Date(p.created_at).toLocaleString('es')
+              const date = new Date(p.created_at).toLocaleString(locale)
               const d = mine ? null : distanceForPost(p)
               const distLabel = mine ? '—' : formatDistanceKm(d)
               const hasGeo = p.lat != null && p.lng != null
@@ -281,28 +285,45 @@ export default function TradesPage() {
                   <div className="trade-card__body">
                     <div className="trade-card__deal">
                       <div className="trade-card__line">
-                        <strong>Ofrezco #{p.offer_card}</strong>
-                        <span className="trade-card__player">{getJugador(p.offer_card).nombre}</span>
+                        <strong>
+                          {t('offer_prefix')} #{p.offer_card}
+                        </strong>
+                        <span className="trade-card__player">
+                          {getJugador(p.offer_card).nombre}
+                        </span>
                       </div>
-                      <span className="trade-card__sep">por</span>
+                      <span className="trade-card__sep">{t('trade_sep')}</span>
                       <div className="trade-card__line">
-                        <strong>Busco #{p.want_card}</strong>
-                        <span className="trade-card__player">{getJugador(p.want_card).nombre}</span>
+                        <strong>
+                          {t('want_prefix')} #{p.want_card}
+                        </strong>
+                        <span className="trade-card__player">
+                          {getJugador(p.want_card).nombre}
+                        </span>
                       </div>
                     </div>
                     <p className="trade-card__meta">
                       {mine ? (
-                        <span className="trade-card__badge">Tu publicación</span>
+                        <span className="trade-card__badge">{t('my_post_badge')}</span>
                       ) : (
-                        <span>Usuario {shortUser(p.user_id)}</span>
+                        <span>
+                          {t('user_prefix')} {shortUser(p.user_id)}
+                        </span>
                       )}
                       <span>{date}</span>
                       {hasGeo && (
-                        <span className="trade-card__geo" title={mine ? 'Tu anuncio' : 'Distancia desde tu ubicación'}>
-                          {mine ? 'Ubicación guardada' : `≈ ${distLabel}`}
+                        <span
+                          className="trade-card__geo"
+                          title={mine ? t('my_post_badge') : ''}
+                        >
+                          {mine ? t('location_saved') : `≈ ${distLabel}`}
                         </span>
                       )}
-                      {!hasGeo && <span className="trade-card__geo trade-card__geo--muted">Sin ubicación</span>}
+                      {!hasGeo && (
+                        <span className="trade-card__geo trade-card__geo--muted">
+                          {t('no_location')}
+                        </span>
+                      )}
                     </p>
                   </div>
                   {mine && (
@@ -311,7 +332,7 @@ export default function TradesPage() {
                       className="btn btn--ghost btn--sm"
                       onClick={() => retirePost(p.id)}
                     >
-                      Quitar
+                      {t('btn_remove_post')}
                     </button>
                   )}
                 </li>

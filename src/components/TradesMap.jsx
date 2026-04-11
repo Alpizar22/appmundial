@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { useLang } from '../context/LangContext'
 
 function FitBounds({ points }) {
   const map = useMap()
@@ -28,6 +29,8 @@ function validCoord(p) {
 }
 
 export default function TradesMap({ posts, myLat, myLng, currentUserId }) {
+  const { t } = useLang()
+
   const markers = useMemo(
     () => (posts || []).filter((p) => validCoord(p)),
     [posts]
@@ -63,10 +66,7 @@ export default function TradesMap({ posts, myLat, myLng, currentUserId }) {
   if (!markers.length) {
     return (
       <div className="trades-map trades-map--empty" role="status">
-        <p>
-          Nadie con ubicación en mapa todavía. Al publicar, activá &quot;Guardar mi ubicación&quot;
-          para aparecer aquí.
-        </p>
+        <p>{t('map_no_locations')}</p>
       </div>
     )
   }
@@ -89,24 +89,24 @@ export default function TradesMap({ posts, myLat, myLng, currentUserId }) {
           myLng != null &&
           !Number.isNaN(Number(myLat)) &&
           !Number.isNaN(Number(myLng)) && (
-          <CircleMarker
-            center={[myLat, myLng]}
-            radius={11}
-            pathOptions={{
-              color: '#f8fafc',
-              weight: 3,
-              fillColor: '#1e4d8c',
-              fillOpacity: 0.95,
-            }}
-          >
-            <Popup>
-              <div className="trades-map-popup trades-map-popup--you">
-                <strong>Tu posición</strong>
-                <p className="trades-map-popup__hint">Así calculamos distancias en la lista.</p>
-              </div>
-            </Popup>
-          </CircleMarker>
-        )}
+            <CircleMarker
+              center={[myLat, myLng]}
+              radius={11}
+              pathOptions={{
+                color: '#f8fafc',
+                weight: 3,
+                fillColor: '#1e4d8c',
+                fillOpacity: 0.95,
+              }}
+            >
+              <Popup>
+                <div className="trades-map-popup trades-map-popup--you">
+                  <strong>{t('map_my_pos')}</strong>
+                  <p className="trades-map-popup__hint">{t('map_distances_hint')}</p>
+                </div>
+              </Popup>
+            </CircleMarker>
+          )}
         {markers.map((p) => {
           const mine = p.user_id === currentUserId
           return (
@@ -124,20 +124,25 @@ export default function TradesMap({ posts, myLat, myLng, currentUserId }) {
               <Popup>
                 <div className="trades-map-popup">
                   <p className="trades-map-popup__deal">
-                    <span className="trades-map-popup__label">Ofrezco</span>{' '}
+                    <span className="trades-map-popup__label">{t('map_offer')}</span>{' '}
                     <strong>#{p.offer_card}</strong>
                   </p>
                   <p className="trades-map-popup__deal">
-                    <span className="trades-map-popup__label">Busco</span>{' '}
+                    <span className="trades-map-popup__label">{t('map_want')}</span>{' '}
                     <strong>#{p.want_card}</strong>
                   </p>
-                  <p className="trades-map-popup__user">Usuario {String(p.user_id).slice(0, 6)}…</p>
+                  <p className="trades-map-popup__user">
+                    {t('user_prefix')} {String(p.user_id).slice(0, 6)}…
+                  </p>
                   {!mine ? (
-                    <Link className="btn btn--primary btn--sm trades-map-popup__cta" to={`/chat?partner=${p.user_id}`}>
-                      Ir al chat
+                    <Link
+                      className="btn btn--primary btn--sm trades-map-popup__cta"
+                      to={`/chat?partner=${p.user_id}`}
+                    >
+                      {t('map_go_chat')}
                     </Link>
                   ) : (
-                    <p className="trades-map-popup__hint">Tu publicación</p>
+                    <p className="trades-map-popup__hint">{t('map_my_post_hint')}</p>
                   )}
                 </div>
               </Popup>

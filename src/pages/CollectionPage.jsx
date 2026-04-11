@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
+import { useLang } from '../context/LangContext'
 import { TOTAL_CARDS } from '../constants'
 import { buscarJugadores, getJugador } from '../data/jugadores'
 
@@ -14,6 +15,7 @@ function buildMap(rows) {
 
 export default function CollectionPage() {
   const { user } = useAuth()
+  const { t } = useLang()
   const [qtyByCard, setQtyByCard] = useState(() => new Map())
   const [filter, setFilter] = useState('')
   const [loading, setLoading] = useState(true)
@@ -134,21 +136,21 @@ export default function CollectionPage() {
   return (
     <div className="page collection">
       <header className="page-header">
-        <h1>Colección</h1>
+        <h1>{t('collection_title')}</h1>
         <p>
-          Pulsa una carta para marcarla o quitarla. <kbd>Mayús</kbd> + clic suma un duplicado si ya
-          la tienes.
+          {t('collection_subtitle_p1')} <kbd>{t('collection_kbd')}</kbd>{' '}
+          {t('collection_subtitle_p2')}
         </p>
       </header>
 
       <div className="collection-toolbar">
         <label className="field field--inline">
-          <span>Buscar número o jugador</span>
+          <span>{t('collection_search_label')}</span>
           <input
             type="search"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Ej. 42, Messi, México…"
+            placeholder={t('collection_search_placeholder')}
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
@@ -156,7 +158,7 @@ export default function CollectionPage() {
           />
         </label>
         <button type="button" className="btn btn--ghost" onClick={() => refresh()}>
-          Actualizar
+          {t('collection_btn_refresh')}
         </button>
       </div>
 
@@ -184,10 +186,10 @@ export default function CollectionPage() {
               onClick={(e) => handleCellClick(n, e)}
               title={
                 q === 0
-                  ? `${tip} — marcar`
+                  ? `${tip} — ${t('tip_mark')}`
                   : q === 1
-                    ? `${tip} — quitar · Mayús+clic: duplicado`
-                    : `${tip} — ${q} copias`
+                    ? `${tip} — ${t('tip_remove')}`
+                    : `${tip} — ${t('tip_copies', { q })}`
               }
             >
               <span className="card-cell__num">{n}</span>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
+import { useLang } from '../context/LangContext'
 
 const MAX_BODY = 2000
 
@@ -37,6 +38,7 @@ function otherParticipant(conv, myId) {
 export default function ChatPage() {
   const { conversationId } = useParams()
   const { user } = useAuth()
+  const { t, locale } = useLang()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const messagesEndRef = useRef(null)
@@ -67,8 +69,14 @@ export default function ChatPage() {
 
   const loadLists = useCallback(async () => {
     const [mineRes, allRes, convRes] = await Promise.all([
-      supabase.from('trade_posts').select('id, user_id, offer_card, want_card, active').eq('user_id', user.id),
-      supabase.from('trade_posts').select('id, user_id, offer_card, want_card, active').eq('active', true),
+      supabase
+        .from('trade_posts')
+        .select('id, user_id, offer_card, want_card, active')
+        .eq('user_id', user.id),
+      supabase
+        .from('trade_posts')
+        .select('id, user_id, offer_card, want_card, active')
+        .eq('active', true),
       supabase
         .from('conversations')
         .select('id, participant_small, participant_large, created_at')
@@ -91,7 +99,7 @@ export default function ChatPage() {
       try {
         await loadLists()
       } catch (e) {
-        if (alive) setError(e.message || 'No se pudieron cargar los datos')
+        if (alive) setError(e.message || t('err_load_data'))
       } finally {
         if (alive) setLoading(false)
       }
@@ -99,7 +107,7 @@ export default function ChatPage() {
     return () => {
       alive = false
     }
-  }, [loadLists])
+  }, [loadLists, t])
 
   useEffect(() => {
     const ids = conversations.map((c) => c.id)
@@ -127,24 +135,21 @@ export default function ChatPage() {
     }
   }, [conversations])
 
-  const loadMessages = useCallback(
-    async (cid) => {
-      if (!cid) return
-      setThreadLoading(true)
-      const { data, error: err } = await supabase
-        .from('messages')
-        .select('id, conversation_id, sender_id, body, created_at')
-        .eq('conversation_id', cid)
-        .order('created_at', { ascending: true })
-      setThreadLoading(false)
-      if (err) {
-        setError(err.message)
-        return
-      }
-      setMessages(data || [])
-    },
-    []
-  )
+  const loadMessages = useCallback(async (cid) => {
+    if (!cid) return
+    setThreadLoading(true)
+    const { data, error: err } = await supabase
+      .from('messages')
+      .select('id, conversation_id, sender_id, body, created_at')
+      .eq('conversation_id', cid)
+      .order('created_at', { ascending: true })
+    setThreadLoading(false)
+    if (err) {
+      setError(err.message)
+      return
+    }
+    setMessages(data || [])
+  }, [])
 
   useEffect(() => {
     setError('')
@@ -238,10 +243,10 @@ export default function ChatPage() {
         }
       }
 
-      setError(insErr?.message || 'No se pudo abrir el chat')
+      setError(insErr?.message || t('err_open_chat'))
       setStarting(null)
     },
-    [user.id, navigate, loadLists]
+    [user.id, navigate, loadLists, t]
   )
 
   const partnerFromQuery = searchParams.get('partner')
@@ -316,19 +321,17 @@ export default function ChatPage() {
   return (
     <div className="chat-page">
       <div className={`chat-shell${conversationId ? ' chat-shell--thread-open' : ''}`}>
-        <aside className="chat-sidebar" aria-label="Conversaciones">
+        <aside className="chat-sidebar" aria-label={t('conversations_aria')}>
           <div className="chat-sidebar__header">
-            <h1 className="chat-sidebar__title">Chats</h1>
-            <p className="chat-sidebar__subtitle">Solo con quien tengáis un intercambio compatible.</p>
+            <h1 className="chat-sidebar__title">{t('chats_title')}</h1>
+            <p className="chat-sidebar__subtitle">{t('chats_subtitle')}</p>
           </div>
 
           {error && !conversationId && <p className="form-error chat-inline-error">{error}</p>}
 
           <div className="chat-list">
             {conversations.length === 0 && partnersWithoutRoom.length === 0 && (
-              <p className="chat-list__empty">
-                Publica en Intercambios; cuando alguien encaje oferta ↔ búsqueda, aparecerá aquí.
-              </p>
+              <p className="chat-list__empty">{t('chat_empty')}</p>
             )}
 
             {conversations.map((c) => {
@@ -345,9 +348,15 @@ export default function ChatPage() {
                     {other.slice(0, 2).toUpperCase()}
                   </div>
                   <div className="chat-row__body">
-                    <span className="chat-row__name">Usuario {shortUser(other)}</span>
+                    <span className="chat-row__name">
+                      {t('user_prefix')} {shortUser(other)}
+                    </span>
                     <span className="chat-row__preview">
-                      {last ? (last.sender_id === user.id ? `Tú: ${last.body}` : last.body) : 'Sin mensajes aún'}
+                      {last
+                        ? last.sender_id === user.id
+                          ? `${t('my_message_prefix')}: ${last.body}`
+                          : last.body
+                        : t('no_messages')}
                     </span>
                   </div>
                 </Link>
@@ -356,7 +365,7 @@ export default function ChatPage() {
 
             {partnersWithoutRoom.length > 0 && (
               <>
-                <p className="chat-list__section">Compatibles — iniciar chat</p>
+                <p className="chat-list__section">{t('compatible_section')}</p>
                 {partnersWithoutRoom.map((pid) => (
                   <button
                     key={pid}
@@ -369,9 +378,11 @@ export default function ChatPage() {
                       +
                     </div>
                     <div className="chat-row__body">
-                      <span className="chat-row__name">Usuario {shortUser(pid)}</span>
+                      <span className="chat-row__name">
+                        {t('user_prefix')} {shortUser(pid)}
+                      </span>
                       <span className="chat-row__preview">
-                        {starting === pid ? 'Abriendo…' : 'Tocá para chatear'}
+                        {starting === pid ? t('opening') : t('tap_to_chat')}
                       </span>
                     </div>
                   </button>
@@ -381,15 +392,15 @@ export default function ChatPage() {
           </div>
         </aside>
 
-        <section className="chat-main" aria-label="Mensajes">
+        <section className="chat-main" aria-label={t('messages_aria')}>
           {!conversationId ? (
             <div className="chat-placeholder">
-              <p>Elegí una conversación o iniciá un chat con un usuario compatible.</p>
+              <p>{t('chat_placeholder')}</p>
             </div>
           ) : (
             <>
               <header className="chat-main__header">
-                <Link to="/chat" className="chat-main__back" aria-label="Volver al listado">
+                <Link to="/chat" className="chat-main__back" aria-label={t('back_aria')}>
                   ←
                 </Link>
                 <div className="chat-main__peer">
@@ -398,14 +409,18 @@ export default function ChatPage() {
                   </div>
                   <div>
                     <strong className="chat-main__peer-name">
-                      {threadPartner ? `Usuario ${shortUser(threadPartner)}` : 'Chat'}
+                      {threadPartner
+                        ? `${t('user_prefix')} ${shortUser(threadPartner)}`
+                        : 'Chat'}
                     </strong>
-                    <span className="chat-main__peer-status">Intercambio compatible</span>
+                    <span className="chat-main__peer-status">{t('chat_compatible')}</span>
                   </div>
                 </div>
               </header>
 
-              {error && conversationId && <p className="form-error chat-thread-error">{error}</p>}
+              {error && conversationId && (
+                <p className="form-error chat-thread-error">{error}</p>
+              )}
 
               <div className="chat-messages">
                 {threadLoading ? (
@@ -423,7 +438,7 @@ export default function ChatPage() {
                         <div className={`chat-bubble${mine ? ' chat-bubble--mine' : ''}`}>
                           <p className="chat-bubble__text">{m.body}</p>
                           <time className="chat-bubble__time" dateTime={m.created_at}>
-                            {new Date(m.created_at).toLocaleTimeString('es', {
+                            {new Date(m.created_at).toLocaleTimeString(locale, {
                               hour: '2-digit',
                               minute: '2-digit',
                             })}
@@ -440,15 +455,19 @@ export default function ChatPage() {
                 <input
                   type="text"
                   className="chat-composer__input"
-                  placeholder="Escribí un mensaje…"
+                  placeholder={t('msg_placeholder')}
                   value={draft}
                   maxLength={MAX_BODY}
                   onChange={(e) => setDraft(e.target.value)}
                   autoComplete="off"
-                  aria-label="Mensaje"
+                  aria-label={t('msg_aria')}
                 />
-                <button type="submit" className="btn btn--primary chat-composer__send" disabled={!draft.trim()}>
-                  Enviar
+                <button
+                  type="submit"
+                  className="btn btn--primary chat-composer__send"
+                  disabled={!draft.trim()}
+                >
+                  {t('btn_send')}
                 </button>
               </form>
             </>

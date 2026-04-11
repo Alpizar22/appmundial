@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
+import { useLang } from '../context/LangContext'
 import { getJugador } from '../data/jugadores'
 
 export default function DuplicatesPage() {
   const { user } = useAuth()
+  const { t } = useLang()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -60,47 +62,46 @@ export default function DuplicatesPage() {
   return (
     <div className="page duplicates">
       <header className="page-header">
-        <h1>Duplicados</h1>
-        <p>
-          Cartas con más de una copia. Cada clic en «Quitar una copia extra» deja una sola en el
-          álbum.
-        </p>
+        <h1>{t('duplicates_title')}</h1>
+        <p>{t('duplicates_subtitle')}</p>
       </header>
 
       {error && <p className="form-error">{error}</p>}
 
       {rows.length === 0 ? (
         <div className="empty-state">
-          <p>No tienes duplicados registrados.</p>
+          <p>{t('duplicates_empty')}</p>
           <p className="empty-state__hint">
-            En la colección usa <kbd>Mayús</kbd> + clic en una carta que ya tengas para sumar
-            duplicados.
+            {t('duplicates_hint_p1')} <kbd>{t('duplicates_kbd')}</kbd>{' '}
+            {t('duplicates_hint_p2')}
           </p>
         </div>
       ) : (
         <>
           <p className="dup-summary">
-            <strong>{totalExtra}</strong> copias de más en{' '}
-            <strong>{rows.length}</strong> números distintos.
+            <strong>{totalExtra}</strong> {t('dup_summary_between')}{' '}
+            <strong>{rows.length}</strong> {t('dup_summary_suffix')}
           </p>
           <ul className="dup-list">
             {rows.map((r) => {
               const j = getJugador(r.card_number)
               return (
-              <li key={r.card_number} className="dup-row">
-                <div>
-                  <span className="dup-row__num">Carta #{r.card_number}</span>
-                  <span className="dup-row__player">{j.nombre}</span>
-                  <span className="dup-row__qty">{r.quantity} copias · {j.pais}</span>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn--secondary btn--sm"
-                  onClick={() => removeOneDuplicate(r.card_number, r.quantity)}
-                >
-                  Quitar una copia extra
-                </button>
-              </li>
+                <li key={r.card_number} className="dup-row">
+                  <div>
+                    <span className="dup-row__num">{t('card_number', { n: r.card_number })}</span>
+                    <span className="dup-row__player">{j.nombre}</span>
+                    <span className="dup-row__qty">
+                      {r.quantity} {t('copies_label')} · {j.pais}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => removeOneDuplicate(r.card_number, r.quantity)}
+                  >
+                    {t('btn_remove_extra')}
+                  </button>
+                </li>
               )
             })}
           </ul>

@@ -421,6 +421,16 @@ kbd {
   margin-left: auto;
 }
 
+.lang-toggle {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.lang-toggle__btn--active {
+  color: var(--wc-white) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
 .app-header__email {
   max-width: 160px;
   overflow: hidden;

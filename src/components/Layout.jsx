@@ -1,18 +1,20 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useLang } from '../context/LangContext'
 import { IconChat, IconGrid, IconHome, IconLayers, IconSwap } from './NavIcons'
-
-const nav = [
-  { to: '/', label: 'Inicio', end: true, Icon: IconHome },
-  { to: '/coleccion', label: 'Colección', Icon: IconGrid },
-  { to: '/duplicados', label: 'Duplicados', Icon: IconLayers },
-  { to: '/intercambios', label: 'Intercambios', Icon: IconSwap },
-  { to: '/chat', label: 'Chat', prefix: true, Icon: IconChat },
-]
 
 export default function Layout() {
   const { signOut, user } = useAuth()
+  const { lang, setLang, t } = useLang()
   const location = useLocation()
+
+  const nav = [
+    { to: '/', label: t('nav_home'), end: true, Icon: IconHome },
+    { to: '/coleccion', label: t('nav_collection'), Icon: IconGrid },
+    { to: '/duplicados', label: t('nav_duplicates'), Icon: IconLayers },
+    { to: '/intercambios', label: t('nav_trades'), Icon: IconSwap },
+    { to: '/chat', label: t('nav_chat'), prefix: true, Icon: IconChat },
+  ]
 
   return (
     <div className="app-shell">
@@ -22,11 +24,11 @@ export default function Layout() {
             ⚽
           </span>
           <div>
-            <strong>Mundial 2026</strong>
-            <span className="app-header__subtitle">Álbum de cartas</span>
+            <strong>{t('header_brand')}</strong>
+            <span className="app-header__subtitle">{t('header_subtitle')}</span>
           </div>
         </div>
-        <nav className="app-nav" aria-label="Principal">
+        <nav className="app-nav" aria-label={t('nav_aria')}>
           {nav.map(({ to, label, end, prefix, Icon }) => (
             <NavLink
               key={to}
@@ -48,8 +50,26 @@ export default function Layout() {
           <span className="app-header__email" title={user?.email}>
             {user?.email}
           </span>
+          <div className="lang-toggle" role="group" aria-label="Language / Idioma">
+            <button
+              type="button"
+              className={`btn btn--ghost btn--sm${lang === 'es' ? ' lang-toggle__btn--active' : ''}`}
+              onClick={() => setLang('es')}
+              aria-pressed={lang === 'es'}
+            >
+              ES
+            </button>
+            <button
+              type="button"
+              className={`btn btn--ghost btn--sm${lang === 'en' ? ' lang-toggle__btn--active' : ''}`}
+              onClick={() => setLang('en')}
+              aria-pressed={lang === 'en'}
+            >
+              EN
+            </button>
+          </div>
           <button type="button" className="btn btn--ghost" onClick={() => signOut()}>
-            Salir
+            {t('btn_logout')}
           </button>
         </div>
       </header>

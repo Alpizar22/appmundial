@@ -1,0 +1,146 @@
+const en = {
+  // Auth
+  auth_title: 'World Cup 2026',
+  auth_subtitle: 'Your card collection, all in one place.',
+  auth_tab_login: 'Sign in',
+  auth_tab_register: 'Register',
+  auth_label_email: 'Email',
+  auth_placeholder_email: 'you@email.com',
+  auth_label_password: 'Password',
+  auth_placeholder_password: '••••••••',
+  auth_btn_processing: 'Processing…',
+  auth_btn_login: 'Sign in',
+  auth_btn_register: 'Create account',
+  auth_msg_confirm:
+    'Check your email to confirm your account (if confirmation is enabled in Supabase).',
+  auth_err_fallback: 'Could not complete the action',
+
+  // Layout / Nav
+  nav_home: 'Home',
+  nav_collection: 'Collection',
+  nav_duplicates: 'Duplicates',
+  nav_trades: 'Trades',
+  nav_chat: 'Chat',
+  nav_aria: 'Main',
+  header_brand: 'World Cup 2026',
+  header_subtitle: 'Sticker album',
+  btn_logout: 'Sign out',
+
+  // Dashboard
+  dashboard_title: 'Dashboard',
+  dashboard_subtitle: 'Summary of your World Cup 2026 album progress.',
+  stat_unique: 'Unique cards',
+  stat_complete: 'Album complete!',
+  stat_pct_of_album: '{pct}% of album',
+  stat_total_copies: 'Total copies',
+  stat_includes_dupes: 'Includes duplicates',
+  stat_extra: 'Extra copies',
+  stat_for_trade: 'Available to trade',
+  quick_access: 'Quick access',
+  action_mark: 'Mark cards',
+  action_mark_desc: 'Numbers 1 to {total}',
+  action_dupes: 'Duplicates',
+  action_dupes_desc: 'See your repeated cards',
+  action_trades: 'Trades',
+  action_trades_desc: 'I offer X, I want Y',
+  action_chat: 'Chat',
+  action_chat_desc: 'Talk with other collectors',
+
+  // Collection
+  collection_title: 'Collection',
+  collection_subtitle_p1: 'Tap a card to mark or unmark it.',
+  collection_kbd: 'Shift',
+  collection_subtitle_p2: '+ click adds a duplicate if you already have it.',
+  collection_search_label: 'Search by number or player',
+  collection_search_placeholder: 'E.g. 42, Messi, Mexico…',
+  collection_btn_refresh: 'Refresh',
+  tip_mark: 'mark',
+  tip_remove: 'remove · Shift+click: duplicate',
+  tip_copies: '{q} copies',
+
+  // Duplicates
+  duplicates_title: 'Duplicates',
+  duplicates_subtitle:
+    'Cards with more than one copy. Each click on «Remove one extra copy» leaves just one in the album.',
+  duplicates_empty: 'You have no registered duplicates.',
+  duplicates_hint_p1: 'In the collection, use',
+  duplicates_kbd: 'Shift',
+  duplicates_hint_p2: '+ click on a card you already have to add duplicates.',
+  duplicates_summary: '{extra} extra copies across {count} different numbers.',
+  dup_summary_between: 'extra copies across',
+  dup_summary_suffix: 'different numbers.',
+  card_number: 'Card #{n}',
+  copies_label: 'copies',
+  btn_remove_extra: 'Remove one extra copy',
+
+  // Trades
+  trades_title: 'Trades',
+  trades_subtitle:
+    'Post with your location (optional) to see distances and a map. The browser will ask for permission when publishing if you enable save location.',
+  new_post: 'New post',
+  dupe_pick_title: 'Pick a duplicate card to offer',
+  label_offer_alt: 'Or type the card no. you offer',
+  label_offer: 'I offer card no.',
+  placeholder_offer: 'E.g. 120',
+  label_want: 'I want card no.',
+  placeholder_want: 'E.g. 305',
+  check_location: 'Save my location in this post (latitude / longitude)',
+  err_offer_range: 'The offered card must be between 1 and {total}.',
+  err_want_range: 'The wanted card must be between 1 and {total}.',
+  err_same_card: 'The offered card and the wanted card must be different.',
+  geo_denied:
+    'Could not read your location (permission denied or unavailable). The post will be published without coordinates.',
+  btn_publishing: 'Publishing…',
+  btn_publish: 'Publish trade',
+  map_title: 'Collector map',
+  map_with_location: 'with location',
+  map_loading: 'Loading map…',
+  map_footnote:
+    'Allow location in your browser to center the map on you and see distances in the list.',
+  active_posts: 'Active listings',
+  no_posts: 'No listings yet.',
+  offer_prefix: 'I offer',
+  want_prefix: 'I want',
+  trade_sep: 'for',
+  my_post_badge: 'Your post',
+  user_prefix: 'User',
+  location_saved: 'Location saved',
+  no_location: 'No location',
+  btn_remove_post: 'Remove',
+
+  // Chat
+  chats_title: 'Chats',
+  chats_subtitle: 'Only with users who have a compatible trade.',
+  chat_empty:
+    'Post in Trades; when someone matches offer ↔ want, they will appear here.',
+  no_messages: 'No messages yet',
+  my_message_prefix: 'You',
+  compatible_section: 'Compatible — start chat',
+  opening: 'Opening…',
+  tap_to_chat: 'Tap to chat',
+  chat_placeholder: 'Select a conversation or start a chat with a compatible user.',
+  chat_compatible: 'Compatible trade',
+  msg_placeholder: 'Write a message…',
+  btn_send: 'Send',
+  err_open_chat: 'Could not open chat',
+  err_load_data: 'Could not load data',
+  back_aria: 'Back to list',
+  conversations_aria: 'Conversations',
+  messages_aria: 'Messages',
+  msg_aria: 'Message',
+
+  // ProtectedRoute
+  loading: 'Loading…',
+
+  // TradesMap
+  map_no_locations:
+    'Nobody with a location on the map yet. When posting, enable "Save my location" to appear here.',
+  map_my_pos: 'Your position',
+  map_distances_hint: 'This is how we calculate distances in the list.',
+  map_offer: 'I offer',
+  map_want: 'I want',
+  map_go_chat: 'Go to chat',
+  map_my_post_hint: 'Your post',
+}
+
+export default en

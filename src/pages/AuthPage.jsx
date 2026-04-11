@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
+import { useLang } from '../context/LangContext'
 
 function safeReturnPath(raw) {
   if (typeof raw !== 'string' || !raw.startsWith('/') || raw.startsWith('//')) return '/'
@@ -11,6 +12,7 @@ function safeReturnPath(raw) {
 
 export default function AuthPage() {
   const { user, loading } = useAuth()
+  const { t } = useLang()
   const location = useLocation()
   const from = safeReturnPath(location.state?.from?.pathname) || '/'
 
@@ -51,12 +53,10 @@ export default function AuthPage() {
           password,
         })
         if (err) throw err
-        setMessage(
-          'Revisa tu correo para confirmar la cuenta (si tienes confirmación activada en Supabase).'
-        )
+        setMessage(t('auth_msg_confirm'))
       }
     } catch (err) {
-      setError(err.message || 'No se pudo completar la acción')
+      setError(err.message || t('auth_err_fallback'))
     } finally {
       setBusy(false)
     }
@@ -69,8 +69,8 @@ export default function AuthPage() {
           <span className="auth-card__ball" aria-hidden="true">
             ⚽
           </span>
-          <h1>Mundial 2026</h1>
-          <p>Tu colección de cartas, en un solo lugar.</p>
+          <h1>{t('auth_title')}</h1>
+          <p>{t('auth_subtitle')}</p>
         </div>
         <div className="auth-card__tabs" role="tablist">
           <button
@@ -84,7 +84,7 @@ export default function AuthPage() {
               setMessage('')
             }}
           >
-            Entrar
+            {t('auth_tab_login')}
           </button>
           <button
             type="button"
@@ -97,12 +97,12 @@ export default function AuthPage() {
               setMessage('')
             }}
           >
-            Registro
+            {t('auth_tab_register')}
           </button>
         </div>
         <form className="auth-form" onSubmit={handleSubmit}>
           <label className="field">
-            <span>Email</span>
+            <span>{t('auth_label_email')}</span>
             <input
               type="email"
               autoComplete="email"
@@ -113,11 +113,11 @@ export default function AuthPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="tu@email.com"
+              placeholder={t('auth_placeholder_email')}
             />
           </label>
           <label className="field">
-            <span>Contraseña</span>
+            <span>{t('auth_label_password')}</span>
             <input
               type="password"
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
@@ -128,13 +128,17 @@ export default function AuthPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              placeholder="••••••••"
+              placeholder={t('auth_placeholder_password')}
             />
           </label>
           {error && <p className="form-error">{error}</p>}
           {message && <p className="form-success">{message}</p>}
           <button type="submit" className="btn btn--primary btn--block" disabled={busy}>
-            {busy ? 'Procesando…' : mode === 'login' ? 'Entrar' : 'Crear cuenta'}
+            {busy
+              ? t('auth_btn_processing')
+              : mode === 'login'
+                ? t('auth_btn_login')
+                : t('auth_btn_register')}
           </button>
         </form>
       </div>

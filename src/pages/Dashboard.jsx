@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
+import { useLang } from '../context/LangContext'
 import { TOTAL_CARDS } from '../constants'
 import { celebrateAlbumComplete } from '../lib/celebrateAlbum'
 import { IconChat, IconGrid, IconLayers, IconSwap } from '../components/NavIcons'
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { t } = useLang()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const prevUniqueRef = useRef(null)
@@ -70,14 +72,14 @@ export default function Dashboard() {
   return (
     <div className="page dashboard">
       <header className="page-header">
-        <h1>Panel principal</h1>
-        <p>Resumen de tu progreso en el álbum del Mundial 2026.</p>
+        <h1>{t('dashboard_title')}</h1>
+        <p>{t('dashboard_subtitle')}</p>
       </header>
 
       <div className="stat-grid">
         <article className="stat-card stat-card--highlight stat-card--album">
           <span className="stat-card__glow" aria-hidden="true" />
-          <span className="stat-card__label">Cartas distintas</span>
+          <span className="stat-card__label">{t('stat_unique')}</span>
           <strong className="stat-card__value">
             {stats.unique}
             <small> / {TOTAL_CARDS}</small>
@@ -93,36 +95,36 @@ export default function Dashboard() {
           </div>
           <span className="stat-card__hint">
             {stats.unique >= TOTAL_CARDS ? (
-              <span className="stat-card__complete">¡Álbum completo!</span>
+              <span className="stat-card__complete">{t('stat_complete')}</span>
             ) : (
-              `${stats.pct}% del álbum`
+              t('stat_pct_of_album', { pct: stats.pct })
             )}
           </span>
         </article>
         <article className="stat-card stat-card--copies">
           <span className="stat-card__glow stat-card__glow--blue" aria-hidden="true" />
-          <span className="stat-card__label">Copias en total</span>
+          <span className="stat-card__label">{t('stat_total_copies')}</span>
           <strong className="stat-card__value">{stats.totalCopies}</strong>
-          <span className="stat-card__hint">Incluye duplicados</span>
+          <span className="stat-card__hint">{t('stat_includes_dupes')}</span>
         </article>
         <article className="stat-card stat-card--dupstat">
           <span className="stat-card__glow stat-card__glow--red" aria-hidden="true" />
-          <span className="stat-card__label">Copias de más</span>
+          <span className="stat-card__label">{t('stat_extra')}</span>
           <strong className="stat-card__value">{stats.duplicateExtra}</strong>
-          <span className="stat-card__hint">Para intercambiar</span>
+          <span className="stat-card__hint">{t('stat_for_trade')}</span>
         </article>
       </div>
 
       <section className="dashboard-actions">
-        <h2>Accesos rápidos</h2>
+        <h2>{t('quick_access')}</h2>
         <div className="action-cards">
           <Link className="action-card action-card--grid" to="/coleccion">
             <span className="action-card__icon-wrap" aria-hidden="true">
               <IconGrid className="action-card__svg" />
             </span>
             <div>
-              <strong>Marcar cartas</strong>
-              <p>Números del 1 al {TOTAL_CARDS}</p>
+              <strong>{t('action_mark')}</strong>
+              <p>{t('action_mark_desc', { total: TOTAL_CARDS })}</p>
             </div>
           </Link>
           <Link className="action-card action-card--layers" to="/duplicados">
@@ -130,8 +132,8 @@ export default function Dashboard() {
               <IconLayers className="action-card__svg" />
             </span>
             <div>
-              <strong>Duplicados</strong>
-              <p>Revisa las que tienes repetidas</p>
+              <strong>{t('action_dupes')}</strong>
+              <p>{t('action_dupes_desc')}</p>
             </div>
           </Link>
           <Link className="action-card action-card--swap" to="/intercambios">
@@ -139,8 +141,8 @@ export default function Dashboard() {
               <IconSwap className="action-card__svg" />
             </span>
             <div>
-              <strong>Intercambios</strong>
-              <p>Ofrezco X, busco Y</p>
+              <strong>{t('action_trades')}</strong>
+              <p>{t('action_trades_desc')}</p>
             </div>
           </Link>
           <Link className="action-card action-card--chat" to="/chat">
@@ -148,8 +150,8 @@ export default function Dashboard() {
               <IconChat className="action-card__svg" />
             </span>
             <div>
-              <strong>Chat</strong>
-              <p>Hablá con otros coleccionistas</p>
+              <strong>{t('action_chat')}</strong>
+              <p>{t('action_chat_desc')}</p>
             </div>
           </Link>
         </div>
