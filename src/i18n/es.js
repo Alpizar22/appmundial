@@ -132,6 +132,32 @@ const es = {
   // ProtectedRoute
   loading: 'Cargando…',
 
+  // Premium / Pro
+  nav_premium: 'Pro',
+  premium_title: 'SoccerSticker Pro',
+  premium_subtitle: 'Pago único · Sin suscripción',
+  premium_price: '$2.99',
+  premium_btn_buy: 'Obtener Pro por $2.99',
+  premium_btn_busy: 'Redirigiendo…',
+  premium_already_pro: '¡Ya sos Pro!',
+  premium_pro_since: 'Pro desde {date}',
+  premium_active_benefits: 'Tus beneficios activos',
+  premium_feature_themes: 'Temas exclusivos',
+  premium_feature_themes_desc: 'Personalizá los colores del álbum',
+  premium_feature_badges: 'Badges de coleccionista',
+  premium_feature_badges_desc: 'Mostrá tu rango a otros jugadores',
+  premium_feature_dashboard: 'Dashboard avanzado',
+  premium_feature_dashboard_desc: 'Estadísticas detalladas de tu colección',
+  premium_feature_odds: 'Probabilidades de cartas',
+  premium_feature_odds_desc: 'Calculá cuántos sobres necesitás',
+  premium_feature_priority: 'Acceso prioritario',
+  premium_feature_priority_desc: 'Primero en nuevas funciones y mejoras',
+  premium_success_title: '¡Bienvenido a Pro!',
+  premium_success_body: 'Tu pago fue procesado. Ya podés disfrutar todos los beneficios.',
+  premium_one_time: 'Pago único, sin suscripción',
+  premium_secure: 'Pago seguro con Stripe',
+  premium_err_fallback: 'No se pudo iniciar el pago. Intentá de nuevo.',
+
   // TradesMap
   map_no_locations:
     'Nadie con ubicación en mapa todavía. Al publicar, activá "Guardar mi ubicación" para aparecer aquí.',

@@ -1,12 +1,15 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
-import { IconChat, IconGrid, IconHome, IconLayers, IconSwap } from './NavIcons'
+import { useProfile } from '../hooks/useProfile'
+import { IconChat, IconGrid, IconHome, IconLayers, IconStar, IconSwap } from './NavIcons'
 
 export default function Layout() {
   const { signOut, user } = useAuth()
   const { lang, setLang, t } = useLang()
   const location = useLocation()
+
+  const { isPro } = useProfile()
 
   const nav = [
     { to: '/', label: t('nav_home'), end: true, Icon: IconHome },
@@ -14,6 +17,7 @@ export default function Layout() {
     { to: '/duplicados', label: t('nav_duplicates'), Icon: IconLayers },
     { to: '/intercambios', label: t('nav_trades'), Icon: IconSwap },
     { to: '/chat', label: t('nav_chat'), prefix: true, Icon: IconChat },
+    { to: '/premium', label: t('nav_premium'), Icon: IconStar, pro: true },
   ]
 
   return (
@@ -29,19 +33,25 @@ export default function Layout() {
           </div>
         </div>
         <nav className="app-nav" aria-label={t('nav_aria')}>
-          {nav.map(({ to, label, end, prefix, Icon }) => (
+          {nav.map(({ to, label, end, prefix, Icon, pro }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
               className={({ isActive }) => {
                 const active = prefix ? location.pathname.startsWith(to) : isActive
-                return active ? 'app-nav__link app-nav__link--active' : 'app-nav__link'
+                const base = active ? 'app-nav__link app-nav__link--active' : 'app-nav__link'
+                return pro ? `${base} app-nav__link--pro` : base
               }}
             >
               <span className="app-nav__inner">
                 <Icon className="app-nav__icon" />
-                <span className="app-nav__label">{label}</span>
+                <span className="app-nav__label">
+                  {label}
+                  {pro && isPro && (
+                    <span className="app-nav__pro-dot" aria-label="Pro activo" />
+                  )}
+                </span>
               </span>
             </NavLink>
           ))}

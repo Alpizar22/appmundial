@@ -10,6 +10,7 @@ import CollectionPage from './pages/CollectionPage'
 import DuplicatesPage from './pages/DuplicatesPage'
 import TradesPage from './pages/TradesPage'
 import ChatPage from './pages/ChatPage'
+import PremiumPage from './pages/PremiumPage'
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
             <Route path="intercambios" element={<TradesPage />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="chat/:conversationId" element={<ChatPage />} />
+            <Route path="premium" element={<PremiumPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
