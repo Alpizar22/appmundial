@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { useProfile } from '../hooks/useProfile'
@@ -50,7 +50,7 @@ export default function Layout() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div className="app-header__brand">
+        <Link to="/" className="app-header__brand">
           <span className="app-header__logo" aria-hidden="true">
             ⚽
           </span>
@@ -58,7 +58,7 @@ export default function Layout() {
             <strong>{t('header_brand')}</strong>
             <span className="app-header__subtitle">{t('header_subtitle')}</span>
           </div>
-        </div>
+        </Link>
 
         {/* Desktop nav */}
         <nav className="app-nav" aria-label={t('nav_aria')}>
