@@ -45,16 +45,13 @@ export default function PremiumPage() {
       } = await supabase.auth.getSession()
       if (!session) throw new Error('No session')
 
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
-      )
+      const res = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
       const json = await res.json()
       if (!res.ok || json.error) throw new Error(json.error || res.statusText)
 
