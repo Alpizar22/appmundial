@@ -3230,3 +3230,16 @@ export function buscarJugadores(query) {
   }
   return out
 }
+
+// Rareza basada en número de carta
+// 1-600: común | 601-700: rara | 701-760: brillante | 761-780: oro | 781-800: legendaria
+export function getRareza(n) {
+  if (n <= 600) return 'común'
+  if (n <= 700) return 'rara'
+  if (n <= 760) return 'brillante'
+  if (n <= 780) return 'oro'
+  return 'legendaria'
+}
+
+export const SPECIAL_START = 701  // primer número especial (Pro)
+export const SPECIAL_TOTAL = 100  // cartas 701-800

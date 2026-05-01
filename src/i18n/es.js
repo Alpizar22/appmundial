@@ -270,6 +270,42 @@ const es = {
   how_2_desc: 'Publica qué ofreces y qué buscas',
   how_3_label: 'Chatea y queda',
   how_3_desc: 'Habla con coleccionistas cerca de ti',
+
+  // Quick stats (nuevo dashboard)
+  nav_notas: 'Notas',
+  qstat_completado: 'Completado',
+  qstat_tengo: 'Tengo',
+  qstat_faltan: 'Me faltan',
+  qstat_repetidas: 'Repetidas',
+  qstat_especiales: 'Especiales',
+  qstat_notas: 'Mis notas',
+  qstat_de_total: '{n} de {total}',
+  btn_marcar: 'Marcar cartas',
+
+  // Collection vista filter
+  collection_vista_all: 'Todas',
+  collection_vista_tengo: 'Tengo',
+  collection_vista_faltan: 'Me faltan',
+  collection_vista_especiales: 'Especiales',
+
+  // Notas page
+  notas_title: 'Mis Notas',
+  notas_subtitle: 'Cartas que quieres conseguir',
+  notas_empty: 'No tienes notas guardadas. Agrega cartas que buscas.',
+  notas_add_title: 'Agregar nota',
+  nota_card_label: 'N.º de carta (1–800)',
+  nota_card_placeholder: 'Ej. 342',
+  nota_prioridad_label: 'Prioridad',
+  nota_texto_label: 'Nota (opcional)',
+  nota_texto_placeholder: '¿Por qué la quieres? ¿Algo que ofrecer a cambio?',
+  nota_prioridad_alta: '🔴 Alta',
+  nota_prioridad_media: '🟡 Media',
+  nota_prioridad_baja: '🔵 Baja',
+  btn_add_nota: 'Agregar',
+  btn_delete_nota: 'Eliminar',
+  btn_adding_nota: 'Guardando…',
+  nota_err_invalid: 'Número de carta inválido (1–800).',
+  nota_err_fallback: 'No se pudo guardar la nota.',
 }
 
 export default es

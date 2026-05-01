@@ -270,6 +270,42 @@ const en = {
   how_2_desc: 'Post what you offer and what you need',
   how_3_label: 'Chat and meet up',
   how_3_desc: 'Talk with collectors near you',
+
+  // Quick stats (new dashboard)
+  nav_notas: 'Notes',
+  qstat_completado: 'Complete',
+  qstat_tengo: 'Have',
+  qstat_faltan: 'Missing',
+  qstat_repetidas: 'Duplicates',
+  qstat_especiales: 'Specials',
+  qstat_notas: 'My notes',
+  qstat_de_total: '{n} of {total}',
+  btn_marcar: 'Mark cards',
+
+  // Collection vista filter
+  collection_vista_all: 'All',
+  collection_vista_tengo: 'Have',
+  collection_vista_faltan: 'Missing',
+  collection_vista_especiales: 'Specials',
+
+  // Notes page
+  notas_title: 'My Notes',
+  notas_subtitle: 'Cards you want to get',
+  notas_empty: 'No notes saved. Add cards you are looking for.',
+  notas_add_title: 'Add note',
+  nota_card_label: 'Card number (1–800)',
+  nota_card_placeholder: 'e.g. 342',
+  nota_prioridad_label: 'Priority',
+  nota_texto_label: 'Note (optional)',
+  nota_texto_placeholder: 'Why do you want it? Anything to offer in return?',
+  nota_prioridad_alta: '🔴 High',
+  nota_prioridad_media: '🟡 Medium',
+  nota_prioridad_baja: '🔵 Low',
+  btn_add_nota: 'Add',
+  btn_delete_nota: 'Delete',
+  btn_adding_nota: 'Saving…',
+  nota_err_invalid: 'Invalid card number (1–800).',
+  nota_err_fallback: 'Could not save the note.',
 }
 
 export default en

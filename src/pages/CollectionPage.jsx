@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { TOTAL_CARDS } from '../constants'
-import { buscarJugadores, getJugador } from '../data/jugadores'
+import { buscarJugadores, getJugador, SPECIAL_START } from '../data/jugadores'
 
 const LONG_PRESS_MS = 600
 
@@ -16,12 +17,17 @@ function buildMap(rows) {
   return m
 }
 
+const VALID_VISTAS = ['tengo', 'faltan', 'especiales']
+
 export default function CollectionPage() {
   const { user } = useAuth()
   const { t } = useLang()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [qtyByCard, setQtyByCard] = useState(() => new Map())
   const [filter, setFilter] = useState('')
   const [loading, setLoading] = useState(true)
+
+  const vista = VALID_VISTAS.includes(searchParams.get('vista')) ? searchParams.get('vista') : null
   const [error, setError] = useState('')
   const [tapAnim, setTapAnim] = useState(null)
   const tapTimerRef = useRef(null)
@@ -89,21 +95,26 @@ export default function CollectionPage() {
   }, [])
 
   const numbers = useMemo(() => {
+    const all = Array.from({ length: TOTAL_CARDS }, (_, i) => i + 1)
+
+    // Vista filter (from URL param)
+    let base = all
+    if (vista === 'tengo') base = all.filter((n) => (qtyByCard.get(n) || 0) > 0)
+    else if (vista === 'faltan') base = all.filter((n) => (qtyByCard.get(n) || 0) === 0)
+    else if (vista === 'especiales') base = all.filter((n) => n >= SPECIAL_START)
+
+    // Text/number search on top of vista
     const q = filter.trim()
-    if (!q) return Array.from({ length: TOTAL_CARDS }, (_, i) => i + 1)
+    if (!q) return base
     if (/^\d+$/.test(q)) {
       const n = parseInt(q, 10)
-      if (!Number.isNaN(n) && n >= 1 && n <= TOTAL_CARDS) return [n]
-      return Array.from({ length: TOTAL_CARDS }, (_, i) => i + 1).filter((num) =>
-        String(num).includes(q)
-      )
+      if (!Number.isNaN(n) && n >= 1 && n <= TOTAL_CARDS) return base.filter((num) => num === n)
+      return base.filter((num) => String(num).includes(q))
     }
     const byName = buscarJugadores(q)
-    if (byName?.length) return byName
-    return Array.from({ length: TOTAL_CARDS }, (_, i) => i + 1).filter((num) =>
-      String(num).includes(q)
-    )
-  }, [filter])
+    if (byName?.length) return base.filter((n) => byName.includes(n))
+    return base.filter((num) => String(num).includes(q))
+  }, [filter, vista, qtyByCard])
 
   async function setQuantity(cardNumber, nextQty) {
     if (nextQty <= 0) {
@@ -201,6 +212,28 @@ export default function CollectionPage() {
         </p>
         <p className="collection-subtitle-mobile">{t('collection_subtitle_mobile')}</p>
       </header>
+
+      {/* Vista filter bar */}
+      <div className="collection-vista-bar" role="group" aria-label="Filtrar vista">
+        {[
+          { key: null, label: t('collection_vista_all') },
+          { key: 'tengo', label: t('collection_vista_tengo') },
+          { key: 'faltan', label: t('collection_vista_faltan') },
+          { key: 'especiales', label: t('collection_vista_especiales') },
+        ].map(({ key, label }) => (
+          <button
+            key={key ?? 'all'}
+            type="button"
+            className={`collection-vista-btn${vista === key ? ' collection-vista-btn--active' : ''}`}
+            onClick={() => {
+              if (key === null) setSearchParams({})
+              else setSearchParams({ vista: key })
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
       <div className="collection-toolbar">
         <label className="field field--inline">

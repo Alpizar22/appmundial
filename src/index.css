@@ -3195,3 +3195,410 @@ kbd {
   color: var(--color-text-muted, rgba(255,255,255,0.7));
   margin: 0;
 }
+
+/* ================================================================
+   QUICK STATS GRID (Dashboard rediseño)
+   ================================================================ */
+.qstats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 480px) {
+  .qstats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .qstats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.qstat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 1rem;
+  background: rgba(10, 49, 97, 0.45);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 44px;
+  isolation: isolate;
+}
+
+.qstat-card:hover,
+.qstat-card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  border-color: rgba(255, 255, 255, 0.22);
+  outline: none;
+}
+
+.qstat-card:active {
+  transform: translateY(-1px);
+}
+
+.qstat-card--wide {
+  grid-column: span 2;
+}
+
+.qstat-card__icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.qstat-card__value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--wc-white);
+  line-height: 1.1;
+  margin: 0.2rem 0 0.05rem;
+}
+
+.qstat-card__value small {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.qstat-card__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.qstat-card__sub {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+}
+
+/* Progress bar inside completado card */
+.qstat-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  margin-top: 0.55rem;
+  overflow: hidden;
+}
+
+.qstat-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--wc-red), #f87171);
+  border-radius: 2px;
+  transition: width 0.7s ease;
+}
+
+/* Card accent colors */
+.qstat-card--pct {
+  background: linear-gradient(140deg, rgba(196, 30, 58, 0.45) 0%, rgba(10, 49, 97, 0.55) 100%);
+  border-color: rgba(196, 30, 58, 0.4);
+}
+
+.qstat-card--tengo {
+  background: linear-gradient(140deg, rgba(22, 163, 74, 0.38) 0%, rgba(10, 49, 97, 0.55) 100%);
+  border-color: rgba(22, 163, 74, 0.3);
+}
+
+.qstat-card--faltan {
+  background: linear-gradient(140deg, rgba(239, 68, 68, 0.32) 0%, rgba(10, 49, 97, 0.55) 100%);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.qstat-card--dupes {
+  background: linear-gradient(140deg, rgba(59, 130, 246, 0.38) 0%, rgba(10, 49, 97, 0.55) 100%);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+.qstat-card--shine {
+  background: linear-gradient(140deg, rgba(245, 158, 11, 0.38) 0%, rgba(10, 49, 97, 0.55) 100%);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.qstat-card--notas {
+  background: linear-gradient(140deg, rgba(139, 92, 246, 0.38) 0%, rgba(10, 49, 97, 0.55) 100%);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+/* Pro-locked card */
+.qstat-card__value--blur {
+  filter: blur(7px);
+  user-select: none;
+}
+
+.qstat-card__lock-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 20, 40, 0.6);
+  backdrop-filter: blur(2px);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f5c518;
+  border-radius: inherit;
+  letter-spacing: 0.05em;
+}
+
+/* ── Mark Cards CTA button ── */
+.mark-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, var(--wc-red) 0%, var(--wc-red-dark) 100%);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 2rem;
+  min-height: 56px;
+  box-shadow: 0 4px 18px rgba(196, 30, 58, 0.4);
+  letter-spacing: 0.01em;
+}
+
+.mark-cta:hover,
+.mark-cta:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(196, 30, 58, 0.55);
+  outline: none;
+}
+
+.mark-cta:active {
+  transform: translateY(0);
+}
+
+/* ================================================================
+   COLLECTION VISTA FILTER BAR
+   ================================================================ */
+.collection-vista-bar {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+
+.collection-vista-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  min-height: 36px;
+}
+
+.collection-vista-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+.collection-vista-btn--active {
+  background: rgba(196, 30, 58, 0.35);
+  border-color: rgba(196, 30, 58, 0.55);
+  color: var(--wc-white);
+}
+
+/* ================================================================
+   NOTAS PAGE
+   ================================================================ */
+.nota-form {
+  background: rgba(10, 49, 97, 0.35);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.nota-form__title {
+  font-size: 1rem;
+  margin: 0 0 0.25rem;
+}
+
+.nota-form__row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.nota-form__row > .field {
+  flex: 1;
+  min-width: 130px;
+}
+
+.notas-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.nota-item {
+  background: rgba(10, 49, 97, 0.4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.nota-item__badge {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: rgba(196, 30, 58, 0.3);
+  border: 1px solid rgba(196, 30, 58, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--wc-white);
+}
+
+.nota-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.nota-item__card-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--wc-white);
+  line-height: 1.3;
+}
+
+.nota-item__jugador {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.nota-item__prioridad {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12em 0.65em;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.35rem;
+}
+
+.nota-item__prioridad--alta {
+  background: rgba(239, 68, 68, 0.22);
+  color: #fca5a5;
+}
+
+.nota-item__prioridad--media {
+  background: rgba(245, 158, 11, 0.22);
+  color: #fcd34d;
+}
+
+.nota-item__prioridad--baja {
+  background: rgba(59, 130, 246, 0.22);
+  color: #93c5fd;
+}
+
+.nota-item__texto {
+  font-size: 0.875rem;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.nota-item__del {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.25rem 0.3rem;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+  min-width: 32px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nota-item__del:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.empty-hint {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* field textarea + select — same base as input */
+.field textarea,
+.field select {
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.field textarea:focus,
+.field select:focus {
+  outline: 2px solid var(--wc-blue-light);
+  outline-offset: 1px;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 64px;
+}
+
+/* field select */
+.field select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.25rem;
+}

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { useProfile } from '../hooks/useProfile'
 import { useTheme } from '../hooks/useTheme'
-import { IconChat, IconGrid, IconHome, IconLayers, IconStar, IconSwap, IconUser } from './NavIcons'
+import { IconChat, IconGrid, IconHome, IconLayers, IconNote, IconStar, IconSwap, IconUser } from './NavIcons'
 
 export default function Layout() {
   const { signOut, user } = useAuth()
@@ -20,6 +20,7 @@ export default function Layout() {
     { to: '/', label: t('nav_home'), end: true, Icon: IconHome },
     { to: '/coleccion', label: t('nav_collection'), Icon: IconGrid },
     { to: '/duplicados', label: t('nav_duplicates'), Icon: IconLayers },
+    { to: '/notas', label: t('nav_notas'), Icon: IconNote },
     { to: '/intercambios', label: t('nav_trades'), Icon: IconSwap, proFeature: true },
     { to: '/chat', label: t('nav_chat'), prefix: true, Icon: IconChat, proFeature: true },
     { to: '/premium', label: t('nav_premium'), Icon: IconStar, pro: true },

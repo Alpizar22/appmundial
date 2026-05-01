@@ -7,11 +7,10 @@ import { useLang } from '../context/LangContext'
 import { useProfile } from '../hooks/useProfile'
 import { TOTAL_CARDS } from '../constants'
 import { celebrateAlbumComplete } from '../lib/celebrateAlbum'
-import { getJugador } from '../data/jugadores'
-import { IconChat, IconGrid, IconLayers, IconStar, IconSwap } from '../components/NavIcons'
+import { getJugador, SPECIAL_START, SPECIAL_TOTAL } from '../data/jugadores'
 import FAQ from '../components/FAQ'
 
-const COMMON_THRESHOLD = 600 // cards 1-600 common, 601-800 rare
+const COMMON_THRESHOLD = 600
 
 function getOrUpdateStreak() {
   const KEY = 'ss_streak'
@@ -36,51 +35,45 @@ export default function Dashboard() {
   const { isPro } = useProfile()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
+  const [notasCount, setNotasCount] = useState(0)
   const prevUniqueRef = useRef(null)
   const celebrated100Ref = useRef(false)
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const { data, error } = await supabase
-        .from('user_cards')
-        .select('card_number, quantity')
-        .eq('user_id', user.id)
+      const [cardsRes, notasRes] = await Promise.all([
+        supabase.from('user_cards').select('card_number, quantity').eq('user_id', user.id),
+        supabase.from('notas').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+      ])
       if (!cancelled) {
-        if (!error && data) setRows(data)
+        if (!cardsRes.error && cardsRes.data) setRows(cardsRes.data)
+        if (!notasRes.error) setNotasCount(notasRes.count ?? 0)
         setLoading(false)
       }
     })()
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [user.id])
 
   const stats = useMemo(() => {
     const unique = rows.length
     const totalCopies = rows.reduce((s, r) => s + (r.quantity || 0), 0)
-    const duplicateExtra = rows.reduce(
-      (s, r) => s + Math.max(0, (r.quantity || 1) - 1),
-      0
-    )
+    const duplicateExtra = rows.reduce((s, r) => s + Math.max(0, (r.quantity || 1) - 1), 0)
     const pct = Math.round((unique / TOTAL_CARDS) * 1000) / 10
-    return { unique, totalCopies, duplicateExtra, pct }
+    const missing = TOTAL_CARDS - unique
+    const especiales = rows.filter((r) => r.card_number >= SPECIAL_START).length
+    return { unique, totalCopies, duplicateExtra, pct, missing, especiales }
   }, [rows])
 
   const proStats = useMemo(() => {
     if (!isPro || loading) return null
     const ownedSet = new Set(rows.map((r) => r.card_number))
 
-    // Hardest missing card (highest-numbered rare first, then common)
     let hardestMissing = null
     for (let n = TOTAL_CARDS; n >= 1; n--) {
-      if (!ownedSet.has(n)) {
-        hardestMissing = n
-        break
-      }
+      if (!ownedSet.has(n)) { hardestMissing = n; break }
     }
 
-    // Rarity distribution
     const commonOwned = rows.filter((r) => r.card_number <= COMMON_THRESHOLD).length
     const rareOwned = rows.filter((r) => r.card_number > COMMON_THRESHOLD).length
     const commonTotal = COMMON_THRESHOLD
@@ -88,7 +81,6 @@ export default function Dashboard() {
     const commonPct = Math.round((commonOwned / commonTotal) * 100)
     const rarePct = Math.round((rareOwned / rareTotal) * 100)
 
-    // Estimated packs to complete
     const missing = TOTAL_CARDS - rows.length
     let estimatedPacks = 0
     if (missing > 0) {
@@ -96,7 +88,6 @@ export default function Dashboard() {
       estimatedPacks = Math.ceil(missing / Math.max(5 * pctMissing, 0.25))
     }
 
-    // Country progress (group by pais)
     const countryMap = {}
     for (let n = 1; n <= TOTAL_CARDS; n++) {
       const j = getJugador(n)
@@ -109,21 +100,8 @@ export default function Dashboard() {
       .sort((a, b) => a.pct - b.pct)
       .slice(0, 8)
 
-    // Streak
     const streak = getOrUpdateStreak()
-
-    return {
-      hardestMissing,
-      commonOwned,
-      rareOwned,
-      commonTotal,
-      rareTotal,
-      commonPct,
-      rarePct,
-      estimatedPacks,
-      countries,
-      streak,
-    }
+    return { hardestMissing, commonOwned, rareOwned, commonTotal, rareTotal, commonPct, rarePct, estimatedPacks, countries, streak }
   }, [rows, isPro, loading])
 
   useEffect(() => {
@@ -131,10 +109,7 @@ export default function Dashboard() {
     const u = stats.unique
     const prev = prevUniqueRef.current
     prevUniqueRef.current = u
-    if (u < TOTAL_CARDS) {
-      celebrated100Ref.current = false
-      return
-    }
+    if (u < TOTAL_CARDS) { celebrated100Ref.current = false; return }
     if (celebrated100Ref.current) return
     const justCompleted = prev !== null && prev < TOTAL_CARDS
     const alreadyFullOnFirstLoad = prev === null && u === TOTAL_CARDS
@@ -161,51 +136,86 @@ export default function Dashboard() {
         <meta property="og:description" content="Controla tu colección de cromos de fútbol 2026 con estadísticas detalladas." />
         <meta property="og:url" content="https://soccersticker.app/" />
       </Helmet>
+
       <header className="page-header">
         <h1>{t('dashboard_title')}</h1>
         <p>{t('dashboard_subtitle')}</p>
       </header>
 
-      <div className="stat-grid">
-        <article className="stat-card stat-card--highlight stat-card--album">
-          <span className="stat-card__glow" aria-hidden="true" />
-          <span className="stat-card__label">{t('stat_unique')}</span>
-          <strong className="stat-card__value">
-            {stats.unique}
-            <small> / {TOTAL_CARDS}</small>
+      {/* ── Quick Stats Grid ── */}
+      <section className="qstats-grid" aria-label="Estadísticas del álbum">
+        {/* Completado — wide card */}
+        <Link to="/coleccion" className="qstat-card qstat-card--pct qstat-card--wide">
+          <span className="qstat-card__icon">📊</span>
+          <strong className="qstat-card__value">
+            {stats.pct}<small>%</small>
           </strong>
-          <div
-            className={`progress-bar progress-bar--animated${stats.unique >= TOTAL_CARDS ? ' progress-bar--complete' : ''}`}
-            aria-hidden="true"
-          >
+          <span className="qstat-card__label">{t('qstat_completado')}</span>
+          <div className="qstat-bar">
             <div
-              className="progress-bar__fill progress-bar__fill--shine"
+              className="qstat-bar__fill"
               style={{ width: `${Math.min(100, stats.pct)}%` }}
             />
           </div>
-          <span className="stat-card__hint">
-            {stats.unique >= TOTAL_CARDS ? (
-              <span className="stat-card__complete">{t('stat_complete')}</span>
-            ) : (
-              t('stat_pct_of_album', { pct: stats.pct })
-            )}
+          <span className="qstat-card__sub">
+            {t('qstat_de_total', { n: stats.unique, total: TOTAL_CARDS })}
           </span>
-        </article>
-        <article className="stat-card stat-card--copies">
-          <span className="stat-card__glow stat-card__glow--blue" aria-hidden="true" />
-          <span className="stat-card__label">{t('stat_total_copies')}</span>
-          <strong className="stat-card__value">{stats.totalCopies}</strong>
-          <span className="stat-card__hint">{t('stat_includes_dupes')}</span>
-        </article>
-        <article className="stat-card stat-card--dupstat">
-          <span className="stat-card__glow stat-card__glow--red" aria-hidden="true" />
-          <span className="stat-card__label">{t('stat_extra')}</span>
-          <strong className="stat-card__value">{stats.duplicateExtra}</strong>
-          <span className="stat-card__hint">{t('stat_for_trade')}</span>
-        </article>
-      </div>
+        </Link>
 
-      {/* —— Pro Dashboard —— */}
+        {/* Tengo */}
+        <Link to="/coleccion?vista=tengo" className="qstat-card qstat-card--tengo">
+          <span className="qstat-card__icon">✅</span>
+          <strong className="qstat-card__value">{stats.unique}</strong>
+          <span className="qstat-card__label">{t('qstat_tengo')}</span>
+        </Link>
+
+        {/* Me faltan */}
+        <Link to="/coleccion?vista=faltan" className="qstat-card qstat-card--faltan">
+          <span className="qstat-card__icon">❌</span>
+          <strong className="qstat-card__value">{stats.missing}</strong>
+          <span className="qstat-card__label">{t('qstat_faltan')}</span>
+        </Link>
+
+        {/* Repetidas */}
+        <Link to="/duplicados" className="qstat-card qstat-card--dupes">
+          <span className="qstat-card__icon">🔄</span>
+          <strong className="qstat-card__value">{stats.duplicateExtra}</strong>
+          <span className="qstat-card__label">{t('qstat_repetidas')}</span>
+        </Link>
+
+        {/* Especiales — Pro gated */}
+        {isPro ? (
+          <Link to="/coleccion?vista=especiales" className="qstat-card qstat-card--shine">
+            <span className="qstat-card__icon">⭐</span>
+            <strong className="qstat-card__value">
+              {stats.especiales}<small>/{SPECIAL_TOTAL}</small>
+            </strong>
+            <span className="qstat-card__label">{t('qstat_especiales')}</span>
+          </Link>
+        ) : (
+          <Link to="/premium" className="qstat-card qstat-card--shine qstat-card--locked">
+            <span className="qstat-card__icon">⭐</span>
+            <strong className="qstat-card__value qstat-card__value--blur">??</strong>
+            <span className="qstat-card__label">{t('qstat_especiales')}</span>
+            <span className="qstat-card__lock-badge">🔒 Pro</span>
+          </Link>
+        )}
+
+        {/* Mis Notas */}
+        <Link to="/notas" className="qstat-card qstat-card--notas">
+          <span className="qstat-card__icon">📝</span>
+          <strong className="qstat-card__value">{notasCount}</strong>
+          <span className="qstat-card__label">{t('qstat_notas')}</span>
+        </Link>
+      </section>
+
+      {/* ── Mark Cards CTA ── */}
+      <Link to="/coleccion" className="mark-cta">
+        <span aria-hidden="true">➕</span>
+        {t('btn_marcar')}
+      </Link>
+
+      {/* ── Pro Dashboard ── */}
       {isPro && proStats ? (
         <section className="pro-dashboard">
           <h2 className="pro-dashboard__title">
@@ -213,15 +223,13 @@ export default function Dashboard() {
             {t('pro_dashboard_title')}
           </h2>
           <div className="pro-dashboard__grid">
-            {/* Hardest missing card */}
             <article className="pro-stat-card">
               <span className="pro-stat-card__label">{t('pro_hardest_title')}</span>
               {proStats.hardestMissing ? (
                 <strong className="pro-stat-card__value">
                   #{proStats.hardestMissing}
                   <small className="pro-stat-card__sub">
-                    {' '}
-                    {getJugador(proStats.hardestMissing).nombre}
+                    {' '}{getJugador(proStats.hardestMissing).nombre}
                   </small>
                 </strong>
               ) : (
@@ -231,7 +239,6 @@ export default function Dashboard() {
               )}
             </article>
 
-            {/* Estimated packs */}
             <article className="pro-stat-card">
               <span className="pro-stat-card__label">{t('pro_packs_title')}</span>
               <strong className="pro-stat-card__value">
@@ -241,7 +248,6 @@ export default function Dashboard() {
               </strong>
             </article>
 
-            {/* Streak */}
             <article className="pro-stat-card">
               <span className="pro-stat-card__label">{t('pro_streak_title')}</span>
               <strong className="pro-stat-card__value">
@@ -252,39 +258,27 @@ export default function Dashboard() {
               </strong>
             </article>
 
-            {/* Common vs Rare */}
             <article className="pro-stat-card pro-stat-card--wide">
               <span className="pro-stat-card__label">{t('pro_rarity_title')}</span>
               <div className="pro-rarity">
                 <div className="pro-rarity__row">
                   <span>{t('pro_rarity_common', { pct: proStats.commonPct })}</span>
-                  <span>
-                    {proStats.commonOwned}/{proStats.commonTotal}
-                  </span>
+                  <span>{proStats.commonOwned}/{proStats.commonTotal}</span>
                 </div>
                 <div className="pro-rarity__bar">
-                  <div
-                    className="pro-rarity__fill pro-rarity__fill--common"
-                    style={{ width: `${proStats.commonPct}%` }}
-                  />
+                  <div className="pro-rarity__fill pro-rarity__fill--common" style={{ width: `${proStats.commonPct}%` }} />
                 </div>
                 <div className="pro-rarity__row">
                   <span>{t('pro_rarity_rare', { pct: proStats.rarePct })}</span>
-                  <span>
-                    {proStats.rareOwned}/{proStats.rareTotal}
-                  </span>
+                  <span>{proStats.rareOwned}/{proStats.rareTotal}</span>
                 </div>
                 <div className="pro-rarity__bar">
-                  <div
-                    className="pro-rarity__fill pro-rarity__fill--rare"
-                    style={{ width: `${proStats.rarePct}%` }}
-                  />
+                  <div className="pro-rarity__fill pro-rarity__fill--rare" style={{ width: `${proStats.rarePct}%` }} />
                 </div>
               </div>
             </article>
           </div>
 
-          {/* Country progress chart */}
           <div className="pro-countries">
             <h3 className="pro-countries__title">{t('pro_countries_title')}</h3>
             <div className="pro-countries__list">
@@ -292,15 +286,10 @@ export default function Dashboard() {
                 <div key={pais} className="pro-country-row">
                   <span className="pro-country-row__name">{pais}</span>
                   <div className="pro-country-row__bar-wrap">
-                    <div
-                      className="pro-country-row__bar"
-                      style={{ width: `${pct}%` }}
-                    />
+                    <div className="pro-country-row__bar" style={{ width: `${pct}%` }} />
                   </div>
                   <span className="pro-country-row__pct">{pct}%</span>
-                  <span className="pro-country-row__count">
-                    {owned}/{total}
-                  </span>
+                  <span className="pro-country-row__count">{owned}/{total}</span>
                 </div>
               ))}
             </div>
@@ -343,63 +332,6 @@ export default function Dashboard() {
               <p className="how-step__desc">{t('how_3_desc')}</p>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section className="dashboard-actions">
-        <h2>{t('quick_access')}</h2>
-        <div className="action-cards">
-          <Link className="action-card action-card--grid" to="/coleccion">
-            <span className="action-card__icon-wrap" aria-hidden="true">
-              <IconGrid className="action-card__svg" />
-            </span>
-            <div>
-              <strong>{t('action_mark')}</strong>
-              <p>{t('action_mark_desc', { total: TOTAL_CARDS })}</p>
-            </div>
-          </Link>
-          <Link className="action-card action-card--layers" to="/duplicados">
-            <span className="action-card__icon-wrap" aria-hidden="true">
-              <IconLayers className="action-card__svg" />
-            </span>
-            <div>
-              <strong>{t('action_dupes')}</strong>
-              <p>{t('action_dupes_desc')}</p>
-            </div>
-          </Link>
-          <Link className="action-card action-card--swap" to="/intercambios">
-            <span className="action-card__icon-wrap" aria-hidden="true">
-              <IconSwap className="action-card__svg" />
-            </span>
-            <div>
-              <strong>{t('action_trades')}</strong>
-              <p>{t('action_trades_desc')}</p>
-            </div>
-          </Link>
-          <Link className="action-card action-card--chat" to="/chat">
-            <span className="action-card__icon-wrap" aria-hidden="true">
-              <IconChat className="action-card__svg" />
-            </span>
-            <div>
-              <strong>{t('action_chat')}</strong>
-              <p>{t('action_chat_desc')}</p>
-            </div>
-          </Link>
-          <Link
-            className={`action-card action-card--pro${isPro ? ' action-card--pro-active' : ''}`}
-            to="/premium"
-          >
-            <span className="action-card__icon-wrap" aria-hidden="true">
-              <IconStar className="action-card__svg" />
-            </span>
-            <div>
-              <strong>
-                {isPro ? t('action_pro_active') : t('action_pro')}
-              </strong>
-              <p>{isPro ? t('action_pro_active_desc') : t('action_pro_desc')}</p>
-            </div>
-            {isPro && <span className="pro-badge action-card__pro-badge">{t('pro_badge')}</span>}
-          </Link>
         </div>
       </section>
 
