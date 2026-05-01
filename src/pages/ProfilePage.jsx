@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
@@ -102,6 +103,13 @@ export default function ProfilePage() {
 
   return (
     <div className="page profile">
+      <Helmet>
+        <title>Mi perfil – SoccerSticker | Personaliza tu coleccionista</title>
+        <meta name="description" content="Personaliza tu perfil de coleccionista: elige tu avatar emoji, título personalizado y tema visual. Muestra tu identidad a otros coleccionistas de cromos." />
+        <meta property="og:title" content="Mi perfil – SoccerSticker" />
+        <meta property="og:description" content="Personaliza tu avatar, título y tema de SoccerSticker." />
+        <meta property="og:url" content="https://soccersticker.app/perfil" />
+      </Helmet>
       <header className="page-header">
         <h1>{t('profile_title')}</h1>
         <p>{t('profile_subtitle')}</p>

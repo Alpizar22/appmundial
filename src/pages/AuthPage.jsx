@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
@@ -64,6 +65,13 @@ export default function AuthPage() {
 
   return (
     <div className="auth-page">
+      <Helmet>
+        <title>Iniciar sesión – SoccerSticker | Álbum de cromos de fútbol</title>
+        <meta name="description" content="Accede a tu colección de cromos de fútbol 2026. Organiza tus estampitas, gestiona repetidos e intercambia con coleccionistas. Regístrate gratis." />
+        <meta property="og:title" content="Inicia sesión – SoccerSticker" />
+        <meta property="og:description" content="Organiza tu álbum de cromos de fútbol digital. Gratis para siempre." />
+        <meta property="og:url" content="https://soccersticker.app/auth" />
+      </Helmet>
       <div className="auth-card">
         <div className="auth-card__hero">
           <span className="auth-card__ball" aria-hidden="true">

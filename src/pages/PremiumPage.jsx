@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { loadStripe } from '@stripe/stripe-js'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
@@ -88,6 +89,13 @@ export default function PremiumPage() {
 
   return (
     <div className="page premium">
+      <Helmet>
+        <title>SoccerSticker Pro – Potencia tu colección de cromos de fútbol</title>
+        <meta name="description" content="Desbloquea funciones premium: estadísticas avanzadas del álbum, 12 temas exclusivos, 24 avatares, badge Pro y chat con coleccionistas. Solo $2.99 pago único." />
+        <meta property="og:title" content="SoccerSticker Pro – $2.99 pago único" />
+        <meta property="og:description" content="Estadísticas avanzadas, temas, avatares y más para tu colección de cromos de fútbol. Pago único sin suscripción." />
+        <meta property="og:url" content="https://soccersticker.app/premium" />
+      </Helmet>
 
       {/* —— Success banner —— */}
       {justPaid && isPro && (

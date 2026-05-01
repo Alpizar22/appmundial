@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
@@ -8,6 +9,7 @@ import { TOTAL_CARDS } from '../constants'
 import { celebrateAlbumComplete } from '../lib/celebrateAlbum'
 import { getJugador } from '../data/jugadores'
 import { IconChat, IconGrid, IconLayers, IconStar, IconSwap } from '../components/NavIcons'
+import FAQ from '../components/FAQ'
 
 const COMMON_THRESHOLD = 600 // cards 1-600 common, 601-800 rare
 
@@ -152,6 +154,13 @@ export default function Dashboard() {
 
   return (
     <div className="page dashboard">
+      <Helmet>
+        <title>Mi álbum – SoccerSticker | Colección de cromos de fútbol 2026</title>
+        <meta name="description" content="Lleva el control de tu álbum de stickers de fútbol 2026. Ve tus estadísticas, gestiona repetidos e intercambia cartas con coleccionistas cercanos." />
+        <meta property="og:title" content="Mi álbum – SoccerSticker" />
+        <meta property="og:description" content="Controla tu colección de cromos de fútbol 2026 con estadísticas detalladas." />
+        <meta property="og:url" content="https://soccersticker.app/" />
+      </Helmet>
       <header className="page-header">
         <h1>{t('dashboard_title')}</h1>
         <p>{t('dashboard_subtitle')}</p>
@@ -393,6 +402,8 @@ export default function Dashboard() {
           </Link>
         </div>
       </section>
+
+      <FAQ />
     </div>
   )
 }

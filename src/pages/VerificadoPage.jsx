@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { useLang } from '../context/LangContext'
 
 export default function VerificadoPage() {
@@ -19,6 +20,11 @@ export default function VerificadoPage() {
 
   return (
     <div className="verified-page">
+      <Helmet>
+        <title>{hasError ? 'Error de verificación' : 'Correo verificado'} – SoccerSticker</title>
+        <meta name="description" content="Verifica tu cuenta de SoccerSticker para comenzar a organizar tu colección de cromos de fútbol." />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <div className="verified-card">
         <div className="verified-card__icon">{hasError ? '⚠️' : '✅'}</div>
         <h1 className="verified-card__title">

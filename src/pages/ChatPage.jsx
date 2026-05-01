@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
@@ -333,6 +334,13 @@ export default function ChatPage() {
 
   return (
     <div className="chat-page">
+      <Helmet>
+        <title>Chat – SoccerSticker | Habla con coleccionistas de cromos</title>
+        <meta name="description" content="Conecta con otros coleccionistas de cromos de fútbol y coordina tus intercambios de estampitas en tiempo real. Función exclusiva SoccerSticker Pro." />
+        <meta property="og:title" content="Chat – SoccerSticker" />
+        <meta property="og:description" content="Coordina intercambios de cromos de fútbol en tiempo real con otros coleccionistas." />
+        <meta property="og:url" content="https://soccersticker.app/chat" />
+      </Helmet>
       <div className={`chat-shell${conversationId ? ' chat-shell--thread-open' : ''}`}>
         <aside className="chat-sidebar" aria-label={t('conversations_aria')}>
           <div className="chat-sidebar__header">

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
@@ -185,6 +186,13 @@ export default function CollectionPage() {
 
   return (
     <div className="page collection">
+      <Helmet>
+        <title>Mi colección de cromos – SoccerSticker | Álbum de fútbol 2026</title>
+        <meta name="description" content="Registra cada carta de tu colección de stickers de fútbol. Organiza tus cromos por selección y descubre qué cartas te faltan para completar el álbum." />
+        <meta property="og:title" content="Mi colección – SoccerSticker" />
+        <meta property="og:description" content="Organiza tu álbum de cromos de fútbol 2026 y descubre qué cartas te faltan." />
+        <meta property="og:url" content="https://soccersticker.app/coleccion" />
+      </Helmet>
       <header className="page-header">
         <h1>{t('collection_title')}</h1>
         <p className="collection-subtitle-desktop">

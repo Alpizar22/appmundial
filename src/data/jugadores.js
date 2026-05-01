@@ -1,5 +1,5 @@
 /** 
- * Cartas 1–800: jugadores ilustrativos por selección clasificada al Mundial 2026.
+ * Cartas 1–800: jugadores ilustrativos por selección clasificada al torneo internacional 2026.
  * No es el listado oficial del álbum físico; actualizá nombres cuando salga la plantilla del editor.
  * Generado por scripts/build-jugadores.mjs
  */

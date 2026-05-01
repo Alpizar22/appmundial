@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
@@ -176,6 +177,13 @@ export default function TradesPage() {
 
   return (
     <div className="page trades">
+      <Helmet>
+        <title>Intercambios de cromos – SoccerSticker | Intercambio estampitas fútbol</title>
+        <meta name="description" content="Intercambia estampitas de fútbol con coleccionistas cerca de ti. Publica tus repetidos, encuentra las cartas que te faltan y coordina intercambios en el mapa." />
+        <meta property="og:title" content="Intercambios – SoccerSticker" />
+        <meta property="og:description" content="Intercambia estampitas de fútbol con coleccionistas cercanos. Encuentra las cartas que te faltan." />
+        <meta property="og:url" content="https://soccersticker.app/intercambios" />
+      </Helmet>
       <header className="page-header">
         <h1>{t('trades_title')}</h1>
         <p>{t('trades_subtitle')}</p>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
@@ -61,6 +62,13 @@ export default function DuplicatesPage() {
 
   return (
     <div className="page duplicates">
+      <Helmet>
+        <title>Mis repetidos – SoccerSticker | Gestión de cromos duplicados</title>
+        <meta name="description" content="Gestiona tus cromos repetidos de fútbol. Conoce exactamente qué estampitas tienes de más para intercambiar con otros coleccionistas." />
+        <meta property="og:title" content="Mis repetidos – SoccerSticker" />
+        <meta property="og:description" content="Controla tus cromos duplicados de fútbol y prepárate para intercambiarlos." />
+        <meta property="og:url" content="https://soccersticker.app/duplicados" />
+      </Helmet>
       <header className="page-header">
         <h1>{t('duplicates_title')}</h1>
         <p>{t('duplicates_subtitle')}</p>

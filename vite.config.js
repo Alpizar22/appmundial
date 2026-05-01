@@ -12,7 +12,7 @@ export default defineConfig({
       manifest: {
         name: 'SoccerSticker',
         short_name: 'SoccerSticker',
-        description: 'Tu colección de stickers del Mundial',
+        description: 'Tu colección de stickers del torneo internacional de fútbol 2026',
         theme_color: '#cc0000',
         background_color: '#0a0e1a',
         display: 'standalone',
