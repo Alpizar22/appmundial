@@ -10,7 +10,7 @@ import { celebrateAlbumComplete } from '../lib/celebrateAlbum'
 import { getJugador, SPECIAL_START, SPECIAL_TOTAL } from '../data/jugadores'
 import FAQ from '../components/FAQ'
 
-const COMMON_THRESHOLD = 600
+const COMMON_THRESHOLD = 720
 
 function getOrUpdateStreak() {
   const KEY = 'ss_streak'
@@ -85,7 +85,7 @@ export default function Dashboard() {
     let estimatedPacks = 0
     if (missing > 0) {
       const pctMissing = missing / TOTAL_CARDS
-      estimatedPacks = Math.ceil(missing / Math.max(5 * pctMissing, 0.25))
+      estimatedPacks = Math.ceil(missing / Math.max(7 * pctMissing, 0.14))
     }
 
     const countryMap = {}

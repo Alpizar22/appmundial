@@ -8,7 +8,7 @@ const FAQS = [
   },
   {
     q: '¿Cómo sé qué cartas me faltan para completar el álbum?',
-    a: 'En "Mi colección" puedes ver los 800 cromos del álbum. Los que no tienes aparecen con cantidad 0. En el Dashboard también ves tu porcentaje de avance. Con SoccerSticker Pro obtienes estadísticas avanzadas: la carta más difícil de conseguir, cuántos sobres necesitarías y el progreso por selección.',
+    a: 'En "Mi colección" puedes ver los 980 cromos del álbum. Los que no tienes aparecen con cantidad 0. En el Dashboard también ves tu porcentaje de avance. Con SoccerSticker Pro obtienes estadísticas avanzadas: la carta más difícil de conseguir, cuántos sobres necesitarías y el progreso por selección.',
   },
   {
     q: '¿Cómo hago un intercambio con otro coleccionista?',

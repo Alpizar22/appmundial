@@ -293,7 +293,7 @@ const es = {
   notas_subtitle: 'Cartas que quieres conseguir',
   notas_empty: 'No tienes notas guardadas. Agrega cartas que buscas.',
   notas_add_title: 'Agregar nota',
-  nota_card_label: 'N.º de carta (1–800)',
+  nota_card_label: 'N.º de carta (1–980)',
   nota_card_placeholder: 'Ej. 342',
   nota_prioridad_label: 'Prioridad',
   nota_texto_label: 'Nota (opcional)',
@@ -304,7 +304,7 @@ const es = {
   btn_add_nota: 'Agregar',
   btn_delete_nota: 'Eliminar',
   btn_adding_nota: 'Guardando…',
-  nota_err_invalid: 'Número de carta inválido (1–800).',
+  nota_err_invalid: 'Número de carta inválido (1–980).',
   nota_err_fallback: 'No se pudo guardar la nota.',
 }
 

@@ -293,7 +293,7 @@ const en = {
   notas_subtitle: 'Cards you want to get',
   notas_empty: 'No notes saved. Add cards you are looking for.',
   notas_add_title: 'Add note',
-  nota_card_label: 'Card number (1–800)',
+  nota_card_label: 'Card number (1–980)',
   nota_card_placeholder: 'e.g. 342',
   nota_prioridad_label: 'Priority',
   nota_texto_label: 'Note (optional)',
@@ -304,7 +304,7 @@ const en = {
   btn_add_nota: 'Add',
   btn_delete_nota: 'Delete',
   btn_adding_nota: 'Saving…',
-  nota_err_invalid: 'Invalid card number (1–800).',
+  nota_err_invalid: 'Invalid card number (1–980).',
   nota_err_fallback: 'Could not save the note.',
 }
 

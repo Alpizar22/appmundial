@@ -1,1 +1,1 @@
-export const TOTAL_CARDS = 800
+export const TOTAL_CARDS = 980
