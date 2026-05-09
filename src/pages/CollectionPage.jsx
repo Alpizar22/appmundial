@@ -5,7 +5,7 @@ import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { TOTAL_CARDS } from '../constants'
-import { buscarJugadores, getJugador, SPECIAL_START } from '../data/jugadores'
+import { buscarJugadores, getJugador, PAISES_EN_ORDEN, SPECIAL_START } from '../data/jugadores'
 
 const LONG_PRESS_MS = 600
 
@@ -17,7 +17,7 @@ function buildMap(rows) {
   return m
 }
 
-const VALID_VISTAS = ['tengo', 'faltan', 'especiales']
+const VALID_VISTAS = ['tengo', 'faltan', 'especiales', 'equipos']
 
 export default function CollectionPage() {
   const { user } = useAuth()
@@ -26,6 +26,7 @@ export default function CollectionPage() {
   const [qtyByCard, setQtyByCard] = useState(() => new Map())
   const [filter, setFilter] = useState('')
   const [loading, setLoading] = useState(true)
+  const [paisFiltro, setPaisFiltro] = useState(null)
 
   const vista = VALID_VISTAS.includes(searchParams.get('vista')) ? searchParams.get('vista') : null
   const [error, setError] = useState('')
@@ -97,13 +98,15 @@ export default function CollectionPage() {
   const numbers = useMemo(() => {
     const all = Array.from({ length: TOTAL_CARDS }, (_, i) => i + 1)
 
-    // Vista filter (from URL param)
     let base = all
     if (vista === 'tengo') base = all.filter((n) => (qtyByCard.get(n) || 0) > 0)
     else if (vista === 'faltan') base = all.filter((n) => (qtyByCard.get(n) || 0) === 0)
     else if (vista === 'especiales') base = all.filter((n) => n >= SPECIAL_START)
 
-    // Text/number search on top of vista
+    if (paisFiltro) {
+      base = base.filter((n) => getJugador(n).pais === paisFiltro)
+    }
+
     const q = filter.trim()
     if (!q) return base
     if (/^\d+$/.test(q)) {
@@ -114,7 +117,18 @@ export default function CollectionPage() {
     const byName = buscarJugadores(q)
     if (byName?.length) return base.filter((n) => byName.includes(n))
     return base.filter((num) => String(num).includes(q))
-  }, [filter, vista, qtyByCard])
+  }, [filter, vista, qtyByCard, paisFiltro])
+
+  const byEquipo = useMemo(() => {
+    if (vista !== 'equipos') return null
+    const map = new Map()
+    for (const n of numbers) {
+      const { pais } = getJugador(n)
+      if (!map.has(pais)) map.set(pais, [])
+      map.get(pais).push(n)
+    }
+    return [...map.entries()]
+  }, [vista, numbers])
 
   async function setQuantity(cardNumber, nextQty) {
     if (nextQty <= 0) {
@@ -187,6 +201,77 @@ export default function CollectionPage() {
     }
   }
 
+  function renderCard(n) {
+    const q = qtyByCard.get(n) || 0
+    const j = getJugador(n)
+    const cls = [
+      'card-cell',
+      q === 1 ? 'card-cell--owned' : '',
+      q > 1 ? 'card-cell--dup' : '',
+      tapAnim === n ? 'card-cell--tap' : '',
+    ]
+      .filter(Boolean)
+      .join(' ')
+    const tip = `${j.nombre} (${j.pais}) · #${n}`
+    return (
+      <button
+        key={n}
+        type="button"
+        role="listitem"
+        className={cls}
+        onClick={(e) => handleCellClick(n, e)}
+        onTouchStart={() => handleLongPressStart(n)}
+        onTouchEnd={handleLongPressEnd}
+        onTouchMove={handleLongPressEnd}
+        onContextMenu={(e) => e.preventDefault()}
+        title={
+          q === 0
+            ? `${tip} — ${t('tip_mark')}`
+            : q === 1
+              ? `${tip} — ${t('tip_remove')}`
+              : `${tip} — ${t('tip_copies', { q })}`
+        }
+      >
+        <span className="card-cell__num">{n}</span>
+        <span className="card-cell__name">{j.nombre}</span>
+        {q > 0 && <span className="card-cell__badge">×{q}</span>}
+        {q > 0 && (
+          <>
+            <span
+              className="card-cell__add-dup"
+              role="button"
+              aria-label={t('tip_add_dup')}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => handleAddDup(e, n)}
+            >
+              +
+            </span>
+            <span className="card-cell__mob-actions" aria-hidden="true">
+              <span
+                className="card-cell__mob-btn card-cell__mob-btn--minus"
+                role="button"
+                aria-label={t('tip_remove_copy')}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => handleRemoveDup(e, n)}
+              >
+                −
+              </span>
+              <span
+                className="card-cell__mob-btn card-cell__mob-btn--plus"
+                role="button"
+                aria-label={t('tip_add_dup')}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => handleAddDup(e, n)}
+              >
+                +
+              </span>
+            </span>
+          </>
+        )}
+      </button>
+    )
+  }
+
   if (loading) {
     return (
       <div className="screen-loading">
@@ -220,6 +305,7 @@ export default function CollectionPage() {
           { key: 'tengo', label: t('collection_vista_tengo') },
           { key: 'faltan', label: t('collection_vista_faltan') },
           { key: 'especiales', label: t('collection_vista_especiales') },
+          { key: 'equipos', label: t('collection_vista_equipos') },
         ].map(({ key, label }) => (
           <button
             key={key ?? 'all'}
@@ -231,6 +317,27 @@ export default function CollectionPage() {
             }}
           >
             {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Country chips — horizontal scroll */}
+      <div className="collection-chips-row" role="group" aria-label="Filtrar por selección">
+        <button
+          type="button"
+          className={`country-chip${!paisFiltro ? ' country-chip--active' : ''}`}
+          onClick={() => setPaisFiltro(null)}
+        >
+          {t('collection_chip_all')}
+        </button>
+        {PAISES_EN_ORDEN.map((pais) => (
+          <button
+            key={pais}
+            type="button"
+            className={`country-chip${paisFiltro === pais ? ' country-chip--active' : ''}`}
+            onClick={() => setPaisFiltro((p) => (p === pais ? null : pais))}
+          >
+            {pais}
           </button>
         ))}
       </div>
@@ -256,80 +363,28 @@ export default function CollectionPage() {
 
       {error && <p className="form-error">{error}</p>}
 
-      <div className="card-grid" role="list">
-        {numbers.map((n) => {
-          const q = qtyByCard.get(n) || 0
-          const j = getJugador(n)
-          const cls = [
-            'card-cell',
-            q === 1 ? 'card-cell--owned' : '',
-            q > 1 ? 'card-cell--dup' : '',
-            tapAnim === n ? 'card-cell--tap' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')
-          const tip = `${j.nombre} (${j.pais}) · #${n}`
-          return (
-            <button
-              key={n}
-              type="button"
-              role="listitem"
-              className={cls}
-              onClick={(e) => handleCellClick(n, e)}
-              onTouchStart={() => handleLongPressStart(n)}
-              onTouchEnd={handleLongPressEnd}
-              onTouchMove={handleLongPressEnd}
-              onContextMenu={(e) => e.preventDefault()}
-              title={
-                q === 0
-                  ? `${tip} — ${t('tip_mark')}`
-                  : q === 1
-                    ? `${tip} — ${t('tip_remove')}`
-                    : `${tip} — ${t('tip_copies', { q })}`
-              }
-            >
-              <span className="card-cell__num">{n}</span>
-              <span className="card-cell__name">{j.nombre}</span>
-              {q > 0 && <span className="card-cell__badge">×{q}</span>}
-              {q > 0 && (
-                <>
-                  {/* Desktop: hover + button */}
-                  <span
-                    className="card-cell__add-dup"
-                    role="button"
-                    aria-label={t('tip_add_dup')}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => handleAddDup(e, n)}
-                  >
-                    +
-                  </span>
-                  {/* Mobile: visible − and + action bar */}
-                  <span className="card-cell__mob-actions" aria-hidden="true">
-                    <span
-                      className="card-cell__mob-btn card-cell__mob-btn--minus"
-                      role="button"
-                      aria-label={t('tip_remove_copy')}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => handleRemoveDup(e, n)}
-                    >
-                      −
-                    </span>
-                    <span
-                      className="card-cell__mob-btn card-cell__mob-btn--plus"
-                      role="button"
-                      aria-label={t('tip_add_dup')}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => handleAddDup(e, n)}
-                    >
-                      +
-                    </span>
-                  </span>
-                </>
-              )}
-            </button>
-          )
-        })}
-      </div>
+      {byEquipo ? (
+        <div className="collection-by-team">
+          {byEquipo.map(([pais, cards]) => {
+            const owned = cards.filter((n) => (qtyByCard.get(n) || 0) > 0).length
+            return (
+              <section key={pais} className="team-section">
+                <h2 className="team-section__header">
+                  <span className="team-section__name">{pais}</span>
+                  <span className="team-section__count">{owned}/{cards.length}</span>
+                </h2>
+                <div className="card-grid" role="list">
+                  {cards.map((n) => renderCard(n))}
+                </div>
+              </section>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="card-grid" role="list">
+          {numbers.map((n) => renderCard(n))}
+        </div>
+      )}
     </div>
   )
 }

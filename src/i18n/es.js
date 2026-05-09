@@ -287,6 +287,8 @@ const es = {
   collection_vista_tengo: 'Tengo',
   collection_vista_faltan: 'Me faltan',
   collection_vista_especiales: 'Especiales',
+  collection_vista_equipos: 'Por equipo',
+  collection_chip_all: 'Todos',
 
   // Notas page
   notas_title: 'Mis Notas',

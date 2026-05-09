@@ -3425,6 +3425,87 @@ kbd {
 }
 
 /* ================================================================
+   COLLECTION COUNTRY CHIPS
+   ================================================================ */
+.collection-chips-row {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.collection-chips-row::-webkit-scrollbar {
+  display: none;
+}
+
+.country-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  min-height: 32px;
+  white-space: nowrap;
+}
+
+.country-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+.country-chip--active {
+  background: rgba(147, 197, 253, 0.15);
+  border-color: rgba(147, 197, 253, 0.5);
+  color: var(--wc-white);
+}
+
+/* ================================================================
+   COLLECTION BY TEAM VIEW
+   ================================================================ */
+.collection-by-team {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.team-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.team-section__name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.team-section__count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  white-space: nowrap;
+}
+
+/* ================================================================
    NOTAS PAGE
    ================================================================ */
 .nota-form {

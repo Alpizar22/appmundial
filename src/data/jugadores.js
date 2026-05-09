@@ -3424,3 +3424,15 @@ export function getRareza(n) {
 
 export const SPECIAL_START = 919  // primer número especial (Pro)
 export const SPECIAL_TOTAL = 62   // cartas 919-980
+
+export const PAISES_EN_ORDEN = (() => {
+  const seen = new Set()
+  const out = []
+  for (const j of JUGADORES) {
+    if (j.pais && !seen.has(j.pais)) {
+      seen.add(j.pais)
+      out.push(j.pais)
+    }
+  }
+  return out
+})()

@@ -287,6 +287,8 @@ const en = {
   collection_vista_tengo: 'Have',
   collection_vista_faltan: 'Missing',
   collection_vista_especiales: 'Specials',
+  collection_vista_equipos: 'By team',
+  collection_chip_all: 'All',
 
   // Notes page
   notas_title: 'My Notes',
