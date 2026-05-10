@@ -4,20 +4,19 @@ import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
-import { TOTAL_CARDS } from '../constants'
-import { buscarJugadores, getJugador, PAISES_EN_ORDEN, SPECIAL_START } from '../data/jugadores'
+import { EQUIPOS, buscarCartas, isEspecial } from '../data/jugadores'
 
 const LONG_PRESS_MS = 600
 
 function buildMap(rows) {
   const m = new Map()
   for (const r of rows) {
-    m.set(r.card_number, r.quantity ?? 1)
+    m.set(r.carta_id, r.cantidad ?? 1)
   }
   return m
 }
 
-const VALID_VISTAS = ['tengo', 'faltan', 'especiales', 'equipos']
+const VALID_VISTAS = ['tengo', 'faltan', 'especiales']
 
 export default function CollectionPage() {
   const { user } = useAuth()
@@ -27,16 +26,18 @@ export default function CollectionPage() {
   const [filter, setFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const [paisFiltro, setPaisFiltro] = useState(null)
-
-  const vista = VALID_VISTAS.includes(searchParams.get('vista')) ? searchParams.get('vista') : null
   const [error, setError] = useState('')
   const [tapAnim, setTapAnim] = useState(null)
   const tapTimerRef = useRef(null)
   const longPressTimerRef = useRef(null)
   const didLongPressRef = useRef(false)
+  const teamRefs = useRef({})
+  const chipsRowRef = useRef(null)
 
-  const bumpTap = useCallback((n) => {
-    setTapAnim(n)
+  const vista = VALID_VISTAS.includes(searchParams.get('vista')) ? searchParams.get('vista') : null
+
+  const bumpTap = useCallback((id) => {
+    setTapAnim(id)
     if (tapTimerRef.current) window.clearTimeout(tapTimerRef.current)
     tapTimerRef.current = window.setTimeout(() => setTapAnim(null), 380)
   }, [])
@@ -44,12 +45,9 @@ export default function CollectionPage() {
   const refresh = useCallback(async () => {
     const { data, error: err } = await supabase
       .from('user_cards')
-      .select('card_number, quantity')
+      .select('carta_id, cantidad')
       .eq('user_id', user.id)
-    if (err) {
-      setError(err.message)
-      return
-    }
+    if (err) { setError(err.message); return }
     setQtyByCard(buildMap(data || []))
     setError('')
   }, [user.id])
@@ -61,32 +59,24 @@ export default function CollectionPage() {
       await refresh()
       if (alive) setLoading(false)
     })()
-    return () => {
-      alive = false
-    }
+    return () => { alive = false }
   }, [refresh])
 
-  useEffect(
-    () => () => {
-      if (tapTimerRef.current) window.clearTimeout(tapTimerRef.current)
-      if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current)
-    },
-    []
-  )
+  useEffect(() => () => {
+    if (tapTimerRef.current) window.clearTimeout(tapTimerRef.current)
+    if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current)
+  }, [])
 
-  const handleLongPressStart = useCallback(
-    (cardNumber) => {
-      longPressTimerRef.current = window.setTimeout(async () => {
-        const current = qtyByCard.get(cardNumber) || 0
-        if (current > 0) {
-          didLongPressRef.current = true
-          bumpTap(cardNumber)
-          await setQuantity(cardNumber, current + 1)
-        }
-      }, LONG_PRESS_MS)
-    },
-    [qtyByCard, bumpTap]
-  )
+  const handleLongPressStart = useCallback((cartaId) => {
+    longPressTimerRef.current = window.setTimeout(async () => {
+      const current = qtyByCard.get(cartaId) || 0
+      if (current > 0) {
+        didLongPressRef.current = true
+        bumpTap(cartaId)
+        await setQuantity(cartaId, current + 1)
+      }
+    }, LONG_PRESS_MS)
+  }, [qtyByCard, bumpTap])
 
   const handleLongPressEnd = useCallback(() => {
     if (longPressTimerRef.current) {
@@ -95,176 +85,119 @@ export default function CollectionPage() {
     }
   }, [])
 
-  const numbers = useMemo(() => {
-    const all = Array.from({ length: TOTAL_CARDS }, (_, i) => i + 1)
-
-    let base = all
-    if (vista === 'tengo') base = all.filter((n) => (qtyByCard.get(n) || 0) > 0)
-    else if (vista === 'faltan') base = all.filter((n) => (qtyByCard.get(n) || 0) === 0)
-    else if (vista === 'especiales') base = all.filter((n) => n >= SPECIAL_START)
-
-    if (paisFiltro) {
-      base = base.filter((n) => getJugador(n).pais === paisFiltro)
-    }
-
+  // Build a Set of matching carta_ids when search is active
+  const searchSet = useMemo(() => {
     const q = filter.trim()
-    if (!q) return base
-    if (/^\d+$/.test(q)) {
-      const n = parseInt(q, 10)
-      if (!Number.isNaN(n) && n >= 1 && n <= TOTAL_CARDS) return base.filter((num) => num === n)
-      return base.filter((num) => String(num).includes(q))
-    }
-    const byName = buscarJugadores(q)
-    if (byName?.length) return base.filter((n) => byName.includes(n))
-    return base.filter((num) => String(num).includes(q))
-  }, [filter, vista, qtyByCard, paisFiltro])
+    if (!q) return null
+    const results = buscarCartas(q)
+    return results ? new Set(results) : new Set()
+  }, [filter])
 
-  const byEquipo = useMemo(() => {
-    if (vista !== 'equipos') return null
-    const map = new Map()
-    for (const n of numbers) {
-      const { pais } = getJugador(n)
-      if (!map.has(pais)) map.set(pais, [])
-      map.get(pais).push(n)
-    }
-    return [...map.entries()]
-  }, [vista, numbers])
+  // Filter EQUIPOS based on vista + search + paisFiltro
+  const equiposFiltrados = useMemo(() => {
+    return EQUIPOS.map((equipo) => {
+      let cartas = equipo.cartas
 
-  async function setQuantity(cardNumber, nextQty) {
+      if (vista === 'tengo') cartas = cartas.filter((c) => (qtyByCard.get(`${equipo.id}_${c.numero}`) || 0) > 0)
+      else if (vista === 'faltan') cartas = cartas.filter((c) => (qtyByCard.get(`${equipo.id}_${c.numero}`) || 0) === 0)
+      else if (vista === 'especiales') cartas = cartas.filter((c) => c.tipo === 'escudo')
+
+      if (searchSet) cartas = cartas.filter((c) => searchSet.has(`${equipo.id}_${c.numero}`))
+
+      return { ...equipo, cartas }
+    }).filter((equipo) => {
+      if (paisFiltro && equipo.nombre !== paisFiltro) return false
+      return equipo.cartas.length > 0
+    })
+  }, [vista, qtyByCard, searchSet, paisFiltro])
+
+  async function setQuantity(cartaId, nextQty) {
     if (nextQty <= 0) {
       const { error: err } = await supabase
         .from('user_cards')
         .delete()
         .eq('user_id', user.id)
-        .eq('card_number', cardNumber)
+        .eq('carta_id', cartaId)
       if (err) setError(err.message)
-      else {
-        setQtyByCard((prev) => {
-          const n = new Map(prev)
-          n.delete(cardNumber)
-          return n
-        })
-      }
+      else setQtyByCard((prev) => { const n = new Map(prev); n.delete(cartaId); return n })
       return
     }
     const { error: err } = await supabase.from('user_cards').upsert(
-      {
-        user_id: user.id,
-        card_number: cardNumber,
-        quantity: nextQty,
-      },
-      { onConflict: 'user_id,card_number' }
+      { user_id: user.id, carta_id: cartaId, cantidad: nextQty },
+      { onConflict: 'user_id,carta_id' }
     )
     if (err) setError(err.message)
-    else {
-      setQtyByCard((prev) => {
-        const n = new Map(prev)
-        n.set(cardNumber, nextQty)
-        return n
-      })
-    }
+    else setQtyByCard((prev) => { const n = new Map(prev); n.set(cartaId, nextQty); return n })
   }
 
-  async function handleCellClick(cardNumber, e) {
-    if (didLongPressRef.current) {
-      didLongPressRef.current = false
-      return
-    }
-    bumpTap(cardNumber)
-    const current = qtyByCard.get(cardNumber) || 0
-    if (e.shiftKey && current > 0) {
-      await setQuantity(cardNumber, current + 1)
-      return
-    }
-    if (current === 0) await setQuantity(cardNumber, 1)
-    else if (current === 1) await setQuantity(cardNumber, 0)
-    else await setQuantity(cardNumber, current - 1)
+  async function handleCellClick(cartaId, e) {
+    if (didLongPressRef.current) { didLongPressRef.current = false; return }
+    bumpTap(cartaId)
+    const current = qtyByCard.get(cartaId) || 0
+    if (e.shiftKey && current > 0) { await setQuantity(cartaId, current + 1); return }
+    if (current === 0) await setQuantity(cartaId, 1)
+    else if (current === 1) await setQuantity(cartaId, 0)
+    else await setQuantity(cartaId, current - 1)
   }
 
-  async function handleAddDup(e, cardNumber) {
-    e.stopPropagation()
-    e.preventDefault()
-    const current = qtyByCard.get(cardNumber) || 0
-    if (current > 0) {
-      bumpTap(cardNumber)
-      await setQuantity(cardNumber, current + 1)
-    }
+  async function handleAddDup(e, cartaId) {
+    e.stopPropagation(); e.preventDefault()
+    const current = qtyByCard.get(cartaId) || 0
+    if (current > 0) { bumpTap(cartaId); await setQuantity(cartaId, current + 1) }
   }
 
-  async function handleRemoveDup(e, cardNumber) {
-    e.stopPropagation()
-    e.preventDefault()
-    const current = qtyByCard.get(cardNumber) || 0
-    if (current > 0) {
-      bumpTap(cardNumber)
-      await setQuantity(cardNumber, current - 1)
-    }
+  async function handleRemoveDup(e, cartaId) {
+    e.stopPropagation(); e.preventDefault()
+    const current = qtyByCard.get(cartaId) || 0
+    if (current > 0) { bumpTap(cartaId); await setQuantity(cartaId, current - 1) }
   }
 
-  function renderCard(n) {
-    const q = qtyByCard.get(n) || 0
-    const j = getJugador(n)
+  function scrollToTeam(nombre) {
+    setPaisFiltro(null)
+    const el = teamRefs.current[nombre]
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  function renderCard(equipo, carta) {
+    const cartaId = `${equipo.id}_${carta.numero}`
+    const q = qtyByCard.get(cartaId) || 0
     const cls = [
       'card-cell',
+      carta.tipo === 'escudo' ? 'card-cell--escudo' : '',
+      carta.tipo === 'foto' ? 'card-cell--foto' : '',
       q === 1 ? 'card-cell--owned' : '',
       q > 1 ? 'card-cell--dup' : '',
-      tapAnim === n ? 'card-cell--tap' : '',
-    ]
-      .filter(Boolean)
-      .join(' ')
-    const tip = `${j.nombre} (${j.pais}) · #${n}`
+      tapAnim === cartaId ? 'card-cell--tap' : '',
+    ].filter(Boolean).join(' ')
+
+    const tip = `${carta.nombre} · ${equipo.nombre} · #${carta.numero}`
     return (
       <button
-        key={n}
+        key={cartaId}
         type="button"
         role="listitem"
         className={cls}
-        onClick={(e) => handleCellClick(n, e)}
-        onTouchStart={() => handleLongPressStart(n)}
+        onClick={(e) => handleCellClick(cartaId, e)}
+        onTouchStart={() => handleLongPressStart(cartaId)}
         onTouchEnd={handleLongPressEnd}
         onTouchMove={handleLongPressEnd}
         onContextMenu={(e) => e.preventDefault()}
-        title={
-          q === 0
-            ? `${tip} — ${t('tip_mark')}`
-            : q === 1
-              ? `${tip} — ${t('tip_remove')}`
-              : `${tip} — ${t('tip_copies', { q })}`
-        }
+        title={q === 0 ? `${tip} — ${t('tip_mark')}` : q === 1 ? `${tip} — ${t('tip_remove')}` : `${tip} — ${t('tip_copies', { q })}`}
       >
-        <span className="card-cell__num">{n}</span>
-        <span className="card-cell__name">{j.nombre}</span>
+        <span className="card-cell__num">{carta.numero}</span>
+        <span className="card-cell__name">{carta.nombre}</span>
         {q > 0 && <span className="card-cell__badge">×{q}</span>}
         {q > 0 && (
           <>
-            <span
-              className="card-cell__add-dup"
-              role="button"
-              aria-label={t('tip_add_dup')}
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => handleAddDup(e, n)}
-            >
-              +
-            </span>
+            <span className="card-cell__add-dup" role="button" aria-label={t('tip_add_dup')}
+              onPointerDown={(e) => e.stopPropagation()} onClick={(e) => handleAddDup(e, cartaId)}>+</span>
             <span className="card-cell__mob-actions" aria-hidden="true">
-              <span
-                className="card-cell__mob-btn card-cell__mob-btn--minus"
-                role="button"
-                aria-label={t('tip_remove_copy')}
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => handleRemoveDup(e, n)}
-              >
-                −
-              </span>
-              <span
-                className="card-cell__mob-btn card-cell__mob-btn--plus"
-                role="button"
-                aria-label={t('tip_add_dup')}
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => handleAddDup(e, n)}
-              >
-                +
-              </span>
+              <span className="card-cell__mob-btn card-cell__mob-btn--minus" role="button"
+                aria-label={t('tip_remove_copy')} onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => handleRemoveDup(e, cartaId)}>−</span>
+              <span className="card-cell__mob-btn card-cell__mob-btn--plus" role="button"
+                aria-label={t('tip_add_dup')} onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => handleAddDup(e, cartaId)}>+</span>
             </span>
           </>
         )}
@@ -272,28 +205,22 @@ export default function CollectionPage() {
     )
   }
 
-  if (loading) {
-    return (
-      <div className="screen-loading">
-        <div className="screen-loading__spinner" />
-      </div>
-    )
-  }
+  if (loading) return <div className="screen-loading"><div className="screen-loading__spinner" /></div>
 
   return (
     <div className="page collection">
       <Helmet>
-        <title>Mi colección de cromos – SoccerSticker | Álbum de fútbol 2026</title>
-        <meta name="description" content="Registra cada carta de tu colección de stickers de fútbol. Organiza tus cromos por selección y descubre qué cartas te faltan para completar el álbum." />
+        <title>Mi colección – SoccerSticker | Álbum de fútbol 2026</title>
+        <meta name="description" content="Registra cada carta de tu colección de stickers del Mundial 2026. Organiza tus cromos por selección y descubre qué cartas te faltan." />
         <meta property="og:title" content="Mi colección – SoccerSticker" />
-        <meta property="og:description" content="Organiza tu álbum de cromos de fútbol 2026 y descubre qué cartas te faltan." />
+        <meta property="og:description" content="Organiza tu álbum de cromos del Mundial 2026 por selección." />
         <meta property="og:url" content="https://soccersticker.app/coleccion" />
       </Helmet>
+
       <header className="page-header">
         <h1>{t('collection_title')}</h1>
         <p className="collection-subtitle-desktop">
-          {t('collection_subtitle_p1')} <kbd>{t('collection_kbd')}</kbd>{' '}
-          {t('collection_subtitle_p2')}
+          {t('collection_subtitle_p1')} <kbd>{t('collection_kbd')}</kbd>{' '}{t('collection_subtitle_p2')}
         </p>
         <p className="collection-subtitle-mobile">{t('collection_subtitle_mobile')}</p>
       </header>
@@ -305,39 +232,31 @@ export default function CollectionPage() {
           { key: 'tengo', label: t('collection_vista_tengo') },
           { key: 'faltan', label: t('collection_vista_faltan') },
           { key: 'especiales', label: t('collection_vista_especiales') },
-          { key: 'equipos', label: t('collection_vista_equipos') },
         ].map(({ key, label }) => (
-          <button
-            key={key ?? 'all'}
-            type="button"
+          <button key={key ?? 'all'} type="button"
             className={`collection-vista-btn${vista === key ? ' collection-vista-btn--active' : ''}`}
-            onClick={() => {
-              if (key === null) setSearchParams({})
-              else setSearchParams({ vista: key })
-            }}
-          >
+            onClick={() => key === null ? setSearchParams({}) : setSearchParams({ vista: key })}>
             {label}
           </button>
         ))}
       </div>
 
-      {/* Country chips — horizontal scroll */}
-      <div className="collection-chips-row" role="group" aria-label="Filtrar por selección">
-        <button
-          type="button"
+      {/* Country chips — scroll to team */}
+      <div className="collection-chips-row" ref={chipsRowRef} role="group" aria-label="Ir a selección">
+        <button type="button"
           className={`country-chip${!paisFiltro ? ' country-chip--active' : ''}`}
-          onClick={() => setPaisFiltro(null)}
-        >
+          onClick={() => setPaisFiltro(null)}>
           {t('collection_chip_all')}
         </button>
-        {PAISES_EN_ORDEN.map((pais) => (
-          <button
-            key={pais}
-            type="button"
-            className={`country-chip${paisFiltro === pais ? ' country-chip--active' : ''}`}
-            onClick={() => setPaisFiltro((p) => (p === pais ? null : pais))}
-          >
-            {pais}
+        {EQUIPOS.map((equipo) => (
+          <button key={equipo.id} type="button"
+            className={`country-chip${paisFiltro === equipo.nombre ? ' country-chip--active' : ''}`}
+            onClick={() => {
+              if (paisFiltro === equipo.nombre) { setPaisFiltro(null); return }
+              setPaisFiltro(equipo.nombre)
+              scrollToTeam(equipo.nombre)
+            }}>
+            {equipo.bandera} {equipo.nombre}
           </button>
         ))}
       </div>
@@ -345,16 +264,9 @@ export default function CollectionPage() {
       <div className="collection-toolbar">
         <label className="field field--inline">
           <span>{t('collection_search_label')}</span>
-          <input
-            type="search"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder={t('collection_search_placeholder')}
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            maxLength={48}
-          />
+          <input type="search" value={filter} onChange={(e) => setFilter(e.target.value)}
+            placeholder={t('collection_search_placeholder')} autoCapitalize="none"
+            autoCorrect="off" spellCheck={false} maxLength={48} />
         </label>
         <button type="button" className="btn btn--ghost" onClick={() => refresh()}>
           {t('collection_btn_refresh')}
@@ -363,28 +275,31 @@ export default function CollectionPage() {
 
       {error && <p className="form-error">{error}</p>}
 
-      {byEquipo ? (
-        <div className="collection-by-team">
-          {byEquipo.map(([pais, cards]) => {
-            const owned = cards.filter((n) => (qtyByCard.get(n) || 0) > 0).length
+      <div className="collection-by-team">
+        {equiposFiltrados.length === 0 ? (
+          <p className="empty-hint">No hay cartas con ese filtro.</p>
+        ) : (
+          equiposFiltrados.map((equipo) => {
+            const ownedCount = equipo.cartas.filter(
+              (c) => (qtyByCard.get(`${equipo.id}_${c.numero}`) || 0) > 0
+            ).length
+            const totalCartas = EQUIPOS.find((e) => e.id === equipo.id)?.cartas.length ?? 20
             return (
-              <section key={pais} className="team-section">
+              <section key={equipo.id} className="team-section"
+                ref={(el) => { teamRefs.current[equipo.nombre] = el }}>
                 <h2 className="team-section__header">
-                  <span className="team-section__name">{pais}</span>
-                  <span className="team-section__count">{owned}/{cards.length}</span>
+                  <span className="team-section__flag">{equipo.bandera}</span>
+                  <span className="team-section__name">{equipo.nombre}</span>
+                  <span className="team-section__count">{ownedCount}/{totalCartas}</span>
                 </h2>
                 <div className="card-grid" role="list">
-                  {cards.map((n) => renderCard(n))}
+                  {equipo.cartas.map((carta) => renderCard(equipo, carta))}
                 </div>
               </section>
             )
-          })}
-        </div>
-      ) : (
-        <div className="card-grid" role="list">
-          {numbers.map((n) => renderCard(n))}
-        </div>
-      )}
+          })
+        )}
+      </div>
     </div>
   )
 }

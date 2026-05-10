@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
-import { getJugador } from '../data/jugadores'
+import { getCarta } from '../data/jugadores'
 
 export default function DuplicatesPage() {
   const { user } = useAuth()
@@ -15,10 +15,10 @@ export default function DuplicatesPage() {
   const refresh = useCallback(async () => {
     const { data, error: err } = await supabase
       .from('user_cards')
-      .select('card_number, quantity')
+      .select('carta_id, cantidad')
       .eq('user_id', user.id)
-      .gt('quantity', 1)
-      .order('card_number')
+      .gt('cantidad', 1)
+      .order('carta_id')
     if (err) setError(err.message)
     else {
       setRows(data || [])
@@ -38,14 +38,14 @@ export default function DuplicatesPage() {
     }
   }, [refresh])
 
-  async function removeOneDuplicate(cardNumber, currentQty) {
+  async function removeOneDuplicate(cartaId, currentQty) {
     const next = currentQty - 1
     if (next <= 0) return
     const { error: err } = await supabase
       .from('user_cards')
-      .update({ quantity: next })
+      .update({ cantidad: next })
       .eq('user_id', user.id)
-      .eq('card_number', cardNumber)
+      .eq('carta_id', cartaId)
     if (err) setError(err.message)
     else await refresh()
   }
@@ -58,7 +58,7 @@ export default function DuplicatesPage() {
     )
   }
 
-  const totalExtra = rows.reduce((s, r) => s + (r.quantity - 1), 0)
+  const totalExtra = rows.reduce((s, r) => s + (r.cantidad - 1), 0)
 
   return (
     <div className="page duplicates">
@@ -92,20 +92,20 @@ export default function DuplicatesPage() {
           </p>
           <ul className="dup-list">
             {rows.map((r) => {
-              const j = getJugador(r.card_number)
+              const { equipo, carta } = getCarta(r.carta_id)
               return (
-                <li key={r.card_number} className="dup-row">
+                <li key={r.carta_id} className="dup-row">
                   <div>
-                    <span className="dup-row__num">{t('card_number', { n: r.card_number })}</span>
-                    <span className="dup-row__player">{j.nombre}</span>
+                    <span className="dup-row__num">{equipo.bandera} #{carta.numero}</span>
+                    <span className="dup-row__player">{carta.nombre}</span>
                     <span className="dup-row__qty">
-                      {r.quantity} {t('copies_label')} · {j.pais}
+                      {r.cantidad} {t('copies_label')} · {equipo.nombre}
                     </span>
                   </div>
                   <button
                     type="button"
                     className="btn btn--secondary btn--sm"
-                    onClick={() => removeOneDuplicate(r.card_number, r.quantity)}
+                    onClick={() => removeOneDuplicate(r.carta_id, r.cantidad)}
                   >
                     {t('btn_remove_extra')}
                   </button>

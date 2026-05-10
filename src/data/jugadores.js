@@ -1,3438 +1,1252 @@
 /**
- * Cartas 1–980: jugadores ilustrativos por selección clasificada al torneo internacional 2026.
- * No es el listado oficial del álbum físico; actualizá nombres cuando salga la plantilla del editor.
- * Generado por scripts/build-jugadores.mjs
- * Estructura: 48 equipos × 20 cartas (18 jugadores + foto grupal + escudo) = 960 base
- * Cartas 919–960: brillantes (Pro); 961–980: legendarias (Pro)
+ * Álbum del Mundial 2026: 48 equipos × 20 cartas = 960 cartas base.
+ * Carta 1 = Escudo (especial), Carta 2 = Foto Grupal, Cartas 3-20 = Jugadores.
+ * ID de carta en BD: `{equipo.id}_{carta.numero}`  ej: "mexico_3"
  */
-import { TOTAL_CARDS } from '../constants.js'
 
-export const JUGADORES = Object.freeze([
+export const EQUIPOS = Object.freeze([
+  {
+    id: 'mexico', nombre: 'México', bandera: '🇲🇽',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Guillermo Ochoa', tipo: 'jugador' },
+      { numero: 4, nombre: 'Hirving Lozano', tipo: 'jugador' },
+      { numero: 5, nombre: 'Raúl Jiménez', tipo: 'jugador' },
+      { numero: 6, nombre: 'Edson Álvarez', tipo: 'jugador' },
+      { numero: 7, nombre: 'Jesús Gallardo', tipo: 'jugador' },
+      { numero: 8, nombre: 'Héctor Herrera', tipo: 'jugador' },
+      { numero: 9, nombre: 'Henry Martín', tipo: 'jugador' },
+      { numero: 10, nombre: 'Luis Chávez', tipo: 'jugador' },
+      { numero: 11, nombre: 'Jorge Sánchez', tipo: 'jugador' },
+      { numero: 12, nombre: 'César Montes', tipo: 'jugador' },
+      { numero: 13, nombre: 'Orbelín Pineda', tipo: 'jugador' },
+      { numero: 14, nombre: 'Santiago Giménez', tipo: 'jugador' },
+      { numero: 15, nombre: 'Roberto Alvarado', tipo: 'jugador' },
+      { numero: 16, nombre: 'Johan Vásquez', tipo: 'jugador' },
+      { numero: 17, nombre: 'Julián Araujo', tipo: 'jugador' },
+      { numero: 18, nombre: 'Carlos Rodríguez', tipo: 'jugador' },
+      { numero: 19, nombre: 'Charly Rodríguez', tipo: 'jugador' },
+      { numero: 20, nombre: 'Uriel Antuna', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'estados_unidos', nombre: 'Estados Unidos', bandera: '🇺🇸',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Christian Pulisic', tipo: 'jugador' },
+      { numero: 4, nombre: 'Weston McKennie', tipo: 'jugador' },
+      { numero: 5, nombre: 'Tyler Adams', tipo: 'jugador' },
+      { numero: 6, nombre: 'Giovanni Reyna', tipo: 'jugador' },
+      { numero: 7, nombre: 'Matt Turner', tipo: 'jugador' },
+      { numero: 8, nombre: 'Yunus Musah', tipo: 'jugador' },
+      { numero: 9, nombre: 'Folarin Balogun', tipo: 'jugador' },
+      { numero: 10, nombre: 'Josh Sargent', tipo: 'jugador' },
+      { numero: 11, nombre: 'Tim Weah', tipo: 'jugador' },
+      { numero: 12, nombre: 'Antonee Robinson', tipo: 'jugador' },
+      { numero: 13, nombre: 'DeAndre Yedlin', tipo: 'jugador' },
+      { numero: 14, nombre: 'Brenden Aaronson', tipo: 'jugador' },
+      { numero: 15, nombre: 'Luca de la Torre', tipo: 'jugador' },
+      { numero: 16, nombre: 'Ricardo Pepi', tipo: 'jugador' },
+      { numero: 17, nombre: 'Walker Zimmerman', tipo: 'jugador' },
+      { numero: 18, nombre: 'Miles Robinson', tipo: 'jugador' },
+      { numero: 19, nombre: 'Mark McKenzie', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jordan Morris', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'canada', nombre: 'Canadá', bandera: '🇨🇦',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Alphonso Davies', tipo: 'jugador' },
+      { numero: 4, nombre: 'Jonathan David', tipo: 'jugador' },
+      { numero: 5, nombre: 'Cyle Larin', tipo: 'jugador' },
+      { numero: 6, nombre: 'Tajon Buchanan', tipo: 'jugador' },
+      { numero: 7, nombre: 'Stephen Eustáquio', tipo: 'jugador' },
+      { numero: 8, nombre: 'Atiba Hutchinson', tipo: 'jugador' },
+      { numero: 9, nombre: 'Alistair Johnston', tipo: 'jugador' },
+      { numero: 10, nombre: 'Samuel Adekugbe', tipo: 'jugador' },
+      { numero: 11, nombre: 'Kamal Miller', tipo: 'jugador' },
+      { numero: 12, nombre: 'Ismaël Koné', tipo: 'jugador' },
+      { numero: 13, nombre: 'Junior Hoilett', tipo: 'jugador' },
+      { numero: 14, nombre: 'Lucas Cavallini', tipo: 'jugador' },
+      { numero: 15, nombre: 'Richie Laryea', tipo: 'jugador' },
+      { numero: 16, nombre: 'Liam Millar', tipo: 'jugador' },
+      { numero: 17, nombre: 'Derek Cornelius', tipo: 'jugador' },
+      { numero: 18, nombre: 'Charles-Andreas Brym', tipo: 'jugador' },
+      { numero: 19, nombre: 'Marco Carducci', tipo: 'jugador' },
+      { numero: 20, nombre: 'Maxime Crépeau', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'argentina', nombre: 'Argentina', bandera: '🇦🇷',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Lionel Messi', tipo: 'jugador' },
+      { numero: 4, nombre: 'Ángel Di María', tipo: 'jugador' },
+      { numero: 5, nombre: 'Rodrigo De Paul', tipo: 'jugador' },
+      { numero: 6, nombre: 'Lautaro Martínez', tipo: 'jugador' },
+      { numero: 7, nombre: 'Emiliano Martínez', tipo: 'jugador' },
+      { numero: 8, nombre: 'Nicolás Otamendi', tipo: 'jugador' },
+      { numero: 9, nombre: 'Lisandro Martínez', tipo: 'jugador' },
+      { numero: 10, nombre: 'Julián Álvarez', tipo: 'jugador' },
+      { numero: 11, nombre: 'Enzo Fernández', tipo: 'jugador' },
+      { numero: 12, nombre: 'Nahuel Molina', tipo: 'jugador' },
+      { numero: 13, nombre: 'Paulo Dybala', tipo: 'jugador' },
+      { numero: 14, nombre: 'Leandro Paredes', tipo: 'jugador' },
+      { numero: 15, nombre: 'Alexis Mac Allister', tipo: 'jugador' },
+      { numero: 16, nombre: 'Germán Pezzella', tipo: 'jugador' },
+      { numero: 17, nombre: 'Giovani Lo Celso', tipo: 'jugador' },
+      { numero: 18, nombre: 'Exequiel Palacios', tipo: 'jugador' },
+      { numero: 19, nombre: 'Thiago Almada', tipo: 'jugador' },
+      { numero: 20, nombre: 'Valentín Castellanos', tipo: 'jugador' },
+    ],
+  },
   {
-    "pais": "México",
-    "nombre": "Guillermo Ochoa"
+    id: 'brasil', nombre: 'Brasil', bandera: '🇧🇷',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Vinicius Jr.', tipo: 'jugador' },
+      { numero: 4, nombre: 'Rodrygo', tipo: 'jugador' },
+      { numero: 5, nombre: 'Neymar Jr.', tipo: 'jugador' },
+      { numero: 6, nombre: 'Bruno Guimarães', tipo: 'jugador' },
+      { numero: 7, nombre: 'Casemiro', tipo: 'jugador' },
+      { numero: 8, nombre: 'Alisson', tipo: 'jugador' },
+      { numero: 9, nombre: 'Marquinhos', tipo: 'jugador' },
+      { numero: 10, nombre: 'Endrick', tipo: 'jugador' },
+      { numero: 11, nombre: 'Raphinha', tipo: 'jugador' },
+      { numero: 12, nombre: 'Lucas Paquetá', tipo: 'jugador' },
+      { numero: 13, nombre: 'Gabriel Martinelli', tipo: 'jugador' },
+      { numero: 14, nombre: 'Danilo', tipo: 'jugador' },
+      { numero: 15, nombre: 'Éder Militão', tipo: 'jugador' },
+      { numero: 16, nombre: 'Antony', tipo: 'jugador' },
+      { numero: 17, nombre: 'Fred', tipo: 'jugador' },
+      { numero: 18, nombre: 'Gabriel Magalhães', tipo: 'jugador' },
+      { numero: 19, nombre: 'Pedro', tipo: 'jugador' },
+      { numero: 20, nombre: 'Richarlison', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'uruguay', nombre: 'Uruguay', bandera: '🇺🇾',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Darwin Núñez', tipo: 'jugador' },
+      { numero: 4, nombre: 'Federico Valverde', tipo: 'jugador' },
+      { numero: 5, nombre: 'Luis Suárez', tipo: 'jugador' },
+      { numero: 6, nombre: 'Rodrigo Bentancur', tipo: 'jugador' },
+      { numero: 7, nombre: 'Ronald Araújo', tipo: 'jugador' },
+      { numero: 8, nombre: 'José María Giménez', tipo: 'jugador' },
+      { numero: 9, nombre: 'Facundo Torres', tipo: 'jugador' },
+      { numero: 10, nombre: 'Maximiliano Araújo', tipo: 'jugador' },
+      { numero: 11, nombre: 'Nicolás De La Cruz', tipo: 'jugador' },
+      { numero: 12, nombre: 'Sebastián Coates', tipo: 'jugador' },
+      { numero: 13, nombre: 'Maxi Gómez', tipo: 'jugador' },
+      { numero: 14, nombre: 'Lucas Torreira', tipo: 'jugador' },
+      { numero: 15, nombre: 'Fernando Muslera', tipo: 'jugador' },
+      { numero: 16, nombre: 'Giorgian De Arrascaeta', tipo: 'jugador' },
+      { numero: 17, nombre: 'Facundo Pellistri', tipo: 'jugador' },
+      { numero: 18, nombre: 'Diego Rossi', tipo: 'jugador' },
+      { numero: 19, nombre: 'Matías Olivera', tipo: 'jugador' },
+      { numero: 20, nombre: 'Agustín Canobbio', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'ecuador', nombre: 'Ecuador', bandera: '🇪🇨',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Moisés Caicedo', tipo: 'jugador' },
+      { numero: 4, nombre: 'Enner Valencia', tipo: 'jugador' },
+      { numero: 5, nombre: 'Gonzalo Plata', tipo: 'jugador' },
+      { numero: 6, nombre: 'Piero Hincapié', tipo: 'jugador' },
+      { numero: 7, nombre: 'Félix Torres', tipo: 'jugador' },
+      { numero: 8, nombre: 'Angelo Preciado', tipo: 'jugador' },
+      { numero: 9, nombre: 'Jeremy Sarmiento', tipo: 'jugador' },
+      { numero: 10, nombre: 'José Cifuentes', tipo: 'jugador' },
+      { numero: 11, nombre: 'Pervis Estupiñán', tipo: 'jugador' },
+      { numero: 12, nombre: 'Ángel Mena', tipo: 'jugador' },
+      { numero: 13, nombre: 'Robert Arboleda', tipo: 'jugador' },
+      { numero: 14, nombre: 'Alexander Domínguez', tipo: 'jugador' },
+      { numero: 15, nombre: 'Willian Pacho', tipo: 'jugador' },
+      { numero: 16, nombre: 'Kevin Rodríguez', tipo: 'jugador' },
+      { numero: 17, nombre: 'Michael Estrada', tipo: 'jugador' },
+      { numero: 18, nombre: 'Diego Palacios', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jhegson Méndez', tipo: 'jugador' },
+      { numero: 20, nombre: 'Stiven Plaza', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'colombia', nombre: 'Colombia', bandera: '🇨🇴',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'James Rodríguez', tipo: 'jugador' },
+      { numero: 4, nombre: 'Luis Díaz', tipo: 'jugador' },
+      { numero: 5, nombre: 'Radamel Falcao', tipo: 'jugador' },
+      { numero: 6, nombre: 'Davinson Sánchez', tipo: 'jugador' },
+      { numero: 7, nombre: 'Juan Cuadrado', tipo: 'jugador' },
+      { numero: 8, nombre: 'Carlos Cuesta', tipo: 'jugador' },
+      { numero: 9, nombre: 'Yerry Mina', tipo: 'jugador' },
+      { numero: 10, nombre: 'Matheus Uribe', tipo: 'jugador' },
+      { numero: 11, nombre: 'Jhon Córdoba', tipo: 'jugador' },
+      { numero: 12, nombre: 'Duván Zapata', tipo: 'jugador' },
+      { numero: 13, nombre: 'Rafael Santos Borré', tipo: 'jugador' },
+      { numero: 14, nombre: 'Wilmar Barrios', tipo: 'jugador' },
+      { numero: 15, nombre: 'Richard Ríos', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jhon Jáder Durán', tipo: 'jugador' },
+      { numero: 17, nombre: 'David Ospina', tipo: 'jugador' },
+      { numero: 18, nombre: 'Stefan Medina', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jorge Carrascal', tipo: 'jugador' },
+      { numero: 20, nombre: 'Falcao García', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'paraguay', nombre: 'Paraguay', bandera: '🇵🇾',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Miguel Almirón', tipo: 'jugador' },
+      { numero: 4, nombre: 'Gustavo Gómez', tipo: 'jugador' },
+      { numero: 5, nombre: 'Omar Alderete', tipo: 'jugador' },
+      { numero: 6, nombre: 'Julio Enciso', tipo: 'jugador' },
+      { numero: 7, nombre: 'Ángel Romero', tipo: 'jugador' },
+      { numero: 8, nombre: 'Óscar Romero', tipo: 'jugador' },
+      { numero: 9, nombre: 'Mathías Villasanti', tipo: 'jugador' },
+      { numero: 10, nombre: 'Andrés Cubas', tipo: 'jugador' },
+      { numero: 11, nombre: 'Antony Silva', tipo: 'jugador' },
+      { numero: 12, nombre: 'Jesús Medina', tipo: 'jugador' },
+      { numero: 13, nombre: 'Robert Morales', tipo: 'jugador' },
+      { numero: 14, nombre: 'Iván Villalba', tipo: 'jugador' },
+      { numero: 15, nombre: 'Hernán Pérez', tipo: 'jugador' },
+      { numero: 16, nombre: 'Alberto Espínola', tipo: 'jugador' },
+      { numero: 17, nombre: 'Matías Espinoza', tipo: 'jugador' },
+      { numero: 18, nombre: 'Quintín Lescano', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Paraguay', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Paraguay', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'alemania', nombre: 'Alemania', bandera: '🇩🇪',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Florian Wirtz', tipo: 'jugador' },
+      { numero: 4, nombre: 'Jamal Musiala', tipo: 'jugador' },
+      { numero: 5, nombre: 'Leroy Sané', tipo: 'jugador' },
+      { numero: 6, nombre: 'Ilkay Gündogan', tipo: 'jugador' },
+      { numero: 7, nombre: 'Joshua Kimmich', tipo: 'jugador' },
+      { numero: 8, nombre: 'Manuel Neuer', tipo: 'jugador' },
+      { numero: 9, nombre: 'Niklas Süle', tipo: 'jugador' },
+      { numero: 10, nombre: 'Antonio Rüdiger', tipo: 'jugador' },
+      { numero: 11, nombre: 'Kai Havertz', tipo: 'jugador' },
+      { numero: 12, nombre: 'Thomas Müller', tipo: 'jugador' },
+      { numero: 13, nombre: 'Serge Gnabry', tipo: 'jugador' },
+      { numero: 14, nombre: 'Leon Goretzka', tipo: 'jugador' },
+      { numero: 15, nombre: 'Nico Schlotterbeck', tipo: 'jugador' },
+      { numero: 16, nombre: 'David Raum', tipo: 'jugador' },
+      { numero: 17, nombre: 'Deniz Undav', tipo: 'jugador' },
+      { numero: 18, nombre: 'Maximilian Mittelstädt', tipo: 'jugador' },
+      { numero: 19, nombre: 'Robert Andrich', tipo: 'jugador' },
+      { numero: 20, nombre: 'Pascal Groß', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'suiza', nombre: 'Suiza', bandera: '🇨🇭',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Granit Xhaka', tipo: 'jugador' },
+      { numero: 4, nombre: 'Yann Sommer', tipo: 'jugador' },
+      { numero: 5, nombre: 'Xherdan Shaqiri', tipo: 'jugador' },
+      { numero: 6, nombre: 'Breel Embolo', tipo: 'jugador' },
+      { numero: 7, nombre: 'Manuel Akanji', tipo: 'jugador' },
+      { numero: 8, nombre: 'Denis Zakaria', tipo: 'jugador' },
+      { numero: 9, nombre: 'Remo Freuler', tipo: 'jugador' },
+      { numero: 10, nombre: 'Silvan Widmer', tipo: 'jugador' },
+      { numero: 11, nombre: 'Ricardo Rodríguez', tipo: 'jugador' },
+      { numero: 12, nombre: 'Fabian Schär', tipo: 'jugador' },
+      { numero: 13, nombre: 'Noah Okafor', tipo: 'jugador' },
+      { numero: 14, nombre: 'Zeki Amdouni', tipo: 'jugador' },
+      { numero: 15, nombre: 'Michel Aebischer', tipo: 'jugador' },
+      { numero: 16, nombre: 'Nico Elvedi', tipo: 'jugador' },
+      { numero: 17, nombre: 'Dan Ndoye', tipo: 'jugador' },
+      { numero: 18, nombre: 'Ruben Vargas', tipo: 'jugador' },
+      { numero: 19, nombre: 'Ardon Jashari', tipo: 'jugador' },
+      { numero: 20, nombre: 'Gregory Wüthrich', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'escocia', nombre: 'Escocia', bandera: '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Andrew Robertson', tipo: 'jugador' },
+      { numero: 4, nombre: 'Scott McTominay', tipo: 'jugador' },
+      { numero: 5, nombre: 'John McGinn', tipo: 'jugador' },
+      { numero: 6, nombre: 'Callum McGregor', tipo: 'jugador' },
+      { numero: 7, nombre: 'Stuart Armstrong', tipo: 'jugador' },
+      { numero: 8, nombre: 'Lyndon Dykes', tipo: 'jugador' },
+      { numero: 9, nombre: 'Ryan Christie', tipo: 'jugador' },
+      { numero: 10, nombre: 'Lawrence Shankland', tipo: 'jugador' },
+      { numero: 11, nombre: 'Craig Gordon', tipo: 'jugador' },
+      { numero: 12, nombre: 'Kieran Tierney', tipo: 'jugador' },
+      { numero: 13, nombre: 'Billy Gilmour', tipo: 'jugador' },
+      { numero: 14, nombre: 'Nathan Patterson', tipo: 'jugador' },
+      { numero: 15, nombre: 'Grant Hanley', tipo: 'jugador' },
+      { numero: 16, nombre: 'Scott McKenna', tipo: 'jugador' },
+      { numero: 17, nombre: 'Ryan Jack', tipo: 'jugador' },
+      { numero: 18, nombre: 'James Forrest', tipo: 'jugador' },
+      { numero: 19, nombre: 'Kenny McLean', tipo: 'jugador' },
+      { numero: 20, nombre: 'Kevin Nisbet', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'inglaterra', nombre: 'Inglaterra', bandera: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Jude Bellingham', tipo: 'jugador' },
+      { numero: 4, nombre: 'Harry Kane', tipo: 'jugador' },
+      { numero: 5, nombre: 'Bukayo Saka', tipo: 'jugador' },
+      { numero: 6, nombre: 'Phil Foden', tipo: 'jugador' },
+      { numero: 7, nombre: 'Declan Rice', tipo: 'jugador' },
+      { numero: 8, nombre: 'Jordan Pickford', tipo: 'jugador' },
+      { numero: 9, nombre: 'Trent Alexander-Arnold', tipo: 'jugador' },
+      { numero: 10, nombre: 'Kyle Walker', tipo: 'jugador' },
+      { numero: 11, nombre: 'Conor Gallagher', tipo: 'jugador' },
+      { numero: 12, nombre: 'Marcus Rashford', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jack Grealish', tipo: 'jugador' },
+      { numero: 14, nombre: 'Kieran Trippier', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jordan Henderson', tipo: 'jugador' },
+      { numero: 16, nombre: 'Kalvin Phillips', tipo: 'jugador' },
+      { numero: 17, nombre: 'Eric Dier', tipo: 'jugador' },
+      { numero: 18, nombre: 'John Stones', tipo: 'jugador' },
+      { numero: 19, nombre: 'Luke Shaw', tipo: 'jugador' },
+      { numero: 20, nombre: 'Cole Palmer', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'francia', nombre: 'Francia', bandera: '🇫🇷',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Kylian Mbappé', tipo: 'jugador' },
+      { numero: 4, nombre: 'Antoine Griezmann', tipo: 'jugador' },
+      { numero: 5, nombre: 'N\'Golo Kanté', tipo: 'jugador' },
+      { numero: 6, nombre: 'Aurélien Tchouaméni', tipo: 'jugador' },
+      { numero: 7, nombre: 'Eduardo Camavinga', tipo: 'jugador' },
+      { numero: 8, nombre: 'Mike Maignan', tipo: 'jugador' },
+      { numero: 9, nombre: 'Raphaël Varane', tipo: 'jugador' },
+      { numero: 10, nombre: 'Jules Koundé', tipo: 'jugador' },
+      { numero: 11, nombre: 'William Saliba', tipo: 'jugador' },
+      { numero: 12, nombre: 'Kingsley Coman', tipo: 'jugador' },
+      { numero: 13, nombre: 'Marcus Thuram', tipo: 'jugador' },
+      { numero: 14, nombre: 'Olivier Giroud', tipo: 'jugador' },
+      { numero: 15, nombre: 'Benjamin Pavard', tipo: 'jugador' },
+      { numero: 16, nombre: 'Dayot Upamecano', tipo: 'jugador' },
+      { numero: 17, nombre: 'Ousmane Dembélé', tipo: 'jugador' },
+      { numero: 18, nombre: 'Adrien Rabiot', tipo: 'jugador' },
+      { numero: 19, nombre: 'Bradley Barcola', tipo: 'jugador' },
+      { numero: 20, nombre: 'Warren Zaïre-Emery', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'espana', nombre: 'España', bandera: '🇪🇸',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Pedri', tipo: 'jugador' },
+      { numero: 4, nombre: 'Gavi', tipo: 'jugador' },
+      { numero: 5, nombre: 'Rodri', tipo: 'jugador' },
+      { numero: 6, nombre: 'Álvaro Morata', tipo: 'jugador' },
+      { numero: 7, nombre: 'Lamine Yamal', tipo: 'jugador' },
+      { numero: 8, nombre: 'Unai Simón', tipo: 'jugador' },
+      { numero: 9, nombre: 'Dani Olmo', tipo: 'jugador' },
+      { numero: 10, nombre: 'Ferran Torres', tipo: 'jugador' },
+      { numero: 11, nombre: 'Fabián Ruiz', tipo: 'jugador' },
+      { numero: 12, nombre: 'Eric García', tipo: 'jugador' },
+      { numero: 13, nombre: 'Pau Torres', tipo: 'jugador' },
+      { numero: 14, nombre: 'Alejandro Balde', tipo: 'jugador' },
+      { numero: 15, nombre: 'Fermín López', tipo: 'jugador' },
+      { numero: 16, nombre: 'Ansu Fati', tipo: 'jugador' },
+      { numero: 17, nombre: 'Mikel Oyarzabal', tipo: 'jugador' },
+      { numero: 18, nombre: 'Marcos Llorente', tipo: 'jugador' },
+      { numero: 19, nombre: 'Aymeric Laporte', tipo: 'jugador' },
+      { numero: 20, nombre: 'Nico Williams', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'portugal', nombre: 'Portugal', bandera: '🇵🇹',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Cristiano Ronaldo', tipo: 'jugador' },
+      { numero: 4, nombre: 'Bruno Fernandes', tipo: 'jugador' },
+      { numero: 5, nombre: 'Bernardo Silva', tipo: 'jugador' },
+      { numero: 6, nombre: 'Rafael Leão', tipo: 'jugador' },
+      { numero: 7, nombre: 'Rúben Dias', tipo: 'jugador' },
+      { numero: 8, nombre: 'João Cancelo', tipo: 'jugador' },
+      { numero: 9, nombre: 'Vitinha', tipo: 'jugador' },
+      { numero: 10, nombre: 'Diogo Jota', tipo: 'jugador' },
+      { numero: 11, nombre: 'Nuno Mendes', tipo: 'jugador' },
+      { numero: 12, nombre: 'João Palhinha', tipo: 'jugador' },
+      { numero: 13, nombre: 'Ricardo Horta', tipo: 'jugador' },
+      { numero: 14, nombre: 'Diogo Dalot', tipo: 'jugador' },
+      { numero: 15, nombre: 'Rafael Guerreiro', tipo: 'jugador' },
+      { numero: 16, nombre: 'Pedro Neto', tipo: 'jugador' },
+      { numero: 17, nombre: 'Rui Patrício', tipo: 'jugador' },
+      { numero: 18, nombre: 'Pepe', tipo: 'jugador' },
+      { numero: 19, nombre: 'Gonçalo Ramos', tipo: 'jugador' },
+      { numero: 20, nombre: 'Otávio', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'paises_bajos', nombre: 'Países Bajos', bandera: '🇳🇱',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Virgil van Dijk', tipo: 'jugador' },
+      { numero: 4, nombre: 'Memphis Depay', tipo: 'jugador' },
+      { numero: 5, nombre: 'Frenkie de Jong', tipo: 'jugador' },
+      { numero: 6, nombre: 'Cody Gakpo', tipo: 'jugador' },
+      { numero: 7, nombre: 'Georginio Wijnaldum', tipo: 'jugador' },
+      { numero: 8, nombre: 'Ryan Gravenberch', tipo: 'jugador' },
+      { numero: 9, nombre: 'Tijjani Reijnders', tipo: 'jugador' },
+      { numero: 10, nombre: 'Nathan Aké', tipo: 'jugador' },
+      { numero: 11, nombre: 'Donyell Malen', tipo: 'jugador' },
+      { numero: 12, nombre: 'Xavi Simons', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jeremie Frimpong', tipo: 'jugador' },
+      { numero: 14, nombre: 'Lutsharel Geertruida', tipo: 'jugador' },
+      { numero: 15, nombre: 'Bart Verbruggen', tipo: 'jugador' },
+      { numero: 16, nombre: 'Denzel Dumfries', tipo: 'jugador' },
+      { numero: 17, nombre: 'Matthijs de Ligt', tipo: 'jugador' },
+      { numero: 18, nombre: 'Steven Bergwijn', tipo: 'jugador' },
+      { numero: 19, nombre: 'Marten de Roon', tipo: 'jugador' },
+      { numero: 20, nombre: 'Wout Weghorst', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'belgica', nombre: 'Bélgica', bandera: '🇧🇪',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Kevin De Bruyne', tipo: 'jugador' },
+      { numero: 4, nombre: 'Romelu Lukaku', tipo: 'jugador' },
+      { numero: 5, nombre: 'Thibaut Courtois', tipo: 'jugador' },
+      { numero: 6, nombre: 'Toby Alderweireld', tipo: 'jugador' },
+      { numero: 7, nombre: 'Jan Vertonghen', tipo: 'jugador' },
+      { numero: 8, nombre: 'Axel Witsel', tipo: 'jugador' },
+      { numero: 9, nombre: 'Dries Mertens', tipo: 'jugador' },
+      { numero: 10, nombre: 'Yannick Carrasco', tipo: 'jugador' },
+      { numero: 11, nombre: 'Leandro Trossard', tipo: 'jugador' },
+      { numero: 12, nombre: 'Lois Openda', tipo: 'jugador' },
+      { numero: 13, nombre: 'Youri Tielemans', tipo: 'jugador' },
+      { numero: 14, nombre: 'Alexis Saelemaekers', tipo: 'jugador' },
+      { numero: 15, nombre: 'Timothy Castagne', tipo: 'jugador' },
+      { numero: 16, nombre: 'Amadou Onana', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jeremy Doku', tipo: 'jugador' },
+      { numero: 18, nombre: 'Arthur Theate', tipo: 'jugador' },
+      { numero: 19, nombre: 'Wout Faes', tipo: 'jugador' },
+      { numero: 20, nombre: 'Charles De Ketelaere', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'austria', nombre: 'Austria', bandera: '🇦🇹',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Marcel Sabitzer', tipo: 'jugador' },
+      { numero: 4, nombre: 'David Alaba', tipo: 'jugador' },
+      { numero: 5, nombre: 'Marko Arnautović', tipo: 'jugador' },
+      { numero: 6, nombre: 'Konrad Laimer', tipo: 'jugador' },
+      { numero: 7, nombre: 'Xaver Schlager', tipo: 'jugador' },
+      { numero: 8, nombre: 'Stefan Posch', tipo: 'jugador' },
+      { numero: 9, nombre: 'Michael Gregoritsch', tipo: 'jugador' },
+      { numero: 10, nombre: 'Maximilian Wöber', tipo: 'jugador' },
+      { numero: 11, nombre: 'Nicolas Seiwald', tipo: 'jugador' },
+      { numero: 12, nombre: 'Patrick Pentz', tipo: 'jugador' },
+      { numero: 13, nombre: 'Christoph Baumgartner', tipo: 'jugador' },
+      { numero: 14, nombre: 'Florian Kainz', tipo: 'jugador' },
+      { numero: 15, nombre: 'Romano Schmid', tipo: 'jugador' },
+      { numero: 16, nombre: 'Philipp Lienhart', tipo: 'jugador' },
+      { numero: 17, nombre: 'Patrick Wimmer', tipo: 'jugador' },
+      { numero: 18, nombre: 'Florian Grillitsch', tipo: 'jugador' },
+      { numero: 19, nombre: 'Andreas Weimann', tipo: 'jugador' },
+      { numero: 20, nombre: 'Guido Burgstaller', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'croacia', nombre: 'Croacia', bandera: '🇭🇷',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Luka Modrić', tipo: 'jugador' },
+      { numero: 4, nombre: 'Ivan Perišić', tipo: 'jugador' },
+      { numero: 5, nombre: 'Mateo Kovačić', tipo: 'jugador' },
+      { numero: 6, nombre: 'Marcelo Brozović', tipo: 'jugador' },
+      { numero: 7, nombre: 'Andrej Kramarić', tipo: 'jugador' },
+      { numero: 8, nombre: 'Dominik Livaković', tipo: 'jugador' },
+      { numero: 9, nombre: 'Mario Pašalić', tipo: 'jugador' },
+      { numero: 10, nombre: 'Bruno Petković', tipo: 'jugador' },
+      { numero: 11, nombre: 'Borna Sosa', tipo: 'jugador' },
+      { numero: 12, nombre: 'Josip Juranović', tipo: 'jugador' },
+      { numero: 13, nombre: 'Lovro Majer', tipo: 'jugador' },
+      { numero: 14, nombre: 'Ivan Gvardiol', tipo: 'jugador' },
+      { numero: 15, nombre: 'Nikola Vlašić', tipo: 'jugador' },
+      { numero: 16, nombre: 'Marko Livaja', tipo: 'jugador' },
+      { numero: 17, nombre: 'Dejan Lovren', tipo: 'jugador' },
+      { numero: 18, nombre: 'Josip Šutalo', tipo: 'jugador' },
+      { numero: 19, nombre: 'Martin Erlić', tipo: 'jugador' },
+      { numero: 20, nombre: 'Domagoj Vida', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'noruega', nombre: 'Noruega', bandera: '🇳🇴',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Erling Haaland', tipo: 'jugador' },
+      { numero: 4, nombre: 'Martin Ødegaard', tipo: 'jugador' },
+      { numero: 5, nombre: 'Alexander Sørloth', tipo: 'jugador' },
+      { numero: 6, nombre: 'Sander Berge', tipo: 'jugador' },
+      { numero: 7, nombre: 'Stefan Strandberg', tipo: 'jugador' },
+      { numero: 8, nombre: 'Leo Østigård', tipo: 'jugador' },
+      { numero: 9, nombre: 'Kristoffer Ajer', tipo: 'jugador' },
+      { numero: 10, nombre: 'Ørjan Nyland', tipo: 'jugador' },
+      { numero: 11, nombre: 'Morten Thorsby', tipo: 'jugador' },
+      { numero: 12, nombre: 'Fredrik Aursnes', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jens Petter Hauge', tipo: 'jugador' },
+      { numero: 14, nombre: 'Mohamed Elyounoussi', tipo: 'jugador' },
+      { numero: 15, nombre: 'Veton Berisha', tipo: 'jugador' },
+      { numero: 16, nombre: 'Andreas Hanche-Olsen', tipo: 'jugador' },
+      { numero: 17, nombre: 'Patrick Berg', tipo: 'jugador' },
+      { numero: 18, nombre: 'Mathias Normann', tipo: 'jugador' },
+      { numero: 19, nombre: 'Ole Sæter', tipo: 'jugador' },
+      { numero: 20, nombre: 'Ola Solbakken', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'bosnia_herzegovina', nombre: 'Bosnia y Herzegovina', bandera: '🇧🇦',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Edin Džeko', tipo: 'jugador' },
+      { numero: 4, nombre: 'Miralem Pjanić', tipo: 'jugador' },
+      { numero: 5, nombre: 'Sead Kolašinac', tipo: 'jugador' },
+      { numero: 6, nombre: 'Ermedin Demirović', tipo: 'jugador' },
+      { numero: 7, nombre: 'Edin Višća', tipo: 'jugador' },
+      { numero: 8, nombre: 'Dino Hotić', tipo: 'jugador' },
+      { numero: 9, nombre: 'Amar Dedić', tipo: 'jugador' },
+      { numero: 10, nombre: 'Kenan Pirić', tipo: 'jugador' },
+      { numero: 11, nombre: 'Hamza Čataković', tipo: 'jugador' },
+      { numero: 12, nombre: 'Armin Hodžić', tipo: 'jugador' },
+      { numero: 13, nombre: 'Siniša Saničanin', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jugador 14 · Bosnia y Herz.', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Bosnia y Herz.', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Bosnia y Herz.', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Bosnia y Herz.', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Bosnia y Herz.', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Bosnia y Herz.', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Bosnia y Herz.', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'republica_checa', nombre: 'República Checa', bandera: '🇨🇿',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Tomáš Souček', tipo: 'jugador' },
+      { numero: 4, nombre: 'Patrik Schick', tipo: 'jugador' },
+      { numero: 5, nombre: 'Vladimír Coufal', tipo: 'jugador' },
+      { numero: 6, nombre: 'Alex Král', tipo: 'jugador' },
+      { numero: 7, nombre: 'Ondřej Lingr', tipo: 'jugador' },
+      { numero: 8, nombre: 'Jan Kuchta', tipo: 'jugador' },
+      { numero: 9, nombre: 'Jindřich Staněk', tipo: 'jugador' },
+      { numero: 10, nombre: 'Tomáš Holeš', tipo: 'jugador' },
+      { numero: 11, nombre: 'Lukáš Provod', tipo: 'jugador' },
+      { numero: 12, nombre: 'Adam Hložek', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jan Bořil', tipo: 'jugador' },
+      { numero: 14, nombre: 'Pavel Kadeřábek', tipo: 'jugador' },
+      { numero: 15, nombre: 'Tomáš Čvančara', tipo: 'jugador' },
+      { numero: 16, nombre: 'Matěj Jurásek', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Rep. Checa', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Rep. Checa', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Rep. Checa', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Rep. Checa', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'suecia', nombre: 'Suecia', bandera: '🇸🇪',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Victor Nilsson Lindelöf', tipo: 'jugador' },
+      { numero: 4, nombre: 'Alexander Isak', tipo: 'jugador' },
+      { numero: 5, nombre: 'Emil Forsberg', tipo: 'jugador' },
+      { numero: 6, nombre: 'Dejan Kulusevski', tipo: 'jugador' },
+      { numero: 7, nombre: 'Ludwig Augustinsson', tipo: 'jugador' },
+      { numero: 8, nombre: 'Viktor Claesson', tipo: 'jugador' },
+      { numero: 9, nombre: 'Kristoffer Olsson', tipo: 'jugador' },
+      { numero: 10, nombre: 'Pontus Jansson', tipo: 'jugador' },
+      { numero: 11, nombre: 'Mattias Svanberg', tipo: 'jugador' },
+      { numero: 12, nombre: 'Albin Ekdal', tipo: 'jugador' },
+      { numero: 13, nombre: 'Robin Quaison', tipo: 'jugador' },
+      { numero: 14, nombre: 'Marcus Danielson', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jordan Larsson', tipo: 'jugador' },
+      { numero: 16, nombre: 'Robin Olsen', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jesper Karlsson', tipo: 'jugador' },
+      { numero: 18, nombre: 'Samuel Dahl', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Suecia', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Suecia', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'turquia', nombre: 'Turquía', bandera: '🇹🇷',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Hakan Çalhanoğlu', tipo: 'jugador' },
+      { numero: 4, nombre: 'Arda Güler', tipo: 'jugador' },
+      { numero: 5, nombre: 'Cengiz Ünder', tipo: 'jugador' },
+      { numero: 6, nombre: 'Zeki Çelik', tipo: 'jugador' },
+      { numero: 7, nombre: 'Merih Demiral', tipo: 'jugador' },
+      { numero: 8, nombre: 'Kerem Aktürkoğlu', tipo: 'jugador' },
+      { numero: 9, nombre: 'Ozan Kabak', tipo: 'jugador' },
+      { numero: 10, nombre: 'Irfan Can Kahveci', tipo: 'jugador' },
+      { numero: 11, nombre: 'Mert Günok', tipo: 'jugador' },
+      { numero: 12, nombre: 'Çağlar Söyüncü', tipo: 'jugador' },
+      { numero: 13, nombre: 'Halil Dervişoğlu', tipo: 'jugador' },
+      { numero: 14, nombre: 'Yusuf Yazıcı', tipo: 'jugador' },
+      { numero: 15, nombre: 'Barış Alper Yılmaz', tipo: 'jugador' },
+      { numero: 16, nombre: 'Ferdi Kadıoğlu', tipo: 'jugador' },
+      { numero: 17, nombre: 'Samet Akaydin', tipo: 'jugador' },
+      { numero: 18, nombre: 'Mert Müldür', tipo: 'jugador' },
+      { numero: 19, nombre: 'Tugay Kerimoğlu', tipo: 'jugador' },
+      { numero: 20, nombre: 'Cenk Tosun', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'japon', nombre: 'Japón', bandera: '🇯🇵',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Takefusa Kubo', tipo: 'jugador' },
+      { numero: 4, nombre: 'Daichi Kamada', tipo: 'jugador' },
+      { numero: 5, nombre: 'Ritsu Doan', tipo: 'jugador' },
+      { numero: 6, nombre: 'Kaoru Mitoma', tipo: 'jugador' },
+      { numero: 7, nombre: 'Maya Yoshida', tipo: 'jugador' },
+      { numero: 8, nombre: 'Takehiro Tomiyasu', tipo: 'jugador' },
+      { numero: 9, nombre: 'Hidemasa Morita', tipo: 'jugador' },
+      { numero: 10, nombre: 'Junya Ito', tipo: 'jugador' },
+      { numero: 11, nombre: 'Shuichi Gonda', tipo: 'jugador' },
+      { numero: 12, nombre: 'Ko Itakura', tipo: 'jugador' },
+      { numero: 13, nombre: 'Wataru Endo', tipo: 'jugador' },
+      { numero: 14, nombre: 'Ayase Ueda', tipo: 'jugador' },
+      { numero: 15, nombre: 'Reo Hatate', tipo: 'jugador' },
+      { numero: 16, nombre: 'Takuma Asano', tipo: 'jugador' },
+      { numero: 17, nombre: 'Hiroki Sakai', tipo: 'jugador' },
+      { numero: 18, nombre: 'Naomichi Ueda', tipo: 'jugador' },
+      { numero: 19, nombre: 'Yuya Osako', tipo: 'jugador' },
+      { numero: 20, nombre: 'Masato Morishige', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'iran', nombre: 'Irán', bandera: '🇮🇷',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Mehdi Taremi', tipo: 'jugador' },
+      { numero: 4, nombre: 'Alireza Jahanbakhsh', tipo: 'jugador' },
+      { numero: 5, nombre: 'Sardar Azmoun', tipo: 'jugador' },
+      { numero: 6, nombre: 'Morteza Pouraliganji', tipo: 'jugador' },
+      { numero: 7, nombre: 'Ehsan Hajsafi', tipo: 'jugador' },
+      { numero: 8, nombre: 'Majid Hosseini', tipo: 'jugador' },
+      { numero: 9, nombre: 'Alireza Beiranvand', tipo: 'jugador' },
+      { numero: 10, nombre: 'Saman Ghoddos', tipo: 'jugador' },
+      { numero: 11, nombre: 'Milad Mohammadi', tipo: 'jugador' },
+      { numero: 12, nombre: 'Shojae Khalilzadeh', tipo: 'jugador' },
+      { numero: 13, nombre: 'Ahmad Noorollahi', tipo: 'jugador' },
+      { numero: 14, nombre: 'Ramin Rezaeian', tipo: 'jugador' },
+      { numero: 15, nombre: 'Omid Noorafkan', tipo: 'jugador' },
+      { numero: 16, nombre: 'Mehdi Ghayedi', tipo: 'jugador' },
+      { numero: 17, nombre: 'Ali Gholizadeh', tipo: 'jugador' },
+      { numero: 18, nombre: 'Kaveh Rezaei', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Irán', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Irán', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'uzbekistan', nombre: 'Uzbekistán', bandera: '🇺🇿',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Eldor Shomurodov', tipo: 'jugador' },
+      { numero: 4, nombre: 'Abbosbek Fayzullaev', tipo: 'jugador' },
+      { numero: 5, nombre: 'Jasur Yaxshiboyev', tipo: 'jugador' },
+      { numero: 6, nombre: 'Jamshid Iskanderov', tipo: 'jugador' },
+      { numero: 7, nombre: 'Localbek Musurmonov', tipo: 'jugador' },
+      { numero: 8, nombre: 'Dostonbek Khamdamov', tipo: 'jugador' },
+      { numero: 9, nombre: 'Sherzod Nasrullayev', tipo: 'jugador' },
+      { numero: 10, nombre: 'Otabek Shukurov', tipo: 'jugador' },
+      { numero: 11, nombre: 'Khurshid Makhmudov', tipo: 'jugador' },
+      { numero: 12, nombre: 'Jugador 12 · Uzbekistán', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jugador 13 · Uzbekistán', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jugador 14 · Uzbekistán', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Uzbekistán', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Uzbekistán', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Uzbekistán', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Uzbekistán', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Uzbekistán', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Uzbekistán', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'corea_sur', nombre: 'Corea del Sur', bandera: '🇰🇷',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Son Heung-min', tipo: 'jugador' },
+      { numero: 4, nombre: 'Hwang Hee-chan', tipo: 'jugador' },
+      { numero: 5, nombre: 'Lee Kang-in', tipo: 'jugador' },
+      { numero: 6, nombre: 'Kim Min-jae', tipo: 'jugador' },
+      { numero: 7, nombre: 'Hwang In-beom', tipo: 'jugador' },
+      { numero: 8, nombre: 'Cho Gue-sung', tipo: 'jugador' },
+      { numero: 9, nombre: 'Na Sang-ho', tipo: 'jugador' },
+      { numero: 10, nombre: 'Kim Seung-gyu', tipo: 'jugador' },
+      { numero: 11, nombre: 'Lee Jae-sung', tipo: 'jugador' },
+      { numero: 12, nombre: 'Paik Seung-ho', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jeong Woo-yeong', tipo: 'jugador' },
+      { numero: 14, nombre: 'Kim Jin-su', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jung Woo-young', tipo: 'jugador' },
+      { numero: 16, nombre: 'Bae Jun-ho', tipo: 'jugador' },
+      { numero: 17, nombre: 'Kwon Chang-hoon', tipo: 'jugador' },
+      { numero: 18, nombre: 'Hong Chul', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Corea del Sur', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Corea del Sur', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'jordania', nombre: 'Jordania', bandera: '🇯🇴',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Yazan Al-Naimat', tipo: 'jugador' },
+      { numero: 4, nombre: 'Musa Al-Taamari', tipo: 'jugador' },
+      { numero: 5, nombre: 'Ahmad Hayel', tipo: 'jugador' },
+      { numero: 6, nombre: 'Baha Faisal', tipo: 'jugador' },
+      { numero: 7, nombre: 'Jugador 7 · Jordania', tipo: 'jugador' },
+      { numero: 8, nombre: 'Jugador 8 · Jordania', tipo: 'jugador' },
+      { numero: 9, nombre: 'Jugador 9 · Jordania', tipo: 'jugador' },
+      { numero: 10, nombre: 'Jugador 10 · Jordania', tipo: 'jugador' },
+      { numero: 11, nombre: 'Jugador 11 · Jordania', tipo: 'jugador' },
+      { numero: 12, nombre: 'Jugador 12 · Jordania', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jugador 13 · Jordania', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jugador 14 · Jordania', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Jordania', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Jordania', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Jordania', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Jordania', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Jordania', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Jordania', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'australia', nombre: 'Australia', bandera: '🇦🇺',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Mathew Ryan', tipo: 'jugador' },
+      { numero: 4, nombre: 'Harry Souttar', tipo: 'jugador' },
+      { numero: 5, nombre: 'Matt Leckie', tipo: 'jugador' },
+      { numero: 6, nombre: 'Adam Taggart', tipo: 'jugador' },
+      { numero: 7, nombre: 'Mitchell Duke', tipo: 'jugador' },
+      { numero: 8, nombre: 'Jackson Irvine', tipo: 'jugador' },
+      { numero: 9, nombre: 'Ajdin Hrustic', tipo: 'jugador' },
+      { numero: 10, nombre: 'Bailey Wright', tipo: 'jugador' },
+      { numero: 11, nombre: 'Aziz Behich', tipo: 'jugador' },
+      { numero: 12, nombre: 'Riley McGree', tipo: 'jugador' },
+      { numero: 13, nombre: 'Cameron Devlin', tipo: 'jugador' },
+      { numero: 14, nombre: 'Milos Degenek', tipo: 'jugador' },
+      { numero: 15, nombre: 'Kye Rowles', tipo: 'jugador' },
+      { numero: 16, nombre: 'Craig Goodwin', tipo: 'jugador' },
+      { numero: 17, nombre: 'Martin Boyle', tipo: 'jugador' },
+      { numero: 18, nombre: 'Rhyan Grant', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jason Cummings', tipo: 'jugador' },
+      { numero: 20, nombre: 'Danny Vukovic', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'qatar', nombre: 'Qatar', bandera: '🇶🇦',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Akram Afif', tipo: 'jugador' },
+      { numero: 4, nombre: 'Almoez Ali', tipo: 'jugador' },
+      { numero: 5, nombre: 'Hasan Al-Haydos', tipo: 'jugador' },
+      { numero: 6, nombre: 'Abdulaziz Hatem', tipo: 'jugador' },
+      { numero: 7, nombre: 'Pedro Miguel', tipo: 'jugador' },
+      { numero: 8, nombre: 'Salim Al-Hajri', tipo: 'jugador' },
+      { numero: 9, nombre: 'Bassam Al-Rawi', tipo: 'jugador' },
+      { numero: 10, nombre: 'Karim Boudiaf', tipo: 'jugador' },
+      { numero: 11, nombre: 'Assim Omer Madebo', tipo: 'jugador' },
+      { numero: 12, nombre: 'Jugador 12 · Qatar', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jugador 13 · Qatar', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jugador 14 · Qatar', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Qatar', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Qatar', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Qatar', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Qatar', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Qatar', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Qatar', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'arabia_saudita', nombre: 'Arabia Saudita', bandera: '🇸🇦',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Saleh Al-Shehri', tipo: 'jugador' },
+      { numero: 4, nombre: 'Salem Al-Dawsari', tipo: 'jugador' },
+      { numero: 5, nombre: 'Mohammed Al-Burayk', tipo: 'jugador' },
+      { numero: 6, nombre: 'Ali Al-Bulaihi', tipo: 'jugador' },
+      { numero: 7, nombre: 'Yasser Al-Shahrani', tipo: 'jugador' },
+      { numero: 8, nombre: 'Mohammed Al-Owais', tipo: 'jugador' },
+      { numero: 9, nombre: 'Abdulelah Al-Malki', tipo: 'jugador' },
+      { numero: 10, nombre: 'Sami Al-Najei', tipo: 'jugador' },
+      { numero: 11, nombre: 'Feras Al-Brikan', tipo: 'jugador' },
+      { numero: 12, nombre: 'Hattan Bahebri', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jugador 13 · Arabia Saudita', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jugador 14 · Arabia Saudita', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Arabia Saudita', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Arabia Saudita', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Arabia Saudita', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Arabia Saudita', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Arabia Saudita', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Arabia Saudita', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'irak', nombre: 'Irak', bandera: '🇮🇶',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Aymen Hussein', tipo: 'jugador' },
+      { numero: 4, nombre: 'Ali Adnan', tipo: 'jugador' },
+      { numero: 5, nombre: 'Amjad Attwan', tipo: 'jugador' },
+      { numero: 6, nombre: 'Bashar Resan', tipo: 'jugador' },
+      { numero: 7, nombre: 'Humam Tariq', tipo: 'jugador' },
+      { numero: 8, nombre: 'Mohanad Ali', tipo: 'jugador' },
+      { numero: 9, nombre: 'Jugador 9 · Irak', tipo: 'jugador' },
+      { numero: 10, nombre: 'Jugador 10 · Irak', tipo: 'jugador' },
+      { numero: 11, nombre: 'Jugador 11 · Irak', tipo: 'jugador' },
+      { numero: 12, nombre: 'Jugador 12 · Irak', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jugador 13 · Irak', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jugador 14 · Irak', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Irak', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Irak', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Irak', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Irak', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Irak', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Irak', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'marruecos', nombre: 'Marruecos', bandera: '🇲🇦',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Achraf Hakimi', tipo: 'jugador' },
+      { numero: 4, nombre: 'Hakim Ziyech', tipo: 'jugador' },
+      { numero: 5, nombre: 'Youssef En-Nesyri', tipo: 'jugador' },
+      { numero: 6, nombre: 'Sofyan Amrabat', tipo: 'jugador' },
+      { numero: 7, nombre: 'Romain Saïss', tipo: 'jugador' },
+      { numero: 8, nombre: 'Nayef Aguerd', tipo: 'jugador' },
+      { numero: 9, nombre: 'Zakaria Aboukhlal', tipo: 'jugador' },
+      { numero: 10, nombre: 'Azzedine Ounahi', tipo: 'jugador' },
+      { numero: 11, nombre: 'Abdessamad Ezzalzouli', tipo: 'jugador' },
+      { numero: 12, nombre: 'Yassine Bounou', tipo: 'jugador' },
+      { numero: 13, nombre: 'Noussair Mazraoui', tipo: 'jugador' },
+      { numero: 14, nombre: 'Selim Amallah', tipo: 'jugador' },
+      { numero: 15, nombre: 'Walid Cheddira', tipo: 'jugador' },
+      { numero: 16, nombre: 'Adam Masina', tipo: 'jugador' },
+      { numero: 17, nombre: 'Yahya Jabrane', tipo: 'jugador' },
+      { numero: 18, nombre: 'Bilal El Khannous', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Marruecos', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Marruecos', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'tunez', nombre: 'Túnez', bandera: '🇹🇳',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Youssef Msakni', tipo: 'jugador' },
+      { numero: 4, nombre: 'Wahbi Khazri', tipo: 'jugador' },
+      { numero: 5, nombre: 'Seifeddine Jaziri', tipo: 'jugador' },
+      { numero: 6, nombre: 'Aïssa Laïdouni', tipo: 'jugador' },
+      { numero: 7, nombre: 'Dylan Bronn', tipo: 'jugador' },
+      { numero: 8, nombre: 'Ellyes Skhiri', tipo: 'jugador' },
+      { numero: 9, nombre: 'Montassar Talbi', tipo: 'jugador' },
+      { numero: 10, nombre: 'Ali Maaloul', tipo: 'jugador' },
+      { numero: 11, nombre: 'Bechir Ben Said', tipo: 'jugador' },
+      { numero: 12, nombre: 'Hannibal Mejbri', tipo: 'jugador' },
+      { numero: 13, nombre: 'Nader Ghandri', tipo: 'jugador' },
+      { numero: 14, nombre: 'Mohamed Ben Romdhane', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Túnez', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Túnez', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Túnez', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Túnez', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Túnez', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Túnez', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'egipto', nombre: 'Egipto', bandera: '🇪🇬',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Mohamed Salah', tipo: 'jugador' },
+      { numero: 4, nombre: 'Ahmed Hegazi', tipo: 'jugador' },
+      { numero: 5, nombre: 'Mohamed Elneny', tipo: 'jugador' },
+      { numero: 6, nombre: 'Omar Marmoush', tipo: 'jugador' },
+      { numero: 7, nombre: 'Mahmoud Trezeguet', tipo: 'jugador' },
+      { numero: 8, nombre: 'Gabaski', tipo: 'jugador' },
+      { numero: 9, nombre: 'Ramadan Sobhi', tipo: 'jugador' },
+      { numero: 10, nombre: 'Mostafa Mohamed', tipo: 'jugador' },
+      { numero: 11, nombre: 'Ahmed El-Sayed', tipo: 'jugador' },
+      { numero: 12, nombre: 'Mohamed Abdelmonem', tipo: 'jugador' },
+      { numero: 13, nombre: 'Amr El Solia', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jugador 14 · Egipto', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Egipto', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Egipto', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Egipto', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Egipto', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Egipto', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Egipto', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'argelia', nombre: 'Argelia', bandera: '🇩🇿',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Riyad Mahrez', tipo: 'jugador' },
+      { numero: 4, nombre: 'Yacine Brahimi', tipo: 'jugador' },
+      { numero: 5, nombre: 'Andy Delort', tipo: 'jugador' },
+      { numero: 6, nombre: 'Baghdad Bounedjah', tipo: 'jugador' },
+      { numero: 7, nombre: 'Rais M\'Bolhi', tipo: 'jugador' },
+      { numero: 8, nombre: 'Djamel Benlamri', tipo: 'jugador' },
+      { numero: 9, nombre: 'Hicham Boudaoui', tipo: 'jugador' },
+      { numero: 10, nombre: 'Adam Ounas', tipo: 'jugador' },
+      { numero: 11, nombre: 'Sofiane Feghouli', tipo: 'jugador' },
+      { numero: 12, nombre: 'Ismaïl Bennacer', tipo: 'jugador' },
+      { numero: 13, nombre: 'Said Benrahma', tipo: 'jugador' },
+      { numero: 14, nombre: 'Nabil Bentaleb', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Argelia', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Argelia', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Argelia', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Argelia', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Argelia', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Argelia', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'ghana', nombre: 'Ghana', bandera: '🇬🇭',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Jordan Ayew', tipo: 'jugador' },
+      { numero: 4, nombre: 'André Ayew', tipo: 'jugador' },
+      { numero: 5, nombre: 'Thomas Partey', tipo: 'jugador' },
+      { numero: 6, nombre: 'Mohammed Kudus', tipo: 'jugador' },
+      { numero: 7, nombre: 'Iñaki Williams', tipo: 'jugador' },
+      { numero: 8, nombre: 'Lawrence Ati-Zigi', tipo: 'jugador' },
+      { numero: 9, nombre: 'Alexander Djiku', tipo: 'jugador' },
+      { numero: 10, nombre: 'Daniel Amartey', tipo: 'jugador' },
+      { numero: 11, nombre: 'Baba Rahman', tipo: 'jugador' },
+      { numero: 12, nombre: 'Abdul Fatawu Issahaku', tipo: 'jugador' },
+      { numero: 13, nombre: 'Kamaldeen Sulemana', tipo: 'jugador' },
+      { numero: 14, nombre: 'Osman Bukari', tipo: 'jugador' },
+      { numero: 15, nombre: 'Joseph Aidoo', tipo: 'jugador' },
+      { numero: 16, nombre: 'Antoine Semenyo', tipo: 'jugador' },
+      { numero: 17, nombre: 'Benjamin Tetteh', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Ghana', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Ghana', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Ghana', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'cabo_verde', nombre: 'Cabo Verde', bandera: '🇨🇻',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Gelson Martins', tipo: 'jugador' },
+      { numero: 4, nombre: 'Garry Rodrigues', tipo: 'jugador' },
+      { numero: 5, nombre: 'Ryan Mendes', tipo: 'jugador' },
+      { numero: 6, nombre: 'Stopira', tipo: 'jugador' },
+      { numero: 7, nombre: 'Jovane Cabral', tipo: 'jugador' },
+      { numero: 8, nombre: 'Diney', tipo: 'jugador' },
+      { numero: 9, nombre: 'Julinho Campinha', tipo: 'jugador' },
+      { numero: 10, nombre: 'Carlos Ponck', tipo: 'jugador' },
+      { numero: 11, nombre: 'Jugador 11 · Cabo Verde', tipo: 'jugador' },
+      { numero: 12, nombre: 'Jugador 12 · Cabo Verde', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jugador 13 · Cabo Verde', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jugador 14 · Cabo Verde', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Cabo Verde', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Cabo Verde', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Cabo Verde', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Cabo Verde', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Cabo Verde', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Cabo Verde', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'sudafrica', nombre: 'Sudáfrica', bandera: '🇿🇦',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Percy Tau', tipo: 'jugador' },
+      { numero: 4, nombre: 'Lyle Foster', tipo: 'jugador' },
+      { numero: 5, nombre: 'Ronwen Williams', tipo: 'jugador' },
+      { numero: 6, nombre: 'Thulani Serero', tipo: 'jugador' },
+      { numero: 7, nombre: 'Bongani Zungu', tipo: 'jugador' },
+      { numero: 8, nombre: 'Evidence Makgopa', tipo: 'jugador' },
+      { numero: 9, nombre: 'Keagan Dolly', tipo: 'jugador' },
+      { numero: 10, nombre: 'Siyanda Xulu', tipo: 'jugador' },
+      { numero: 11, nombre: 'Luther Singh', tipo: 'jugador' },
+      { numero: 12, nombre: 'Bradley Grobler', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jugador 13 · Sudáfrica', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jugador 14 · Sudáfrica', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Sudáfrica', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Sudáfrica', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Sudáfrica', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Sudáfrica', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Sudáfrica', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Sudáfrica', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'costa_marfil', nombre: 'Costa de Marfil', bandera: '🇨🇮',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Sébastien Haller', tipo: 'jugador' },
+      { numero: 4, nombre: 'Franck Kessié', tipo: 'jugador' },
+      { numero: 5, nombre: 'Nicolas Pépé', tipo: 'jugador' },
+      { numero: 6, nombre: 'Wilfried Zaha', tipo: 'jugador' },
+      { numero: 7, nombre: 'Ibrahim Sangaré', tipo: 'jugador' },
+      { numero: 8, nombre: 'Max-Alain Gradel', tipo: 'jugador' },
+      { numero: 9, nombre: 'Badra Ali Sangaré', tipo: 'jugador' },
+      { numero: 10, nombre: 'Lassina Traoré', tipo: 'jugador' },
+      { numero: 11, nombre: 'Eric Bailly', tipo: 'jugador' },
+      { numero: 12, nombre: 'Simon Deli', tipo: 'jugador' },
+      { numero: 13, nombre: 'Odilon Kossounou', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jean-Philippe Gbamin', tipo: 'jugador' },
+      { numero: 15, nombre: 'Serge Aurier', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Costa de Marfil', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Costa de Marfil', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Costa de Marfil', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Costa de Marfil', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Costa de Marfil', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'senegal', nombre: 'Senegal', bandera: '🇸🇳',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Sadio Mané', tipo: 'jugador' },
+      { numero: 4, nombre: 'Kalidou Koulibaly', tipo: 'jugador' },
+      { numero: 5, nombre: 'Idrissa Gueye', tipo: 'jugador' },
+      { numero: 6, nombre: 'Ismaïla Sarr', tipo: 'jugador' },
+      { numero: 7, nombre: 'Boulaye Dia', tipo: 'jugador' },
+      { numero: 8, nombre: 'Édouard Mendy', tipo: 'jugador' },
+      { numero: 9, nombre: 'Cheikhou Kouyaté', tipo: 'jugador' },
+      { numero: 10, nombre: 'Nicolas Jackson', tipo: 'jugador' },
+      { numero: 11, nombre: 'Krepin Diatta', tipo: 'jugador' },
+      { numero: 12, nombre: 'Nampalys Mendy', tipo: 'jugador' },
+      { numero: 13, nombre: 'Pape Gueye', tipo: 'jugador' },
+      { numero: 14, nombre: 'Cheikh Bamba Dieng', tipo: 'jugador' },
+      { numero: 15, nombre: 'Abdou Diallo', tipo: 'jugador' },
+      { numero: 16, nombre: 'Fodé Ballo-Touré', tipo: 'jugador' },
+      { numero: 17, nombre: 'Lamine Camara', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Senegal', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Senegal', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Senegal', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'rd_congo', nombre: 'RD Congo', bandera: '🇨🇩',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Chancel Mbemba', tipo: 'jugador' },
+      { numero: 4, nombre: 'Arthur Masuaku', tipo: 'jugador' },
+      { numero: 5, nombre: 'Cédric Bakambu', tipo: 'jugador' },
+      { numero: 6, nombre: 'Yannick Ferreira-Carrasco', tipo: 'jugador' },
+      { numero: 7, nombre: 'Yoane Wissa', tipo: 'jugador' },
+      { numero: 8, nombre: 'Gaël Kakuta', tipo: 'jugador' },
+      { numero: 9, nombre: 'Théo Bongonda', tipo: 'jugador' },
+      { numero: 10, nombre: 'Christian Luyindama', tipo: 'jugador' },
+      { numero: 11, nombre: 'Samuel Bastien', tipo: 'jugador' },
+      { numero: 12, nombre: 'Jonathan Bolingi', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jugador 13 · RD Congo', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jugador 14 · RD Congo', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · RD Congo', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · RD Congo', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · RD Congo', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · RD Congo', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · RD Congo', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · RD Congo', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'panama', nombre: 'Panamá', bandera: '🇵🇦',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Adalberto Carrasquilla', tipo: 'jugador' },
+      { numero: 4, nombre: 'Abdiel Arroyo', tipo: 'jugador' },
+      { numero: 5, nombre: 'Ismael Díaz', tipo: 'jugador' },
+      { numero: 6, nombre: 'Cecilio Waterman', tipo: 'jugador' },
+      { numero: 7, nombre: 'Luis Mejía', tipo: 'jugador' },
+      { numero: 8, nombre: 'Harold Cummings', tipo: 'jugador' },
+      { numero: 9, nombre: 'Fidel Escobar', tipo: 'jugador' },
+      { numero: 10, nombre: 'Andrés Andrade', tipo: 'jugador' },
+      { numero: 11, nombre: 'Iván Anderson', tipo: 'jugador' },
+      { numero: 12, nombre: 'Édgar Bárcenas', tipo: 'jugador' },
+      { numero: 13, nombre: 'Rodolfo Austin', tipo: 'jugador' },
+      { numero: 14, nombre: 'Aníbal Godoy', tipo: 'jugador' },
+      { numero: 15, nombre: 'Gabriel Torres', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Panamá', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Panamá', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Panamá', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Panamá', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Panamá', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'haiti', nombre: 'Haití', bandera: '🇭🇹',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Duckens Nazon', tipo: 'jugador' },
+      { numero: 4, nombre: 'Frantzdy Pierrot', tipo: 'jugador' },
+      { numero: 5, nombre: 'Semedy Mondésir', tipo: 'jugador' },
+      { numero: 6, nombre: 'Derrick Etienne', tipo: 'jugador' },
+      { numero: 7, nombre: 'Anderson Asmar', tipo: 'jugador' },
+      { numero: 8, nombre: 'Mechak Jérome', tipo: 'jugador' },
+      { numero: 9, nombre: 'Josué Duverger', tipo: 'jugador' },
+      { numero: 10, nombre: 'Jugador 10 · Haití', tipo: 'jugador' },
+      { numero: 11, nombre: 'Jugador 11 · Haití', tipo: 'jugador' },
+      { numero: 12, nombre: 'Jugador 12 · Haití', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jugador 13 · Haití', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jugador 14 · Haití', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Haití', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Haití', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Haití', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Haití', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Haití', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Haití', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'curacao', nombre: 'Curaçao', bandera: '🇨🇼',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Leandro Bacuna', tipo: 'jugador' },
+      { numero: 4, nombre: 'Eloy Room', tipo: 'jugador' },
+      { numero: 5, nombre: 'Cuco Martina', tipo: 'jugador' },
+      { numero: 6, nombre: 'Rangelo Janga', tipo: 'jugador' },
+      { numero: 7, nombre: 'Kenji Gorré', tipo: 'jugador' },
+      { numero: 8, nombre: 'Quentin Nasution-Schultz', tipo: 'jugador' },
+      { numero: 9, nombre: 'Dalton Rocastle', tipo: 'jugador' },
+      { numero: 10, nombre: 'Jugador 10 · Curaçao', tipo: 'jugador' },
+      { numero: 11, nombre: 'Jugador 11 · Curaçao', tipo: 'jugador' },
+      { numero: 12, nombre: 'Jugador 12 · Curaçao', tipo: 'jugador' },
+      { numero: 13, nombre: 'Jugador 13 · Curaçao', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jugador 14 · Curaçao', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Curaçao', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Curaçao', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Curaçao', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Curaçao', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Curaçao', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Curaçao', tipo: 'jugador' },
+    ],
+  },
+  {
+    id: 'nueva_zelanda', nombre: 'Nueva Zelanda', bandera: '🇳🇿',
+    cartas: [
+      { numero: 1, nombre: 'Escudo', tipo: 'escudo' },
+      { numero: 2, nombre: 'Foto Grupal', tipo: 'foto' },
+      { numero: 3, nombre: 'Chris Wood', tipo: 'jugador' },
+      { numero: 4, nombre: 'Winston Reid', tipo: 'jugador' },
+      { numero: 5, nombre: 'Ryan Thomas', tipo: 'jugador' },
+      { numero: 6, nombre: 'Liberato Cacace', tipo: 'jugador' },
+      { numero: 7, nombre: 'Elijah Just', tipo: 'jugador' },
+      { numero: 8, nombre: 'Clayton Lewis', tipo: 'jugador' },
+      { numero: 9, nombre: 'Joe Bell', tipo: 'jugador' },
+      { numero: 10, nombre: 'Tyler Boyd', tipo: 'jugador' },
+      { numero: 11, nombre: 'Stefan Marinovic', tipo: 'jugador' },
+      { numero: 12, nombre: 'Bill Tuiloma', tipo: 'jugador' },
+      { numero: 13, nombre: 'Callan Elliot', tipo: 'jugador' },
+      { numero: 14, nombre: 'Jugador 14 · Nueva Zelanda', tipo: 'jugador' },
+      { numero: 15, nombre: 'Jugador 15 · Nueva Zelanda', tipo: 'jugador' },
+      { numero: 16, nombre: 'Jugador 16 · Nueva Zelanda', tipo: 'jugador' },
+      { numero: 17, nombre: 'Jugador 17 · Nueva Zelanda', tipo: 'jugador' },
+      { numero: 18, nombre: 'Jugador 18 · Nueva Zelanda', tipo: 'jugador' },
+      { numero: 19, nombre: 'Jugador 19 · Nueva Zelanda', tipo: 'jugador' },
+      { numero: 20, nombre: 'Jugador 20 · Nueva Zelanda', tipo: 'jugador' },
+    ],
   },
-  {
-    "pais": "México",
-    "nombre": "Hirving Lozano"
-  },
-  {
-    "pais": "México",
-    "nombre": "Raúl Jiménez"
-  },
-  {
-    "pais": "México",
-    "nombre": "Edson Álvarez"
-  },
-  {
-    "pais": "México",
-    "nombre": "Jesús Gallardo"
-  },
-  {
-    "pais": "México",
-    "nombre": "Héctor Herrera"
-  },
-  {
-    "pais": "México",
-    "nombre": "Henry Martín"
-  },
-  {
-    "pais": "México",
-    "nombre": "Luis Chávez"
-  },
-  {
-    "pais": "México",
-    "nombre": "Jorge Sánchez"
-  },
-  {
-    "pais": "México",
-    "nombre": "César Montes"
-  },
-  {
-    "pais": "México",
-    "nombre": "Orbelín Pineda"
-  },
-  {
-    "pais": "México",
-    "nombre": "Santiago Giménez"
-  },
-  {
-    "pais": "México",
-    "nombre": "Plantel 13 · México"
-  },
-  {
-    "pais": "México",
-    "nombre": "Plantel 14 · México"
-  },
-  {
-    "pais": "México",
-    "nombre": "Plantel 15 · México"
-  },
-  {
-    "pais": "México",
-    "nombre": "Plantel 16 · México"
-  },
-  {
-    "pais": "México",
-    "nombre": "Plantel 17 · México"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Christian Pulisic"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Weston McKennie"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Tyler Adams"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Giovanni Reyna"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Matt Turner"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Tim Weah"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Folarin Balogun"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Antonee Robinson"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Sergiño Dest"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Yunus Musah"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Brenden Aaronson"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Walker Zimmerman"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Plantel 13 · Estados Unidos"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Plantel 14 · Estados Unidos"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Plantel 15 · Estados Unidos"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Plantel 16 · Estados Unidos"
-  },
-  {
-    "pais": "Estados Unidos",
-    "nombre": "Plantel 17 · Estados Unidos"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Alphonso Davies"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Jonathan David"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Milan Borjan"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Stephen Eustáquio"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Tajon Buchanan"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Cyle Larin"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Richie Laryea"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Kamal Miller"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Mark-Anthony Kaye"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Alistair Johnston"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Junior Hoilett"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Liam Millar"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Plantel 13 · Canadá"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Plantel 14 · Canadá"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Plantel 15 · Canadá"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Plantel 16 · Canadá"
-  },
-  {
-    "pais": "Canadá",
-    "nombre": "Plantel 17 · Canadá"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Lionel Messi"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Emiliano Martínez"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Julián Álvarez"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Lautaro Martínez"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Enzo Fernández"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Alexis Mac Allister"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Rodrigo De Paul"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Nicolás Otamendi"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Cristian Romero"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Ángel Di María"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Leandro Paredes"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Nicolás Tagliafico"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Plantel 13 · Argentina"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Plantel 14 · Argentina"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Plantel 15 · Argentina"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Plantel 16 · Argentina"
-  },
-  {
-    "pais": "Argentina",
-    "nombre": "Plantel 17 · Argentina"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Vinícius Júnior"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Alisson"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Marquinhos"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Casemiro"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Neymar"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Gabriel Magalhães"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Raphinha"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Bruno Guimarães"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Lucas Paquetá"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Richarlison"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Éder Militão"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Danilo"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Plantel 13 · Brasil"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Plantel 14 · Brasil"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Plantel 15 · Brasil"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Plantel 16 · Brasil"
-  },
-  {
-    "pais": "Brasil",
-    "nombre": "Plantel 17 · Brasil"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Federico Valverde"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Darwin Núñez"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Rodrigo Bentancur"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Ronald Araujo"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Giorgian de Arrascaeta"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Luis Suárez"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Edinson Cavani"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Sergio Rochet"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "José María Giménez"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Matías Vecino"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Nicolás de la Cruz"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Brian Rodríguez"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Plantel 13 · Uruguay"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Plantel 14 · Uruguay"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Plantel 15 · Uruguay"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Plantel 16 · Uruguay"
-  },
-  {
-    "pais": "Uruguay",
-    "nombre": "Plantel 17 · Uruguay"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Moises Caicedo"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Enner Valencia"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Piero Hincapié"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Jeremy Sarmiento"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Gonzalo Plata"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Ángel Mena"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Alexander Domínguez"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Pervis Estupiñán"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Carlos Gruezo"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Alan Franco"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Plantel 11 · Ecuador"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Plantel 12 · Ecuador"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Plantel 13 · Ecuador"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Plantel 14 · Ecuador"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Plantel 15 · Ecuador"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Plantel 16 · Ecuador"
-  },
-  {
-    "pais": "Ecuador",
-    "nombre": "Plantel 17 · Ecuador"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "James Rodríguez"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Luis Díaz"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Juan Cuadrado"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Davinson Sánchez"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Radamel Falcao"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Yerry Mina"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Duván Zapata"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Carlos Bacca"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Camilo Vargas"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Jefferson Lerma"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Plantel 11 · Colombia"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Plantel 12 · Colombia"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Plantel 13 · Colombia"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Plantel 14 · Colombia"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Plantel 15 · Colombia"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Plantel 16 · Colombia"
-  },
-  {
-    "pais": "Colombia",
-    "nombre": "Plantel 17 · Colombia"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Miguel Almirón"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Antonio Sanabria"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Gustavo Gómez"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "David Martínez"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Ángel Romero"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Óscar Romero"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Antony Silva"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Blas Riveros"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Robert Rojas"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Mathías Villasanti"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Plantel 11 · Paraguay"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Plantel 12 · Paraguay"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Plantel 13 · Paraguay"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Plantel 14 · Paraguay"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Plantel 15 · Paraguay"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Plantel 16 · Paraguay"
-  },
-  {
-    "pais": "Paraguay",
-    "nombre": "Plantel 17 · Paraguay"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Jamal Musiala"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Joshua Kimmich"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Manuel Neuer"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "İlkay Gündoğan"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Kai Havertz"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Leroy Sané"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Antonio Rüdiger"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Thomas Müller"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Serge Gnabry"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Leon Goretzka"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Niklas Süle"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Jonathan Tah"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Plantel 13 · Alemania"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Plantel 14 · Alemania"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Plantel 15 · Alemania"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Plantel 16 · Alemania"
-  },
-  {
-    "pais": "Alemania",
-    "nombre": "Plantel 17 · Alemania"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Granit Xhaka"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Xherdan Shaqiri"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Yann Sommer"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Manuel Akanji"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Ricardo Rodríguez"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Breel Embolo"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Remo Freuler"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Denis Zakaria"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Fabian Schär"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Ruben Vargas"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Plantel 11 · Suiza"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Plantel 12 · Suiza"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Plantel 13 · Suiza"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Plantel 14 · Suiza"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Plantel 15 · Suiza"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Plantel 16 · Suiza"
-  },
-  {
-    "pais": "Suiza",
-    "nombre": "Plantel 17 · Suiza"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Andrew Robertson"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Scott McTominay"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "John McGinn"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Kieran Tierney"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Angus Gunn"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Che Adams"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Lewis Ferguson"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Billy Gilmour"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Grant Hanley"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Ryan Christie"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Plantel 11 · Escocia"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Plantel 12 · Escocia"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Plantel 13 · Escocia"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Plantel 14 · Escocia"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Plantel 15 · Escocia"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Plantel 16 · Escocia"
-  },
-  {
-    "pais": "Escocia",
-    "nombre": "Plantel 17 · Escocia"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Harry Kane"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Jude Bellingham"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Bukayo Saka"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Phil Foden"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Declan Rice"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Jordan Pickford"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "John Stones"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Kyle Walker"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Marcus Rashford"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Jack Grealish"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Trent Alexander-Arnold"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Harry Maguire"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Plantel 13 · Inglaterra"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Plantel 14 · Inglaterra"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Plantel 15 · Inglaterra"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Plantel 16 · Inglaterra"
-  },
-  {
-    "pais": "Inglaterra",
-    "nombre": "Plantel 17 · Inglaterra"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Kylian Mbappé"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Antoine Griezmann"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Mike Maignan"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Dayot Upamecano"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Aurélien Tchouaméni"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Ousmane Dembélé"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Olivier Giroud"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "William Saliba"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Eduardo Camavinga"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Theo Hernández"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Jules Koundé"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Kingsley Coman"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Plantel 13 · Francia"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Plantel 14 · Francia"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Plantel 15 · Francia"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Plantel 16 · Francia"
-  },
-  {
-    "pais": "Francia",
-    "nombre": "Plantel 17 · Francia"
-  },
-  {
-    "pais": "España",
-    "nombre": "Rodri"
-  },
-  {
-    "pais": "España",
-    "nombre": "Álvaro Morata"
-  },
-  {
-    "pais": "España",
-    "nombre": "Pedri"
-  },
-  {
-    "pais": "España",
-    "nombre": "Lamine Yamal"
-  },
-  {
-    "pais": "España",
-    "nombre": "Unai Simón"
-  },
-  {
-    "pais": "España",
-    "nombre": "Aymeric Laporte"
-  },
-  {
-    "pais": "España",
-    "nombre": "Dani Olmo"
-  },
-  {
-    "pais": "España",
-    "nombre": "Nico Williams"
-  },
-  {
-    "pais": "España",
-    "nombre": "Fabián Ruiz"
-  },
-  {
-    "pais": "España",
-    "nombre": "Mikel Merino"
-  },
-  {
-    "pais": "España",
-    "nombre": "Marc Cucurella"
-  },
-  {
-    "pais": "España",
-    "nombre": "Dani Carvajal"
-  },
-  {
-    "pais": "España",
-    "nombre": "Plantel 13 · España"
-  },
-  {
-    "pais": "España",
-    "nombre": "Plantel 14 · España"
-  },
-  {
-    "pais": "España",
-    "nombre": "Plantel 15 · España"
-  },
-  {
-    "pais": "España",
-    "nombre": "Plantel 16 · España"
-  },
-  {
-    "pais": "España",
-    "nombre": "Plantel 17 · España"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Cristiano Ronaldo"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Bruno Fernandes"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Bernardo Silva"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Diogo Costa"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Rúben Dias"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "João Cancelo"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Rafael Leão"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Vitinha"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "João Félix"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Pepe"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Danilo Pereira"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Gonçalo Ramos"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Plantel 13 · Portugal"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Plantel 14 · Portugal"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Plantel 15 · Portugal"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Plantel 16 · Portugal"
-  },
-  {
-    "pais": "Portugal",
-    "nombre": "Plantel 17 · Portugal"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Virgil van Dijk"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Frenkie de Jong"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Memphis Depay"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Cody Gakpo"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Xavi Simons"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Denzel Dumfries"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Matthijs de Ligt"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Steven Bergwijn"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Nathan Aké"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Daley Blind"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Wout Weghorst"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Justin Bijlow"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Plantel 13 · Países Bajos"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Plantel 14 · Países Bajos"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Plantel 15 · Países Bajos"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Plantel 16 · Países Bajos"
-  },
-  {
-    "pais": "Países Bajos",
-    "nombre": "Plantel 17 · Países Bajos"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Kevin De Bruyne"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Romelu Lukaku"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Thibaut Courtois"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Eden Hazard"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Youri Tielemans"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Jeremy Doku"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Jan Vertonghen"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Axel Witsel"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Leandro Trossard"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Charles De Ketelaere"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Timothy Castagne"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Arthur Theate"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Plantel 13 · Bélgica"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Plantel 14 · Bélgica"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Plantel 15 · Bélgica"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Plantel 16 · Bélgica"
-  },
-  {
-    "pais": "Bélgica",
-    "nombre": "Plantel 17 · Bélgica"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "David Alaba"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Marcel Sabitzer"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Marko Arnautović"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Konrad Laimer"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Alexander Schlager"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Christoph Baumgartner"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Sasa Kalajdzic"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Nicolas Seiwald"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Patrick Wimmer"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Maximilian Wöber"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Plantel 11 · Austria"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Plantel 12 · Austria"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Plantel 13 · Austria"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Plantel 14 · Austria"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Plantel 15 · Austria"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Plantel 16 · Austria"
-  },
-  {
-    "pais": "Austria",
-    "nombre": "Plantel 17 · Austria"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Luka Modrić"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Ivan Perišić"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Mateo Kovačić"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Marcelo Brozović"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Dominik Livaković"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Joško Gvardiol"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Andrej Kramarić"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Mario Pašalić"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Borna Sosa"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Dejan Lovren"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Plantel 11 · Croacia"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Plantel 12 · Croacia"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Plantel 13 · Croacia"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Plantel 14 · Croacia"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Plantel 15 · Croacia"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Plantel 16 · Croacia"
-  },
-  {
-    "pais": "Croacia",
-    "nombre": "Plantel 17 · Croacia"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Erling Haaland"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Martin Ødegaard"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Alexander Sørloth"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Sander Berge"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Kristoffer Ajer"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Fredrik Aursnes"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Ørjan Nyland"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Joshua King"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Mohamed Elyounoussi"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Jørgen Strand Larsen"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Plantel 11 · Noruega"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Plantel 12 · Noruega"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Plantel 13 · Noruega"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Plantel 14 · Noruega"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Plantel 15 · Noruega"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Plantel 16 · Noruega"
-  },
-  {
-    "pais": "Noruega",
-    "nombre": "Plantel 17 · Noruega"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Edin Džeko"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Miralem Pjanić"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Asmir Begović"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Sead Kolašinac"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Amar Dedić"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Rade Krunić"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Ibrahim Šehić"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Denis Hadžikadunić"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Ermedin Demirović"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Smail Prevljak"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Plantel 11 · Bosnia y Herzegovina"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Plantel 12 · Bosnia y Herzegovina"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Plantel 13 · Bosnia y Herzegovina"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Plantel 14 · Bosnia y Herzegovina"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Plantel 15 · Bosnia y Herzegovina"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Plantel 16 · Bosnia y Herzegovina"
-  },
-  {
-    "pais": "Bosnia y Herzegovina",
-    "nombre": "Plantel 17 · Bosnia y Herzegovina"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Patrik Schick"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Tomáš Souček"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Vladimír Coufal"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Tomáš Vaclík"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Antonín Barák"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Adam Hložek"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Jakub Jankto"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Alex Král"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Ondřej Čelůstka"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Michal Sadílek"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Plantel 11 · República Checa"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Plantel 12 · República Checa"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Plantel 13 · República Checa"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Plantel 14 · República Checa"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Plantel 15 · República Checa"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Plantel 16 · República Checa"
-  },
-  {
-    "pais": "República Checa",
-    "nombre": "Plantel 17 · República Checa"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Alexander Isak"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Victor Lindelöf"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Emil Forsberg"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Dejan Kulusevski"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Robin Olsen"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Ludwig Augustinsson"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Albin Ekdal"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Mattias Svanberg"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Jesper Karlsson"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Anthony Elanga"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Plantel 11 · Suecia"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Plantel 12 · Suecia"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Plantel 13 · Suecia"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Plantel 14 · Suecia"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Plantel 15 · Suecia"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Plantel 16 · Suecia"
-  },
-  {
-    "pais": "Suecia",
-    "nombre": "Plantel 17 · Suecia"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Hakan Çalhanoğlu"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Merih Demiral"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Arda Güler"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Kenan Yıldız"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Uğurcan Çakır"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Orkun Kökçü"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Cenk Tosun"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "İrfan Can Kahveci"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Zeki Çelik"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Salih Özcan"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Plantel 11 · Turquía"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Plantel 12 · Turquía"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Plantel 13 · Turquía"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Plantel 14 · Turquía"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Plantel 15 · Turquía"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Plantel 16 · Turquía"
-  },
-  {
-    "pais": "Turquía",
-    "nombre": "Plantel 17 · Turquía"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Takefusa Kubo"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Daichi Kamada"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Wataru Endo"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Kaoru Mitoma"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Junya Ito"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Hidemasa Morita"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Shūichi Gonda"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Ayase Ueda"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Hiroki Sakai"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Ko Itakura"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Plantel 11 · Japón"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Plantel 12 · Japón"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Plantel 13 · Japón"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Plantel 14 · Japón"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Plantel 15 · Japón"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Plantel 16 · Japón"
-  },
-  {
-    "pais": "Japón",
-    "nombre": "Plantel 17 · Japón"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Sardar Azmoun"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Mehdi Taremi"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Alireza Jahanbakhsh"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Alireza Beiranvand"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Saeid Ezatolahi"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Milad Mohammadi"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Karim Ansarifard"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Saman Ghoddos"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Hossein Kanaani"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Shoja Khalilzadeh"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Plantel 11 · Irán"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Plantel 12 · Irán"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Plantel 13 · Irán"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Plantel 14 · Irán"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Plantel 15 · Irán"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Plantel 16 · Irán"
-  },
-  {
-    "pais": "Irán",
-    "nombre": "Plantel 17 · Irán"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Eldor Shomurodov"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Jaloliddin Masharipov"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Otabek Shukurov"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Igor Sergeev"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Utkir Yusupov"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Farrukh Sayfiev"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Azizbek Turgunboev"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Khojiakbar Alijonov"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Abbosbek Fayzullayev"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Rustamjon Ashurmatov"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Plantel 11 · Uzbekistán"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Plantel 12 · Uzbekistán"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Plantel 13 · Uzbekistán"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Plantel 14 · Uzbekistán"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Plantel 15 · Uzbekistán"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Plantel 16 · Uzbekistán"
-  },
-  {
-    "pais": "Uzbekistán",
-    "nombre": "Plantel 17 · Uzbekistán"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Son Heung-min"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Kim Min-jae"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Hwang Hee-chan"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Lee Kang-in"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Hwang Ui-jo"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Cho Gue-sung"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Kim Seung-gyu"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Jung Woo-young"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Na Sang-ho"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Hong Hyun-seok"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Plantel 11 · Corea del Sur"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Plantel 12 · Corea del Sur"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Plantel 13 · Corea del Sur"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Plantel 14 · Corea del Sur"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Plantel 15 · Corea del Sur"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Plantel 16 · Corea del Sur"
-  },
-  {
-    "pais": "Corea del Sur",
-    "nombre": "Plantel 17 · Corea del Sur"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Musa Al-Taamari"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Yaseen Al-Bakhit"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Amer Shafi"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Anas Bani Yaseen"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Baha Faisal"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Yazan Al-Naimat"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Ihsan Haddad"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Mohammad Abu Hashish"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Yousef Abu Jalbosh"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Ali Olwan"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Plantel 11 · Jordania"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Plantel 12 · Jordania"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Plantel 13 · Jordania"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Plantel 14 · Jordania"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Plantel 15 · Jordania"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Plantel 16 · Jordania"
-  },
-  {
-    "pais": "Jordania",
-    "nombre": "Plantel 17 · Jordania"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Mathew Ryan"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Mathew Leckie"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Aaron Mooy"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Mitchell Duke"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Harry Souttar"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Jackson Irvine"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Aziz Behich"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Ajdin Hrustic"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Craig Goodwin"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Riley McGree"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Plantel 11 · Australia"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Plantel 12 · Australia"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Plantel 13 · Australia"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Plantel 14 · Australia"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Plantel 15 · Australia"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Plantel 16 · Australia"
-  },
-  {
-    "pais": "Australia",
-    "nombre": "Plantel 17 · Australia"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Akram Afif"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Almoez Ali"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Saad Al Sheeb"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Hassan Al-Haydos"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Boualem Khoukhi"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Abdelkarim Hassan"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Karim Boudiaf"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Pedro Miguel"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Tarek Salman"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Homam Ahmed"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Plantel 11 · Qatar"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Plantel 12 · Qatar"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Plantel 13 · Qatar"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Plantel 14 · Qatar"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Plantel 15 · Qatar"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Plantel 16 · Qatar"
-  },
-  {
-    "pais": "Qatar",
-    "nombre": "Plantel 17 · Qatar"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Salem Al-Dawsari"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Mohammed Al-Owais"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Feras Al-Buraikan"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Saud Abdulhamid"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Abdullah Al-Mayouf"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Yasser Al-Shahrani"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Salman Al-Faraj"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Ali Al-Bulaihi"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Sultan Al-Ghannam"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Mohamed Kanno"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Plantel 11 · Arabia Saudita"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Plantel 12 · Arabia Saudita"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Plantel 13 · Arabia Saudita"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Plantel 14 · Arabia Saudita"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Plantel 15 · Arabia Saudita"
-  },
-  {
-    "pais": "Arabia Saudita",
-    "nombre": "Plantel 16 · Arabia Saudita"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Mohanad Ali"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Ali Adnan"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Jalal Hassan"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Amjad Attwan"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Humam Tariq"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Bashar Resan"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Aymen Hussein"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Safaa Hadi"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Alaa Abbas"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Ibrahim Bayesh"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Plantel 11 · Irak"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Plantel 12 · Irak"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Plantel 13 · Irak"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Plantel 14 · Irak"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Plantel 15 · Irak"
-  },
-  {
-    "pais": "Irak",
-    "nombre": "Plantel 16 · Irak"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Achraf Hakimi"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Yassine Bounou"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Hakim Ziyech"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Sofyan Amrabat"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Youssef En-Nesyri"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Noussair Mazraoui"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Romain Saïss"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Azzedine Ounahi"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Sofiane Boufal"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Nayef Aguerd"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Plantel 11 · Marruecos"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Plantel 12 · Marruecos"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Plantel 13 · Marruecos"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Plantel 14 · Marruecos"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Plantel 15 · Marruecos"
-  },
-  {
-    "pais": "Marruecos",
-    "nombre": "Plantel 16 · Marruecos"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Wahbi Khazri"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Youssef Msakni"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Aymen Dahmen"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Ali Maâloul"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Ellyes Skhiri"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Anis Ben Slimane"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Seifeddine Jaziri"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Montassar Talbi"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Dylan Bronn"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Mohamed Dräger"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Plantel 11 · Túnez"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Plantel 12 · Túnez"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Plantel 13 · Túnez"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Plantel 14 · Túnez"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Plantel 15 · Túnez"
-  },
-  {
-    "pais": "Túnez",
-    "nombre": "Plantel 16 · Túnez"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Mohamed Salah"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Mohamed Elneny"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Ahmed Hegazi"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Mostafa Mohamed"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Omar Marmoush"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Trézéguet"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Mohamed Abou Gabal"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Amr El Solia"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Mahmoud Trezeguet"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Ali Gabr"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Plantel 11 · Egipto"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Plantel 12 · Egipto"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Plantel 13 · Egipto"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Plantel 14 · Egipto"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Plantel 15 · Egipto"
-  },
-  {
-    "pais": "Egipto",
-    "nombre": "Plantel 16 · Egipto"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Riyad Mahrez"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Islam Slimani"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Yacine Brahimi"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Raïs Mbolhi"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Aïssa Mandi"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Sofiane Feghouli"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Ismaël Bennacer"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Youcef Atal"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Baghdad Bounedjah"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Ramy Bensebaini"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Plantel 11 · Argelia"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Plantel 12 · Argelia"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Plantel 13 · Argelia"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Plantel 14 · Argelia"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Plantel 15 · Argelia"
-  },
-  {
-    "pais": "Argelia",
-    "nombre": "Plantel 16 · Argelia"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Mohammed Kudus"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Thomas Partey"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "André Ayew"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Jordan Ayew"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Daniel Amartey"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Lawrence Ati-Zigi"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Alexander Djiku"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Kamaldeen Sulemana"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Inaki Williams"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Salis Abdul Samed"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Plantel 11 · Ghana"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Plantel 12 · Ghana"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Plantel 13 · Ghana"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Plantel 14 · Ghana"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Plantel 15 · Ghana"
-  },
-  {
-    "pais": "Ghana",
-    "nombre": "Plantel 16 · Ghana"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Ryan Mendes"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Garry Rodrigues"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Stopira"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Júlio Tavares"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Vagner"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Jamiro Monteiro"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Kenny Rocha Santos"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Gilson Benchimol"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Deroy Duarte"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Kevin Lenini"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Plantel 11 · Cabo Verde"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Plantel 12 · Cabo Verde"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Plantel 13 · Cabo Verde"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Plantel 14 · Cabo Verde"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Plantel 15 · Cabo Verde"
-  },
-  {
-    "pais": "Cabo Verde",
-    "nombre": "Plantel 16 · Cabo Verde"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Percy Tau"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Ronwen Williams"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Themba Zwane"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Bongani Zungu"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Thapelo Morena"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Evidence Makgopa"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Grant Kekana"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Mothobi Mvala"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Teboho Mokoena"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Khuliso Mudau"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Plantel 11 · Sudáfrica"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Plantel 12 · Sudáfrica"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Plantel 13 · Sudáfrica"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Plantel 14 · Sudáfrica"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Plantel 15 · Sudáfrica"
-  },
-  {
-    "pais": "Sudáfrica",
-    "nombre": "Plantel 16 · Sudáfrica"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Sébastien Haller"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Franck Kessié"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Nicolas Pépé"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Max Gradel"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Eric Bailly"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Serge Aurier"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Wilfried Zaha"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Yahia Fofana"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Badra Ali Sangaré"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Simon Adingra"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Plantel 11 · Costa de Marfil"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Plantel 12 · Costa de Marfil"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Plantel 13 · Costa de Marfil"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Plantel 14 · Costa de Marfil"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Plantel 15 · Costa de Marfil"
-  },
-  {
-    "pais": "Costa de Marfil",
-    "nombre": "Plantel 16 · Costa de Marfil"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Sadio Mané"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Édouard Mendy"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Kalidou Koulibaly"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Idrissa Gueye"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Ismaïla Sarr"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Boulaye Dia"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Cheikhou Kouyaté"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Pape Matar Sarr"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Nicolas Jackson"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Fodé Ballo-Touré"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Plantel 11 · Senegal"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Plantel 12 · Senegal"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Plantel 13 · Senegal"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Plantel 14 · Senegal"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Plantel 15 · Senegal"
-  },
-  {
-    "pais": "Senegal",
-    "nombre": "Plantel 16 · Senegal"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Yoane Wissa"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Cédric Bakambu"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Arthur Masuaku"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Gaël Kakuta"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Chancel Mbemba"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Meschack Elia"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Dieumerci Mbokani"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Joël Kiassumbua"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Samuel Moutoussamy"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Edo Kayembe"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Plantel 11 · RD Congo"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Plantel 12 · RD Congo"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Plantel 13 · RD Congo"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Plantel 14 · RD Congo"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Plantel 15 · RD Congo"
-  },
-  {
-    "pais": "RD Congo",
-    "nombre": "Plantel 16 · RD Congo"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Aníbal Godoy"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Gabriel Torres"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Luis Mejía"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Michael Murillo"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Fidel Escobar"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Édgar Bárcenas"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Ismael Díaz"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Adalberto Carrasquilla"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Harold Cummings"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Rolando Blackburn"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Plantel 11 · Panamá"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Plantel 12 · Panamá"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Plantel 13 · Panamá"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Plantel 14 · Panamá"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Plantel 15 · Panamá"
-  },
-  {
-    "pais": "Panamá",
-    "nombre": "Plantel 16 · Panamá"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Duckens Nazon"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Johny Placide"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Alex Junior Christian"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Steeven Saba"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Derrick Etienne"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Frantzdy Pierrot"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Carlens Arcus"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Jems Geffrard"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Bryan Alceus"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Ricardo Adé"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Plantel 11 · Haití"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Plantel 12 · Haití"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Plantel 13 · Haití"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Plantel 14 · Haití"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Plantel 15 · Haití"
-  },
-  {
-    "pais": "Haití",
-    "nombre": "Plantel 16 · Haití"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Leandro Bacuna"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Brandley Kuwas"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Eloy Room"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Jurgen Locadia"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Juninho Bacuna"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Cuco Martina"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Gino van Kessel"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Roly Bonevacia"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Charlison Benschop"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Jarchinio Antonia"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Plantel 11 · Curaçao"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Plantel 12 · Curaçao"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Plantel 13 · Curaçao"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Plantel 14 · Curaçao"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Plantel 15 · Curaçao"
-  },
-  {
-    "pais": "Curaçao",
-    "nombre": "Plantel 16 · Curaçao"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Chris Wood"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Joe Bell"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Matt Garbett"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Stefan Marinovic"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Winston Reid"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Marco Rojas"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Sarpreet Singh"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Liberato Cacace"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Tim Payne"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Marko Stamenic"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Plantel 11 · Nueva Zelanda"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Plantel 12 · Nueva Zelanda"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Plantel 13 · Nueva Zelanda"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Plantel 14 · Nueva Zelanda"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Plantel 15 · Nueva Zelanda"
-  },
-  {
-    "pais": "Nueva Zelanda",
-    "nombre": "Plantel 16 · Nueva Zelanda"
-  },
-  { "pais": "México", "nombre": "Foto Grupal · México" },
-  { "pais": "Estados Unidos", "nombre": "Foto Grupal · Estados Unidos" },
-  { "pais": "Canadá", "nombre": "Foto Grupal · Canadá" },
-  { "pais": "Argentina", "nombre": "Foto Grupal · Argentina" },
-  { "pais": "Brasil", "nombre": "Foto Grupal · Brasil" },
-  { "pais": "Uruguay", "nombre": "Foto Grupal · Uruguay" },
-  { "pais": "Ecuador", "nombre": "Foto Grupal · Ecuador" },
-  { "pais": "Colombia", "nombre": "Foto Grupal · Colombia" },
-  { "pais": "Paraguay", "nombre": "Foto Grupal · Paraguay" },
-  { "pais": "Alemania", "nombre": "Foto Grupal · Alemania" },
-  { "pais": "Suiza", "nombre": "Foto Grupal · Suiza" },
-  { "pais": "Escocia", "nombre": "Foto Grupal · Escocia" },
-  { "pais": "Inglaterra", "nombre": "Foto Grupal · Inglaterra" },
-  { "pais": "Francia", "nombre": "Foto Grupal · Francia" },
-  { "pais": "España", "nombre": "Foto Grupal · España" },
-  { "pais": "Portugal", "nombre": "Foto Grupal · Portugal" },
-  { "pais": "Países Bajos", "nombre": "Foto Grupal · Países Bajos" },
-  { "pais": "Bélgica", "nombre": "Foto Grupal · Bélgica" },
-  { "pais": "Austria", "nombre": "Foto Grupal · Austria" },
-  { "pais": "Croacia", "nombre": "Foto Grupal · Croacia" },
-  { "pais": "Noruega", "nombre": "Foto Grupal · Noruega" },
-  { "pais": "Bosnia y Herzegovina", "nombre": "Foto Grupal · Bosnia y Herzegovina" },
-  { "pais": "República Checa", "nombre": "Foto Grupal · República Checa" },
-  { "pais": "Suecia", "nombre": "Foto Grupal · Suecia" },
-  { "pais": "Turquía", "nombre": "Foto Grupal · Turquía" },
-  { "pais": "Japón", "nombre": "Foto Grupal · Japón" },
-  { "pais": "Irán", "nombre": "Foto Grupal · Irán" },
-  { "pais": "Uzbekistán", "nombre": "Foto Grupal · Uzbekistán" },
-  { "pais": "Corea del Sur", "nombre": "Foto Grupal · Corea del Sur" },
-  { "pais": "Jordania", "nombre": "Foto Grupal · Jordania" },
-  { "pais": "Australia", "nombre": "Foto Grupal · Australia" },
-  { "pais": "Qatar", "nombre": "Foto Grupal · Qatar" },
-  { "pais": "Arabia Saudita", "nombre": "Foto Grupal · Arabia Saudita" },
-  { "pais": "Irak", "nombre": "Foto Grupal · Irak" },
-  { "pais": "Marruecos", "nombre": "Foto Grupal · Marruecos" },
-  { "pais": "Túnez", "nombre": "Foto Grupal · Túnez" },
-  { "pais": "Egipto", "nombre": "Foto Grupal · Egipto" },
-  { "pais": "Argelia", "nombre": "Foto Grupal · Argelia" },
-  { "pais": "Ghana", "nombre": "Foto Grupal · Ghana" },
-  { "pais": "Cabo Verde", "nombre": "Foto Grupal · Cabo Verde" },
-  { "pais": "Sudáfrica", "nombre": "Foto Grupal · Sudáfrica" },
-  { "pais": "Costa de Marfil", "nombre": "Foto Grupal · Costa de Marfil" },
-  { "pais": "Senegal", "nombre": "Foto Grupal · Senegal" },
-  { "pais": "RD Congo", "nombre": "Foto Grupal · RD Congo" },
-  { "pais": "Panamá", "nombre": "Foto Grupal · Panamá" },
-  { "pais": "Haití", "nombre": "Foto Grupal · Haití" },
-  { "pais": "Curaçao", "nombre": "Foto Grupal · Curaçao" },
-  { "pais": "Nueva Zelanda", "nombre": "Foto Grupal · Nueva Zelanda" },
-  { "pais": "México", "nombre": "Escudo · México" },
-  { "pais": "Estados Unidos", "nombre": "Escudo · Estados Unidos" },
-  { "pais": "Canadá", "nombre": "Escudo · Canadá" },
-  { "pais": "Argentina", "nombre": "Escudo · Argentina" },
-  { "pais": "Brasil", "nombre": "Escudo · Brasil" },
-  { "pais": "Uruguay", "nombre": "Escudo · Uruguay" },
-  { "pais": "Ecuador", "nombre": "Escudo · Ecuador" },
-  { "pais": "Colombia", "nombre": "Escudo · Colombia" },
-  { "pais": "Paraguay", "nombre": "Escudo · Paraguay" },
-  { "pais": "Alemania", "nombre": "Escudo · Alemania" },
-  { "pais": "Suiza", "nombre": "Escudo · Suiza" },
-  { "pais": "Escocia", "nombre": "Escudo · Escocia" },
-  { "pais": "Inglaterra", "nombre": "Escudo · Inglaterra" },
-  { "pais": "Francia", "nombre": "Escudo · Francia" },
-  { "pais": "España", "nombre": "Escudo · España" },
-  { "pais": "Portugal", "nombre": "Escudo · Portugal" },
-  { "pais": "Países Bajos", "nombre": "Escudo · Países Bajos" },
-  { "pais": "Bélgica", "nombre": "Escudo · Bélgica" },
-  { "pais": "Austria", "nombre": "Escudo · Austria" },
-  { "pais": "Croacia", "nombre": "Escudo · Croacia" },
-  { "pais": "Noruega", "nombre": "Escudo · Noruega" },
-  { "pais": "Bosnia y Herzegovina", "nombre": "Escudo · Bosnia y Herzegovina" },
-  { "pais": "República Checa", "nombre": "Escudo · República Checa" },
-  { "pais": "Suecia", "nombre": "Escudo · Suecia" },
-  { "pais": "Turquía", "nombre": "Escudo · Turquía" },
-  { "pais": "Japón", "nombre": "Escudo · Japón" },
-  { "pais": "Irán", "nombre": "Escudo · Irán" },
-  { "pais": "Uzbekistán", "nombre": "Escudo · Uzbekistán" },
-  { "pais": "Corea del Sur", "nombre": "Escudo · Corea del Sur" },
-  { "pais": "Jordania", "nombre": "Escudo · Jordania" },
-  { "pais": "Australia", "nombre": "Escudo · Australia" },
-  { "pais": "Qatar", "nombre": "Escudo · Qatar" },
-  { "pais": "Arabia Saudita", "nombre": "Escudo · Arabia Saudita" },
-  { "pais": "Irak", "nombre": "Escudo · Irak" },
-  { "pais": "Marruecos", "nombre": "Escudo · Marruecos" },
-  { "pais": "Túnez", "nombre": "Escudo · Túnez" },
-  { "pais": "Egipto", "nombre": "Escudo · Egipto" },
-  { "pais": "Argelia", "nombre": "Escudo · Argelia" },
-  { "pais": "Ghana", "nombre": "Escudo · Ghana" },
-  { "pais": "Cabo Verde", "nombre": "Escudo · Cabo Verde" },
-  { "pais": "Sudáfrica", "nombre": "Escudo · Sudáfrica" },
-  { "pais": "Costa de Marfil", "nombre": "Escudo · Costa de Marfil" },
-  { "pais": "Senegal", "nombre": "Escudo · Senegal" },
-  { "pais": "RD Congo", "nombre": "Escudo · RD Congo" },
-  { "pais": "Panamá", "nombre": "Escudo · Panamá" },
-  { "pais": "Haití", "nombre": "Escudo · Haití" },
-  { "pais": "Curaçao", "nombre": "Escudo · Curaçao" },
-  { "pais": "Nueva Zelanda", "nombre": "Escudo · Nueva Zelanda" },
-  { "pais": "Arabia Saudita", "nombre": "Plantel 17 · Arabia Saudita" },
-  { "pais": "Argelia", "nombre": "Plantel 17 · Argelia" },
-  { "pais": "Cabo Verde", "nombre": "Plantel 17 · Cabo Verde" },
-  { "pais": "Costa de Marfil", "nombre": "Plantel 17 · Costa de Marfil" },
-  { "pais": "Curaçao", "nombre": "Plantel 17 · Curaçao" },
-  { "pais": "Egipto", "nombre": "Plantel 17 · Egipto" },
-  { "pais": "Ghana", "nombre": "Plantel 17 · Ghana" },
-  { "pais": "Haití", "nombre": "Plantel 17 · Haití" },
-  { "pais": "Irak", "nombre": "Plantel 17 · Irak" },
-  { "pais": "Marruecos", "nombre": "Plantel 17 · Marruecos" },
-  { "pais": "Nueva Zelanda", "nombre": "Plantel 17 · Nueva Zelanda" },
-  { "pais": "Panamá", "nombre": "Plantel 17 · Panamá" },
-  { "pais": "RD Congo", "nombre": "Plantel 17 · RD Congo" },
-  { "pais": "Senegal", "nombre": "Plantel 17 · Senegal" },
-  { "pais": "Sudáfrica", "nombre": "Plantel 17 · Sudáfrica" },
-  { "pais": "Túnez", "nombre": "Plantel 17 · Túnez" },
-  { "pais": "México", "nombre": "Plantel 18 · México" },
-  { "pais": "Estados Unidos", "nombre": "Plantel 18 · Estados Unidos" },
-  { "pais": "Canadá", "nombre": "Plantel 18 · Canadá" },
-  { "pais": "Argentina", "nombre": "Plantel 18 · Argentina" },
-  { "pais": "Brasil", "nombre": "Plantel 18 · Brasil" },
-  { "pais": "Uruguay", "nombre": "Plantel 18 · Uruguay" },
-  { "pais": "México", "nombre": "Brillante · Guillermo Ochoa" },
-  { "pais": "Estados Unidos", "nombre": "Brillante · Christian Pulisic" },
-  { "pais": "Canadá", "nombre": "Brillante · Alphonso Davies" },
-  { "pais": "Argentina", "nombre": "Brillante · Lionel Messi" },
-  { "pais": "Brasil", "nombre": "Brillante · Vinicius Jr." },
-  { "pais": "Uruguay", "nombre": "Brillante · Darwin Núñez" },
-  { "pais": "Ecuador", "nombre": "Brillante · Moisés Caicedo" },
-  { "pais": "Colombia", "nombre": "Brillante · James Rodríguez" },
-  { "pais": "Paraguay", "nombre": "Brillante · Miguel Almirón" },
-  { "pais": "Alemania", "nombre": "Brillante · Florian Wirtz" },
-  { "pais": "Suiza", "nombre": "Brillante · Granit Xhaka" },
-  { "pais": "Escocia", "nombre": "Brillante · Andrew Robertson" },
-  { "pais": "Inglaterra", "nombre": "Brillante · Jude Bellingham" },
-  { "pais": "Francia", "nombre": "Brillante · Kylian Mbappé" },
-  { "pais": "España", "nombre": "Brillante · Pedri" },
-  { "pais": "Portugal", "nombre": "Brillante · Cristiano Ronaldo" },
-  { "pais": "Países Bajos", "nombre": "Brillante · Virgil van Dijk" },
-  { "pais": "Bélgica", "nombre": "Brillante · Kevin De Bruyne" },
-  { "pais": "Austria", "nombre": "Brillante · Marcel Sabitzer" },
-  { "pais": "Croacia", "nombre": "Brillante · Luka Modrić" },
-  { "pais": "Noruega", "nombre": "Brillante · Erling Haaland" },
-  { "pais": "Bosnia y Herzegovina", "nombre": "Brillante · Edin Džeko" },
-  { "pais": "República Checa", "nombre": "Brillante · Tomáš Souček" },
-  { "pais": "Suecia", "nombre": "Brillante · Victor Nilsson Lindelöf" },
-  { "pais": "Turquía", "nombre": "Brillante · Hakan Çalhanoğlu" },
-  { "pais": "Japón", "nombre": "Brillante · Takefusa Kubo" },
-  { "pais": "Irán", "nombre": "Brillante · Mehdi Taremi" },
-  { "pais": "Uzbekistán", "nombre": "Brillante · Eldor Shomurodov" },
-  { "pais": "Corea del Sur", "nombre": "Brillante · Son Heung-min" },
-  { "pais": "Jordania", "nombre": "Brillante · Yazan Al-Naimat" },
-  { "pais": "Australia", "nombre": "Brillante · Mathew Ryan" },
-  { "pais": "Qatar", "nombre": "Brillante · Akram Afif" },
-  { "pais": "Arabia Saudita", "nombre": "Brillante · Saleh Al-Shehri" },
-  { "pais": "Irak", "nombre": "Brillante · Aymen Hussein" },
-  { "pais": "Marruecos", "nombre": "Brillante · Achraf Hakimi" },
-  { "pais": "Túnez", "nombre": "Brillante · Youssef Msakni" },
-  { "pais": "Egipto", "nombre": "Brillante · Mohamed Salah" },
-  { "pais": "Argelia", "nombre": "Brillante · Riyad Mahrez" },
-  { "pais": "Ghana", "nombre": "Brillante · Jordan Ayew" },
-  { "pais": "Cabo Verde", "nombre": "Brillante · Gelson Martins" },
-  { "pais": "Sudáfrica", "nombre": "Brillante · Percy Tau" },
-  { "pais": "Costa de Marfil", "nombre": "Brillante · Sébastien Haller" },
-  { "pais": "Argentina", "nombre": "Legendaria · Lionel Messi" },
-  { "pais": "Portugal", "nombre": "Legendaria · Cristiano Ronaldo" },
-  { "pais": "Francia", "nombre": "Legendaria · Kylian Mbappé" },
-  { "pais": "Noruega", "nombre": "Legendaria · Erling Haaland" },
-  { "pais": "Brasil", "nombre": "Legendaria · Neymar Jr." },
-  { "pais": "Egipto", "nombre": "Legendaria · Mohamed Salah" },
-  { "pais": "Brasil", "nombre": "Legendaria · Vinicius Jr." },
-  { "pais": "España", "nombre": "Legendaria · Pedri" },
-  { "pais": "Inglaterra", "nombre": "Legendaria · Jude Bellingham" },
-  { "pais": "España", "nombre": "Legendaria · Rodri" },
-  { "pais": "España", "nombre": "Legendaria · Lamine Yamal" },
-  { "pais": "Inglaterra", "nombre": "Legendaria · Bukayo Saka" },
-  { "pais": "Canadá", "nombre": "Legendaria · Alphonso Davies" },
-  { "pais": "Estados Unidos", "nombre": "Legendaria · Christian Pulisic" },
-  { "pais": "México", "nombre": "Legendaria · Hirving Lozano" },
-  { "pais": "Uruguay", "nombre": "Legendaria · Darwin Núñez" },
-  { "pais": "Marruecos", "nombre": "Legendaria · Achraf Hakimi" },
-  { "pais": "Marruecos", "nombre": "Legendaria · Sofyan Amrabat" },
-  { "pais": "Corea del Sur", "nombre": "Legendaria · Son Heung-min" },
-  { "pais": "Japón", "nombre": "Legendaria · Takefusa Kubo" }
 ])
 
-export function getJugador(numero) {
-  const i = Math.trunc(Number(numero)) - 1
-  if (i < 0 || i >= TOTAL_CARDS) return { nombre: '—', pais: '' }
-  return JUGADORES[i]
+// --- Lookup map (built once) ---
+const _cartaMap = new Map()
+for (const eq of EQUIPOS) {
+  for (const carta of eq.cartas) {
+    _cartaMap.set(`${eq.id}_${carta.numero}`, { equipo: eq, carta })
+  }
 }
 
-export function buscarJugadores(query) {
-  const q = String(query || '')
-    .trim()
-    .toLowerCase()
+export function getCarta(cartaId) {
+  return _cartaMap.get(String(cartaId)) ?? {
+    equipo: { id: '', nombre: '—', bandera: '' },
+    carta: { numero: 0, nombre: '—', tipo: 'jugador' },
+  }
+}
+
+export function getJugador(cartaId) {
+  const { equipo, carta } = getCarta(cartaId)
+  return { nombre: carta.nombre, pais: equipo.nombre }
+}
+
+export function buscarCartas(query) {
+  const q = String(query || '').trim().toLowerCase()
   if (!q) return null
   const out = []
-  for (let n = 1; n <= TOTAL_CARDS; n++) {
-    const j = getJugador(n)
-    const hay =
-      String(n).includes(q) ||
-      j.nombre.toLowerCase().includes(q) ||
-      j.pais.toLowerCase().includes(q)
-    if (hay) out.push(n)
-  }
-  return out
-}
-
-// Rareza basada en número de carta
-// 1-720: común | 721-918: rara | 919-960: brillante (Pro) | 961-980: legendaria (Pro)
-export function getRareza(n) {
-  if (n <= 720) return 'común'
-  if (n <= 918) return 'rara'
-  if (n <= 960) return 'brillante'
-  return 'legendaria'
-}
-
-export const SPECIAL_START = 919  // primer número especial (Pro)
-export const SPECIAL_TOTAL = 62   // cartas 919-980
-
-export const PAISES_EN_ORDEN = (() => {
-  const seen = new Set()
-  const out = []
-  for (const j of JUGADORES) {
-    if (j.pais && !seen.has(j.pais)) {
-      seen.add(j.pais)
-      out.push(j.pais)
+  for (const equipo of EQUIPOS) {
+    const matchTeam = equipo.nombre.toLowerCase().includes(q)
+    for (const carta of equipo.cartas) {
+      if (matchTeam || carta.nombre.toLowerCase().includes(q)) {
+        out.push(`${equipo.id}_${carta.numero}`)
+      }
     }
   }
-  return out
-})()
+  return out.length > 0 ? out : null
+}
+
+export function isEspecial(cartaId) {
+  const { carta } = getCarta(cartaId)
+  return carta.tipo === 'escudo'
+}
+
+export const TOTAL_CARTAS = EQUIPOS.reduce((s, e) => s + e.cartas.length, 0) // 960
+export const SPECIAL_TOTAL = EQUIPOS.length // 48 escudos
+export const PAISES_EN_ORDEN = EQUIPOS.map((e) => e.nombre)

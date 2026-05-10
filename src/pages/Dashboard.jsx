@@ -7,10 +7,10 @@ import { useLang } from '../context/LangContext'
 import { useProfile } from '../hooks/useProfile'
 import { TOTAL_CARDS } from '../constants'
 import { celebrateAlbumComplete } from '../lib/celebrateAlbum'
-import { getJugador, SPECIAL_START, SPECIAL_TOTAL } from '../data/jugadores'
+import { getCarta, EQUIPOS, SPECIAL_TOTAL, isEspecial } from '../data/jugadores'
 import FAQ from '../components/FAQ'
 
-const COMMON_THRESHOLD = 720
+const CARTAS_POR_EQUIPO = 20
 
 function getOrUpdateStreak() {
   const KEY = 'ss_streak'
@@ -43,7 +43,7 @@ export default function Dashboard() {
     let cancelled = false
     ;(async () => {
       const [cardsRes, notasRes] = await Promise.all([
-        supabase.from('user_cards').select('card_number, quantity').eq('user_id', user.id),
+        supabase.from('user_cards').select('carta_id, cantidad').eq('user_id', user.id),
         supabase.from('notas').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
       ])
       if (!cancelled) {
@@ -57,29 +57,27 @@ export default function Dashboard() {
 
   const stats = useMemo(() => {
     const unique = rows.length
-    const totalCopies = rows.reduce((s, r) => s + (r.quantity || 0), 0)
-    const duplicateExtra = rows.reduce((s, r) => s + Math.max(0, (r.quantity || 1) - 1), 0)
+    const totalCopies = rows.reduce((s, r) => s + (r.cantidad || 0), 0)
+    const duplicateExtra = rows.reduce((s, r) => s + Math.max(0, (r.cantidad || 1) - 1), 0)
     const pct = Math.round((unique / TOTAL_CARDS) * 1000) / 10
     const missing = TOTAL_CARDS - unique
-    const especiales = rows.filter((r) => r.card_number >= SPECIAL_START).length
+    const especiales = rows.filter((r) => isEspecial(r.carta_id)).length
     return { unique, totalCopies, duplicateExtra, pct, missing, especiales }
   }, [rows])
 
   const proStats = useMemo(() => {
     if (!isPro || loading) return null
-    const ownedSet = new Set(rows.map((r) => r.card_number))
+    const ownedSet = new Set(rows.map((r) => r.carta_id))
 
+    // Find hardest missing: last team's last card that isn't owned
     let hardestMissing = null
-    for (let n = TOTAL_CARDS; n >= 1; n--) {
-      if (!ownedSet.has(n)) { hardestMissing = n; break }
+    outer: for (let ei = EQUIPOS.length - 1; ei >= 0; ei--) {
+      const eq = EQUIPOS[ei]
+      for (let ci = eq.cartas.length - 1; ci >= 0; ci--) {
+        const id = `${eq.id}_${eq.cartas[ci].numero}`
+        if (!ownedSet.has(id)) { hardestMissing = id; break outer }
+      }
     }
-
-    const commonOwned = rows.filter((r) => r.card_number <= COMMON_THRESHOLD).length
-    const rareOwned = rows.filter((r) => r.card_number > COMMON_THRESHOLD).length
-    const commonTotal = COMMON_THRESHOLD
-    const rareTotal = TOTAL_CARDS - COMMON_THRESHOLD
-    const commonPct = Math.round((commonOwned / commonTotal) * 100)
-    const rarePct = Math.round((rareOwned / rareTotal) * 100)
 
     const missing = TOTAL_CARDS - rows.length
     let estimatedPacks = 0
@@ -88,20 +86,15 @@ export default function Dashboard() {
       estimatedPacks = Math.ceil(missing / Math.max(7 * pctMissing, 0.14))
     }
 
-    const countryMap = {}
-    for (let n = 1; n <= TOTAL_CARDS; n++) {
-      const j = getJugador(n)
-      if (!countryMap[j.pais]) countryMap[j.pais] = { total: 0, owned: 0 }
-      countryMap[j.pais].total++
-      if (ownedSet.has(n)) countryMap[j.pais].owned++
-    }
-    const countries = Object.entries(countryMap)
-      .map(([pais, d]) => ({ pais, ...d, pct: d.total ? Math.round((d.owned / d.total) * 100) : 0 }))
-      .sort((a, b) => a.pct - b.pct)
-      .slice(0, 8)
+    const countries = EQUIPOS.map((eq) => {
+      const total = eq.cartas.length
+      const owned = eq.cartas.filter((c) => ownedSet.has(`${eq.id}_${c.numero}`)).length
+      const pct = Math.round((owned / total) * 100)
+      return { pais: `${eq.bandera} ${eq.nombre}`, owned, total, pct }
+    }).sort((a, b) => a.pct - b.pct).slice(0, 8)
 
     const streak = getOrUpdateStreak()
-    return { hardestMissing, commonOwned, rareOwned, commonTotal, rareTotal, commonPct, rarePct, estimatedPacks, countries, streak }
+    return { hardestMissing, estimatedPacks, countries, streak }
   }, [rows, isPro, loading])
 
   useEffect(() => {
@@ -227,9 +220,9 @@ export default function Dashboard() {
               <span className="pro-stat-card__label">{t('pro_hardest_title')}</span>
               {proStats.hardestMissing ? (
                 <strong className="pro-stat-card__value">
-                  #{proStats.hardestMissing}
                   <small className="pro-stat-card__sub">
-                    {' '}{getJugador(proStats.hardestMissing).nombre}
+                    {getCarta(proStats.hardestMissing).equipo.bandera}{' '}
+                    {getCarta(proStats.hardestMissing).carta.nombre}
                   </small>
                 </strong>
               ) : (
@@ -259,22 +252,19 @@ export default function Dashboard() {
             </article>
 
             <article className="pro-stat-card pro-stat-card--wide">
-              <span className="pro-stat-card__label">{t('pro_rarity_title')}</span>
+              <span className="pro-stat-card__label">{t('pro_countries_title')}</span>
               <div className="pro-rarity">
-                <div className="pro-rarity__row">
-                  <span>{t('pro_rarity_common', { pct: proStats.commonPct })}</span>
-                  <span>{proStats.commonOwned}/{proStats.commonTotal}</span>
-                </div>
-                <div className="pro-rarity__bar">
-                  <div className="pro-rarity__fill pro-rarity__fill--common" style={{ width: `${proStats.commonPct}%` }} />
-                </div>
-                <div className="pro-rarity__row">
-                  <span>{t('pro_rarity_rare', { pct: proStats.rarePct })}</span>
-                  <span>{proStats.rareOwned}/{proStats.rareTotal}</span>
-                </div>
-                <div className="pro-rarity__bar">
-                  <div className="pro-rarity__fill pro-rarity__fill--rare" style={{ width: `${proStats.rarePct}%` }} />
-                </div>
+                {proStats.countries.slice(0, 4).map(({ pais, owned, total, pct }) => (
+                  <div key={pais}>
+                    <div className="pro-rarity__row">
+                      <span>{pais}</span>
+                      <span>{owned}/{total}</span>
+                    </div>
+                    <div className="pro-rarity__bar">
+                      <div className="pro-rarity__fill pro-rarity__fill--common" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                ))}
               </div>
             </article>
           </div>

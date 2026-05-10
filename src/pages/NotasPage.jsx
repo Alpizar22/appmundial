@@ -3,8 +3,7 @@ import { Helmet } from 'react-helmet-async'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
-import { TOTAL_CARDS } from '../constants'
-import { getJugador } from '../data/jugadores'
+import { getCarta, EQUIPOS, buscarCartas } from '../data/jugadores'
 
 const PRIORIDADES = ['alta', 'media', 'baja']
 
@@ -23,7 +22,7 @@ export default function NotasPage() {
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({ carta_numero: '', prioridad: 'media', texto: '' })
+  const [form, setForm] = useState({ equipo_id: '', carta_num: '', prioridad: 'media', texto: '' })
   const cardInputRef = useRef(null)
 
   async function fetchNotas() {
@@ -41,21 +40,25 @@ export default function NotasPage() {
   async function handleAdd(e) {
     e.preventDefault()
     setError('')
-    const n = parseInt(form.carta_numero, 10)
-    if (Number.isNaN(n) || n < 1 || n > TOTAL_CARDS) {
+    const num = parseInt(form.carta_num, 10)
+    const cartaId = form.equipo_id && !Number.isNaN(num) && num >= 1 && num <= 20
+      ? `${form.equipo_id}_${num}`
+      : null
+    const { carta } = cartaId ? getCarta(cartaId) : {}
+    if (!cartaId || carta?.nombre === '—') {
       setError(t('nota_err_invalid'))
       return
     }
     setAdding(true)
     const { error: err } = await supabase.from('notas').insert({
       user_id: user.id,
-      carta_numero: n,
+      carta_numero: cartaId,
       prioridad: form.prioridad,
       texto: form.texto.trim(),
     })
     setAdding(false)
     if (err) { setError(t('nota_err_fallback')); return }
-    setForm({ carta_numero: '', prioridad: 'media', texto: '' })
+    setForm({ equipo_id: '', carta_num: '', prioridad: 'media', texto: '' })
     cardInputRef.current?.focus()
     fetchNotas()
   }
@@ -82,15 +85,28 @@ export default function NotasPage() {
 
         <div className="nota-form__row">
           <label className="field">
-            <span>{t('nota_card_label')}</span>
-            <input
+            <span>Selección</span>
+            <select
               ref={cardInputRef}
+              value={form.equipo_id}
+              onChange={(e) => setForm((f) => ({ ...f, equipo_id: e.target.value }))}
+              required
+            >
+              <option value="">-- Elige selección --</option>
+              {EQUIPOS.map((eq) => (
+                <option key={eq.id} value={eq.id}>{eq.bandera} {eq.nombre}</option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>{t('nota_card_label')} (1–20)</span>
+            <input
               type="number"
               min="1"
-              max={TOTAL_CARDS}
-              value={form.carta_numero}
-              onChange={(e) => setForm((f) => ({ ...f, carta_numero: e.target.value }))}
-              placeholder={t('nota_card_placeholder')}
+              max="20"
+              value={form.carta_num}
+              onChange={(e) => setForm((f) => ({ ...f, carta_num: e.target.value }))}
+              placeholder="Ej. 5"
               required
               inputMode="numeric"
             />
@@ -138,13 +154,13 @@ export default function NotasPage() {
       ) : (
         <ul className="notas-list" role="list">
           {notas.map((nota) => {
-            const jugador = getJugador(nota.carta_numero)
+            const { equipo, carta } = getCarta(nota.carta_numero)
             return (
               <li key={nota.id} className="nota-item" role="listitem">
-                <div className="nota-item__badge">#{nota.carta_numero}</div>
+                <div className="nota-item__badge">{equipo.bandera} #{carta.numero}</div>
                 <div className="nota-item__body">
-                  <div className="nota-item__card-name">{jugador.nombre}</div>
-                  <div className="nota-item__jugador">{jugador.pais}</div>
+                  <div className="nota-item__card-name">{carta.nombre}</div>
+                  <div className="nota-item__jugador">{equipo.nombre}</div>
                   <PrioridadBadge prioridad={nota.prioridad} />
                   {nota.texto && <div className="nota-item__texto">{nota.texto}</div>}
                 </div>
