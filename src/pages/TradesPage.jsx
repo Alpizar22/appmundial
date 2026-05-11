@@ -8,7 +8,7 @@ import { useProfile } from '../hooks/useProfile'
 import { useUserProfiles } from '../hooks/useUserProfiles'
 import { TOTAL_CARDS } from '../constants'
 import { formatDistanceKm, haversineKm, requestCurrentPosition } from '../lib/geo'
-import { getJugador } from '../data/jugadores'
+import { getCarta, getJugador } from '../data/jugadores'
 
 const TradesMap = lazy(() => import('../components/TradesMap.jsx'))
 
@@ -35,10 +35,10 @@ export default function TradesPage() {
   const loadDupes = useCallback(async () => {
     const { data, error: err } = await supabase
       .from('user_cards')
-      .select('card_number, quantity')
+      .select('carta_id, cantidad')
       .eq('user_id', user.id)
-      .gt('quantity', 1)
-      .order('card_number')
+      .gt('cantidad', 1)
+      .order('carta_id')
     if (!err) setDupes(data || [])
   }, [user.id])
 
@@ -198,20 +198,20 @@ export default function TradesPage() {
                 <p className="trade-dup-pick__title">{t('dupe_pick_title')}</p>
                 <div className="trade-dup-chips" role="list">
                   {dupes.map((d) => {
-                    const j = getJugador(d.card_number)
-                    const active = offer === String(d.card_number)
+                    const { equipo, carta } = getCarta(d.carta_id)
+                    const active = offer === d.carta_id
                     return (
                       <button
-                        key={d.card_number}
+                        key={d.carta_id}
                         type="button"
                         role="listitem"
                         className={`trade-dup-chip${active ? ' trade-dup-chip--active' : ''}`}
-                        onClick={() => setOffer(String(d.card_number))}
+                        onClick={() => setOffer(d.carta_id)}
                       >
-                        <span className="trade-dup-chip__num">#{d.card_number}</span>
-                        <span className="trade-dup-chip__name">{j.nombre}</span>
+                        <span className="trade-dup-chip__num">{equipo.bandera} #{carta.numero}</span>
+                        <span className="trade-dup-chip__name">{carta.nombre}</span>
                         <span className="trade-dup-chip__meta">
-                          ×{d.quantity} · {j.pais}
+                          ×{d.cantidad} · {equipo.nombre}
                         </span>
                       </button>
                     )
