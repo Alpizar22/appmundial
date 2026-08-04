@@ -3,7 +3,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const MODEL = 'gemini-2.5-flash'
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash'
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
 
 const SYSTEM_ES = `Eres un narrador experto en fútbol. Genera una historia alterna corta (150-200 palabras) en tono periodístico/dramático sobre qué hubiera pasado si el escenario alterno ocurría en el momento histórico dado. Enfócate SOLO en las consecuencias inmediatas del partido (no décadas después). Usa nombres reales de jugadores y equipos (uso editorial). Hazlo emocionante y creíble. Devuelve SOLO el texto narrativo, sin títulos ni etiquetas.`
@@ -63,8 +63,6 @@ export default async function handler(req, res) {
         systemInstruction: { parts: [{ text: systemInstruction }] },
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
         generationConfig: {
-          temperature: 0.9,
-          topP: 0.95,
           maxOutputTokens: 500,
         },
       }),
