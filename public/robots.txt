@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://soccersticker.app/sitemap.xml
+Sitemap: https://whatif.lat/sitemap.xml

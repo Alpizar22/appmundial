@@ -1,206 +1,270 @@
+-- whatif.lat — Supabase schema
+-- Momentos icónicos + variables predefinidas + historias generadas
+
+create extension if not exists "pgcrypto";
+
 -- ============================================================
--- SoccerSticker — schema completo (pega en Supabase SQL Editor)
+-- TABLES
 -- ============================================================
 
--- ── user_cards ──────────────────────────────────────────────
--- Estructura nueva: carta_id TEXT ('mexico_3'), cantidad INT
--- Se hace DROP CASCADE para limpiar cualquier estado intermedio
-
-drop table if exists public.user_cards cascade;
-
-create table public.user_cards (
-  id         uuid        primary key default gen_random_uuid(),
-  user_id    uuid        not null references auth.users (id) on delete cascade,
-  carta_id   text        not null,
-  cantidad   integer     not null default 1 check (cantidad >= 1),
-  created_at timestamptz not null default now(),
-  unique (user_id, carta_id)
+create table if not exists public.momentos (
+  id uuid primary key default gen_random_uuid(),
+  slug text unique not null,
+  titulo text not null,
+  titulo_en text,
+  descripcion text not null,
+  año integer,
+  equipos text[],
+  tags text[],
+  imagen_emoji text default '⚽',
+  activo boolean default true,
+  orden integer default 0,
+  created_at timestamptz not null default now()
 );
 
-create index user_cards_user_id_idx on public.user_cards (user_id);
+create index if not exists momentos_activo_orden_idx
+  on public.momentos (activo, orden);
 
-alter table public.user_cards enable row level security;
-
-create policy "user_cards_select_own" on public.user_cards
-  for select using (auth.uid() = user_id);
-
-create policy "user_cards_insert_own" on public.user_cards
-  for insert with check (auth.uid() = user_id);
-
-create policy "user_cards_update_own" on public.user_cards
-  for update using (auth.uid() = user_id);
-
-create policy "user_cards_delete_own" on public.user_cards
-  for delete using (auth.uid() = user_id);
-
-
--- ── trade_posts ─────────────────────────────────────────────
-
-create table if not exists public.trade_posts (
-  id         uuid        primary key default gen_random_uuid(),
-  user_id    uuid        not null references auth.users (id) on delete cascade,
-  offer_card text        not null,
-  want_card  text        not null,
-  created_at timestamptz not null default now(),
-  active     boolean     not null default true,
-  lat        double precision,
-  lng        double precision
+create table if not exists public.variables (
+  id uuid primary key default gen_random_uuid(),
+  momento_id uuid not null references public.momentos(id) on delete cascade,
+  texto text not null,
+  texto_en text,
+  tipo text,
+  created_at timestamptz not null default now()
 );
 
-create index if not exists trade_posts_active_created_idx
-  on public.trade_posts (active, created_at desc);
+create index if not exists variables_momento_idx
+  on public.variables (momento_id);
 
-alter table public.trade_posts enable row level security;
-
-drop policy if exists "trade_posts_select_auth" on public.trade_posts;
-create policy "trade_posts_select_auth" on public.trade_posts
-  for select using (auth.role() = 'authenticated');
-
-drop policy if exists "trade_posts_insert_own" on public.trade_posts;
-create policy "trade_posts_insert_own" on public.trade_posts
-  for insert with check (auth.uid() = user_id);
-
-drop policy if exists "trade_posts_update_own" on public.trade_posts;
-create policy "trade_posts_update_own" on public.trade_posts
-  for update using (auth.uid() = user_id);
-
-drop policy if exists "trade_posts_delete_own" on public.trade_posts;
-create policy "trade_posts_delete_own" on public.trade_posts
-  for delete using (auth.uid() = user_id);
-
-
--- ── profiles ─────────────────────────────────────────────────
-
-create table if not exists public.profiles (
-  id           uuid primary key references auth.users (id) on delete cascade,
-  is_pro       boolean     not null default false,
-  pro_since    timestamptz,
-  titulo       text,
-  avatar_emoji text,
-  tema         text        not null default 'default',
-  created_at   timestamptz not null default now()
+create table if not exists public.historias (
+  id uuid primary key default gen_random_uuid(),
+  momento_id uuid references public.momentos(id) on delete set null,
+  variable_id uuid references public.variables(id) on delete set null,
+  variable_custom text,
+  narrativa text not null,
+  user_id uuid references auth.users(id) on delete set null,
+  compartidas integer not null default 0,
+  likes integer not null default 0,
+  created_at timestamptz not null default now()
 );
 
-alter table public.profiles enable row level security;
+create index if not exists historias_created_idx
+  on public.historias (created_at desc);
 
-drop policy if exists "profiles_select_own" on public.profiles;
-create policy "profiles_select_own" on public.profiles
-  for select using (auth.uid() = id);
+create index if not exists historias_momento_idx
+  on public.historias (momento_id, created_at desc);
 
-drop policy if exists "profiles_insert_own" on public.profiles;
-create policy "profiles_insert_own" on public.profiles
-  for insert with check (auth.uid() = id);
+-- ============================================================
+-- RLS
+-- ============================================================
 
-drop policy if exists "profiles_update_own" on public.profiles;
-create policy "profiles_update_own" on public.profiles
-  for update using (auth.uid() = id);
+alter table public.momentos enable row level security;
+alter table public.variables enable row level security;
+alter table public.historias enable row level security;
 
+drop policy if exists "momentos_read_anyone" on public.momentos;
+create policy "momentos_read_anyone"
+  on public.momentos for select
+  to anon, authenticated
+  using (activo = true);
 
--- ── conversations + messages ─────────────────────────────────
+drop policy if exists "variables_read_anyone" on public.variables;
+create policy "variables_read_anyone"
+  on public.variables for select
+  to anon, authenticated
+  using (true);
 
-create table if not exists public.conversations (
-  id                uuid        primary key default gen_random_uuid(),
-  participant_small uuid        not null references auth.users (id) on delete cascade,
-  participant_large uuid        not null references auth.users (id) on delete cascade,
-  created_at        timestamptz not null default now(),
-  check (participant_small < participant_large),
-  unique (participant_small, participant_large)
-);
+drop policy if exists "historias_read_anyone" on public.historias;
+create policy "historias_read_anyone"
+  on public.historias for select
+  to anon, authenticated
+  using (true);
 
-create index if not exists conversations_participant_small_idx
-  on public.conversations (participant_small);
-create index if not exists conversations_participant_large_idx
-  on public.conversations (participant_large);
+drop policy if exists "historias_insert_anyone" on public.historias;
+create policy "historias_insert_anyone"
+  on public.historias for insert
+  to anon, authenticated
+  with check (true);
 
-create table if not exists public.messages (
-  id              uuid        primary key default gen_random_uuid(),
-  conversation_id uuid        not null references public.conversations (id) on delete cascade,
-  sender_id       uuid        not null references auth.users (id) on delete cascade,
-  body            text        not null
-    check (char_length(trim(body)) > 0 and char_length(body) <= 2000),
-  created_at      timestamptz not null default now()
-);
+drop policy if exists "historias_delete_owner" on public.historias;
+create policy "historias_delete_owner"
+  on public.historias for delete
+  to authenticated
+  using (user_id = auth.uid());
 
-create index if not exists messages_conversation_created_idx
-  on public.messages (conversation_id, created_at);
+-- ============================================================
+-- RPCs (counters via SECURITY DEFINER to bypass RLS safely)
+-- ============================================================
 
-alter table public.conversations enable row level security;
-alter table public.messages enable row level security;
+create or replace function public.incrementar_compartidas(historia_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.historias set compartidas = compartidas + 1 where id = historia_id;
+end;
+$$;
 
-drop policy if exists "conversations_select_member" on public.conversations;
-create policy "conversations_select_member" on public.conversations
-  for select using (auth.uid() = participant_small or auth.uid() = participant_large);
+create or replace function public.incrementar_likes(historia_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.historias set likes = likes + 1 where id = historia_id;
+end;
+$$;
 
-drop policy if exists "conversations_insert_compatible" on public.conversations;
-create policy "conversations_insert_compatible" on public.conversations
-  for insert with check (
-    (auth.uid() = participant_small or auth.uid() = participant_large)
-    and participant_small < participant_large
-    and exists (
-      select 1
-      from public.trade_posts my
-      inner join public.trade_posts their
-        on their.user_id = case
-          when auth.uid() = participant_small then participant_large
-          else participant_small
-        end
-      where my.user_id = auth.uid()
-        and coalesce(my.active, true)
-        and coalesce(their.active, true)
-        and my.offer_card = their.want_card
-        and my.want_card = their.offer_card
-    )
-  );
+grant execute on function public.incrementar_compartidas(uuid) to anon, authenticated;
+grant execute on function public.incrementar_likes(uuid) to anon, authenticated;
 
-drop policy if exists "messages_select_member" on public.messages;
-create policy "messages_select_member" on public.messages
-  for select using (
-    exists (
-      select 1 from public.conversations c
-      where c.id = messages.conversation_id
-        and (auth.uid() = c.participant_small or auth.uid() = c.participant_large)
-    )
-  );
+-- ============================================================
+-- SEED: 10 momentos icónicos + variables
+-- ============================================================
 
-drop policy if exists "messages_insert_member" on public.messages;
-create policy "messages_insert_member" on public.messages
-  for insert with check (
-    sender_id = auth.uid()
-    and exists (
-      select 1 from public.conversations c
-      where c.id = messages.conversation_id
-        and (auth.uid() = c.participant_small or auth.uid() = c.participant_large)
-    )
-  );
+insert into public.momentos (slug, titulo, titulo_en, descripcion, año, equipos, tags, imagen_emoji, orden)
+values
+  ('remontada-barcelona-psg-2017',
+   'La Remontada 6-1 Barcelona vs PSG',
+   'The 6-1 Comeback Barcelona vs PSG',
+   'Octavos de Champions 2016/17. El Barça remonta el 0-4 de la ida con un 6-1 histórico en el Camp Nou, sellado por el gol de Sergi Roberto en el 95''.',
+   2017, array['Barcelona','PSG'], array['Champions','remontada','Camp Nou'], '🔥', 1),
 
+  ('maracanazo-1950',
+   'El Maracanazo Brasil vs Uruguay 1950',
+   'The Maracanazo Brazil vs Uruguay 1950',
+   'Final del Mundial 1950. Brasil solo necesitaba empatar en casa ante 200.000 aficionados. Uruguay ganó 2-1 con gol de Ghiggia y silenció el Maracaná.',
+   1950, array['Brasil','Uruguay'], array['Mundial','Maracaná','final'], '🇺🇾', 2),
 
--- ── notas ───────────────────────────────────────────────────
+  ('mano-de-dios-1986',
+   'La Mano de Dios: Argentina vs Inglaterra 1986',
+   'Hand of God: Argentina vs England 1986',
+   'Cuartos del Mundial México 86. Maradona anota con la mano y luego el "gol del siglo". Argentina 2-1 Inglaterra.',
+   1986, array['Argentina','Inglaterra'], array['Mundial','Maradona','México 86'], '✋', 3),
 
-create table if not exists public.notas (
-  id           uuid        primary key default gen_random_uuid(),
-  user_id      uuid        not null references auth.users (id) on delete cascade,
-  carta_numero text        not null,
-  prioridad    text        not null default 'media'
-    check (prioridad in ('alta', 'media', 'baja')),
-  texto        text        not null default '',
-  created_at   timestamptz not null default now()
-);
+  ('remontada-champions-2018',
+   'Real Madrid 3-1 Liverpool, final Champions 2018',
+   'Real Madrid 3-1 Liverpool, 2018 Champions Final',
+   'Kiev, 2018. Karius comete dos errores garrafales, Bale marca la chilena del año y el Madrid gana su tercera Champions consecutiva.',
+   2018, array['Real Madrid','Liverpool'], array['Champions','final','Bale','Karius'], '👑', 4),
 
-alter table public.notas enable row level security;
+  ('islandia-inglaterra-euro-2016',
+   'Islandia elimina a Inglaterra, Euro 2016',
+   'Iceland knocks out England, Euro 2016',
+   'Octavos Euro 2016. Islandia, país de 330.000 habitantes, elimina a Inglaterra 2-1 con el famoso "huh!" thunderclap.',
+   2016, array['Islandia','Inglaterra'], array['Euro','sorpresa','underdog'], '🇮🇸', 5),
 
-drop policy if exists "notas_select_own" on public.notas;
-create policy "notas_select_own" on public.notas
-  for select using (auth.uid() = user_id);
+  ('grecia-campeon-euro-2004',
+   'Grecia campeón de Europa 2004',
+   'Greece European Champion 2004',
+   'Euro 2004 en Portugal. Grecia (150-1 antes del torneo) elimina al anfitrión en la final con gol de Charisteas. Uno de los mayores batacazos.',
+   2004, array['Grecia','Portugal'], array['Euro','underdog','Rehhagel'], '🏆', 6),
 
-drop policy if exists "notas_insert_own" on public.notas;
-create policy "notas_insert_own" on public.notas
-  for insert with check (auth.uid() = user_id);
+  ('alemania-brasil-7-1-2014',
+   'Alemania 7-1 Brasil, semifinal Mundial 2014',
+   'Germany 7-1 Brazil, 2014 World Cup semifinal',
+   'Belo Horizonte, 2014. Alemania humilla a Brasil como local con 5 goles en 29 minutos. La peor derrota de la historia brasileña.',
+   2014, array['Alemania','Brasil'], array['Mundial','Mineirazo','semifinal'], '😱', 7),
 
-drop policy if exists "notas_delete_own" on public.notas;
-create policy "notas_delete_own" on public.notas
-  for delete using (auth.uid() = user_id);
+  ('leicester-campeon-premier-2016',
+   'Leicester campeón de la Premier League 2015/16',
+   'Leicester Premier League Champion 2015/16',
+   'Leicester, con cuota 5000-1, gana la Premier con Ranieri, Vardy y Mahrez. El mayor cuento de hadas del fútbol moderno.',
+   2016, array['Leicester City'], array['Premier','underdog','Ranieri','Vardy'], '🦊', 8),
 
+  ('argentina-mundial-2022',
+   'Argentina campeón del Mundo 2022',
+   'Argentina World Champion 2022',
+   'Qatar 2022. Argentina vence a Francia 3-3 (4-2 en penales) en la mejor final de la historia. Messi levanta la copa que le faltaba.',
+   2022, array['Argentina','Francia'], array['Mundial','Messi','Mbappé','final'], '🐐', 9),
 
--- ── Realtime ─────────────────────────────────────────────────
--- Ignorá el error si messages ya estaba en la publicación
-alter publication supabase_realtime add table public.messages;
+  ('espana-mundial-2010',
+   'España campeona del Mundo 2010',
+   'Spain World Champion 2010',
+   'Sudáfrica 2010. Iniesta marca en el minuto 116 ante Países Bajos y España conquista su primer Mundial con el tiki-taka.',
+   2010, array['España','Países Bajos'], array['Mundial','Iniesta','tiki-taka','final'], '🇪🇸', 10)
+on conflict (slug) do nothing;
+
+-- Variables por momento (3-4 cada uno)
+do $$
+declare
+  m_id uuid;
+begin
+  -- Remontada Barcelona-PSG
+  select id into m_id from public.momentos where slug = 'remontada-barcelona-psg-2017';
+  insert into public.variables (momento_id, texto, texto_en, tipo) values
+    (m_id, '¿Y si el árbitro no pita el penal de Suárez?', 'What if the ref doesn''t call Suárez''s penalty?', 'decision'),
+    (m_id, '¿Y si Cavani mete el 6-2 y elimina al Barça?', 'What if Cavani scores 6-2 and knocks out Barça?', 'gol'),
+    (m_id, '¿Y si Messi está lesionado?', 'What if Messi is injured?', 'lesion'),
+    (m_id, '¿Y si Sergi Roberto falla el gol del 95''?', 'What if Sergi Roberto misses the 95th-minute goal?', 'gol');
+
+  -- Maracanazo
+  select id into m_id from public.momentos where slug = 'maracanazo-1950';
+  insert into public.variables (momento_id, texto, texto_en, tipo) values
+    (m_id, '¿Y si Barbosa ataja el gol de Ghiggia?', 'What if Barbosa saves Ghiggia''s goal?', 'gol'),
+    (m_id, '¿Y si Brasil juega con Zizinho al 100%?', 'What if Brazil plays with a fit Zizinho?', 'lesion'),
+    (m_id, '¿Y si el partido se juega en Uruguay?', 'What if the match is played in Uruguay?', 'decision');
+
+  -- Mano de Dios
+  select id into m_id from public.momentos where slug = 'mano-de-dios-1986';
+  insert into public.variables (momento_id, texto, texto_en, tipo) values
+    (m_id, '¿Y si el árbitro anula la Mano de Dios?', 'What if the ref disallows the Hand of God?', 'decision'),
+    (m_id, '¿Y si Maradona es expulsado antes?', 'What if Maradona is sent off earlier?', 'expulsion'),
+    (m_id, '¿Y si Inglaterra empata al final?', 'What if England equalizes late?', 'gol'),
+    (m_id, '¿Y si el VAR existiera en 1986?', 'What if VAR existed in 1986?', 'decision');
+
+  -- Final Champions 2018
+  select id into m_id from public.momentos where slug = 'remontada-champions-2018';
+  insert into public.variables (momento_id, texto, texto_en, tipo) values
+    (m_id, '¿Y si Karius no comete errores?', 'What if Karius doesn''t make blunders?', 'decision'),
+    (m_id, '¿Y si Salah no se lesiona por Ramos?', 'What if Salah isn''t injured by Ramos?', 'lesion'),
+    (m_id, '¿Y si Bale no entra desde el banquillo?', 'What if Bale doesn''t come off the bench?', 'decision');
+
+  -- Islandia-Inglaterra
+  select id into m_id from public.momentos where slug = 'islandia-inglaterra-euro-2016';
+  insert into public.variables (momento_id, texto, texto_en, tipo) values
+    (m_id, '¿Y si Rooney no falla ocasiones claras?', 'What if Rooney converts his chances?', 'gol'),
+    (m_id, '¿Y si Hodgson pone a Vardy de titular?', 'What if Hodgson starts Vardy?', 'decision'),
+    (m_id, '¿Y si Islandia recibe una expulsión temprana?', 'What if Iceland gets an early red card?', 'expulsion');
+
+  -- Grecia 2004
+  select id into m_id from public.momentos where slug = 'grecia-campeon-euro-2004';
+  insert into public.variables (momento_id, texto, texto_en, tipo) values
+    (m_id, '¿Y si Portugal contrata a Rehhagel?', 'What if Portugal hires Rehhagel?', 'fichaje'),
+    (m_id, '¿Y si Charisteas no marca en la final?', 'What if Charisteas doesn''t score in the final?', 'gol'),
+    (m_id, '¿Y si Figo se retira antes de la Euro?', 'What if Figo retires before the Euro?', 'decision');
+
+  -- Alemania 7-1 Brasil
+  select id into m_id from public.momentos where slug = 'alemania-brasil-7-1-2014';
+  insert into public.variables (momento_id, texto, texto_en, tipo) values
+    (m_id, '¿Y si Neymar no se rompe la vértebra?', 'What if Neymar doesn''t break his vertebra?', 'lesion'),
+    (m_id, '¿Y si Thiago Silva no está suspendido?', 'What if Thiago Silva isn''t suspended?', 'expulsion'),
+    (m_id, '¿Y si Julio César ataja el primer gol?', 'What if Julio César saves the first goal?', 'gol'),
+    (m_id, '¿Y si Scolari cambia de esquema al 3-0?', 'What if Scolari switches formation at 3-0?', 'decision');
+
+  -- Leicester 2016
+  select id into m_id from public.momentos where slug = 'leicester-campeon-premier-2016';
+  insert into public.variables (momento_id, texto, texto_en, tipo) values
+    (m_id, '¿Y si Vardy no encadena 11 partidos anotando?', 'What if Vardy doesn''t score in 11 straight games?', 'gol'),
+    (m_id, '¿Y si Mahrez ficha por Arsenal en enero?', 'What if Mahrez signs for Arsenal in January?', 'fichaje'),
+    (m_id, '¿Y si Ranieri es despedido en noviembre?', 'What if Ranieri is fired in November?', 'decision');
+
+  -- Argentina 2022
+  select id into m_id from public.momentos where slug = 'argentina-mundial-2022';
+  insert into public.variables (momento_id, texto, texto_en, tipo) values
+    (m_id, '¿Y si Arabia Saudita no gana en fase de grupos?', 'What if Saudi Arabia doesn''t win in the group stage?', 'gol'),
+    (m_id, '¿Y si Mbappé mete el hat-trick del triunfo?', 'What if Mbappé scores a winning hat-trick?', 'gol'),
+    (m_id, '¿Y si Emiliano Martínez no ataja a Kolo Muani?', 'What if Emiliano Martínez doesn''t save Kolo Muani?', 'decision'),
+    (m_id, '¿Y si Di María está lesionado para la final?', 'What if Di María is injured for the final?', 'lesion');
+
+  -- España 2010
+  select id into m_id from public.momentos where slug = 'espana-mundial-2010';
+  insert into public.variables (momento_id, texto, texto_en, tipo) values
+    (m_id, '¿Y si De Jong es expulsado por la patada a Xabi Alonso?', 'What if De Jong is sent off for the kick on Xabi Alonso?', 'expulsion'),
+    (m_id, '¿Y si Robben marca el mano a mano ante Casillas?', 'What if Robben scores one-on-one against Casillas?', 'gol'),
+    (m_id, '¿Y si Iniesta no marca en el minuto 116?', 'What if Iniesta doesn''t score in the 116th minute?', 'gol');
+end $$;

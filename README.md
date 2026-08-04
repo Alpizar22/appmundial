@@ -1,16 +1,27 @@
-# React + Vite
+# whatif.lat
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Viral generator of alternate football history. Type a "what if…?" scenario and Gemini Flash writes the story. Free, no signup required.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19 + Vite + React Router v7
+- Supabase (optional auth + story storage)
+- Google Gemini 2.5 Flash (free tier) via Vercel serverless function
+- PWA (vite-plugin-pwa + Workbox)
 
-## React Compiler
+## Dev
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm run dev       # Vite dev server
+npm run build     # Production build
+npm run lint      # ESLint
+npm run preview   # Preview production build
+```
 
-## Expanding the ESLint configuration
+## Environment
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+GEMINI_API_KEY          # server-side only
+```

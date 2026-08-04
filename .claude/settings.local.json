@@ -10,7 +10,16 @@
       "Bash(node scripts/gen-icons.mjs)",
       "Bash(npm info:*)",
       "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\);const v=JSON.parse\\(d\\);console.log\\(v.slice\\(-10\\).join\\('\\\\n'\\)\\)\")",
-      "Bash(node -e ':*)"
+      "Bash(node -e ':*)",
+      "Bash(git add *)",
+      "Bash(git push *)",
+      "Bash(awk -F'\"' '{print $4}')",
+      "Bash(awk '!seen[$0]++')",
+      "Bash(rm -f src/pages/CollectionPage.jsx src/pages/DuplicatesPage.jsx src/pages/TradesPage.jsx src/pages/ChatPage.jsx src/pages/PremiumPage.jsx src/pages/ProfilePage.jsx src/pages/NotasPage.jsx src/pages/Dashboard.jsx src/components/TradesMap.jsx src/components/FAQ.jsx src/hooks/useProfile.js src/hooks/useTheme.js src/hooks/useProStatuses.js src/hooks/useUserProfiles.js src/lib/celebrateAlbum.js src/lib/geo.js src/data/jugadores.js src/constants.js api/create-checkout.js api/stripe-webhook.js scripts/build-jugadores.mjs src/App.css supabase/schema.sql)",
+      "Bash(rm -rf supabase/migrations)",
+      "Bash(rmdir *)",
+      "Bash(rm -rf dist)",
+      "Bash(npm uninstall *)"
     ]
   }
 }

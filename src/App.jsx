@@ -1,50 +1,31 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { LangProvider } from './context/LangContext'
-import ProtectedRoute from './components/ProtectedRoute'
-import PWAInstallBanner from './components/PWAInstallBanner'
 import Layout from './components/Layout'
+import HomePage from './pages/HomePage'
+import MomentoPage from './pages/MomentoPage'
+import HistoriaPage from './pages/HistoriaPage'
+import ExplorarPage from './pages/ExplorarPage'
 import AuthPage from './pages/AuthPage'
-import Dashboard from './pages/Dashboard'
-import CollectionPage from './pages/CollectionPage'
-import DuplicatesPage from './pages/DuplicatesPage'
-import TradesPage from './pages/TradesPage'
-import ChatPage from './pages/ChatPage'
-import PremiumPage from './pages/PremiumPage'
-import ProfilePage from './pages/ProfilePage'
-import NotasPage from './pages/NotasPage'
 import VerificadoPage from './pages/VerificadoPage'
 
 export default function App() {
   return (
     <BrowserRouter>
       <LangProvider>
-      <PWAInstallBanner />
-      <AuthProvider>
-        <Routes>
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/verificado" element={<VerificadoPage />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Dashboard />} />
-            <Route path="coleccion" element={<CollectionPage />} />
-            <Route path="duplicados" element={<DuplicatesPage />} />
-            <Route path="intercambios" element={<TradesPage />} />
-            <Route path="chat" element={<ChatPage />} />
-            <Route path="chat/:conversationId" element={<ChatPage />} />
-            <Route path="premium" element={<PremiumPage />} />
-            <Route path="perfil" element={<ProfilePage />} />
-            <Route path="notas" element={<NotasPage />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AuthProvider>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/verificado" element={<VerificadoPage />} />
+            <Route path="/" element={<Layout />}>
+              <Route index element={<HomePage />} />
+              <Route path="momento/:slug" element={<MomentoPage />} />
+              <Route path="historia/:id" element={<HistoriaPage />} />
+              <Route path="explorar" element={<ExplorarPage />} />
+              <Route path="*" element={<HomePage />} />
+            </Route>
+          </Routes>
+        </AuthProvider>
       </LangProvider>
     </BrowserRouter>
   )
