@@ -16,48 +16,65 @@ export default function Orb({ region, mode, onActivate }) {
   useEffect(() => {
     const canvas = canvasRef.current, ctx = canvas.getContext('2d')
     let frame, width, height, scrollTarget = 0, scrollCamera = 0, spin = 0
-    const points = Array.from({ length: 520 }, (_, i) => {
-      const y = 1 - (i / 519) * 2, radius = Math.sqrt(1 - y * y), theta = Math.PI * (3 - Math.sqrt(5)) * i
-      return { x: Math.cos(theta) * radius, y, z: Math.sin(theta) * radius, seed: Math.random(), cluster: i % 5 }
+    const points = Array.from({ length: 560 }, (_, i) => {
+      const y=1-(i/559)*2,r=Math.sqrt(1-y*y),theta=Math.PI*(3-Math.sqrt(5))*i
+      return { x:Math.cos(theta)*r, y, z:Math.sin(theta)*r, seed:Math.random(), cluster:i%5 }
     })
-    const dust = Array.from({ length: 90 }, () => ({ x: Math.random(), y: Math.random(), z: Math.random(), r: Math.random() }))
-    const resize = () => { const box=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);width=box.width;height=box.height;canvas.width=width*dpr;canvas.height=height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0) }
-    const trackScroll = () => { const vh=Math.max(innerHeight,1); scrollTarget=Math.max(0,Math.min(4,(scrollY-vh*.72)/(vh*1.34))) }
-    const lerp = (a,b,t) => a+(b-a)*t
-    const interpolateCamera = (progress) => { const low=Math.floor(progress),high=Math.min(4,low+1),t=progress-low,a=camera[low],b=camera[high];return {zoom:lerp(a.zoom,b.zoom,t),yaw:lerp(a.yaw,b.yaw,t),pitch:lerp(a.pitch,b.pitch,t),x:lerp(a.x,b.x,t),y:lerp(a.y,b.y,t)} }
-    const line = (a,b,alpha,color='#bfc2c8') => { ctx.strokeStyle=`${color}${Math.round(alpha*255).toString(16).padStart(2,'0')}`;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke() }
+    const routes = Array.from({ length: 34 }, (_, i) => ({
+      from:(i*37+11)%points.length, to:(i*83+97)%points.length, bend:((i%7)-3)*.045, speed:.000025+(i%5)*.000006, phase:(i*.173)%1, cluster:i%5,
+    }))
+    const dust=Array.from({length:65},()=>({x:Math.random(),y:Math.random(),z:Math.random(),r:Math.random()}))
+    const resize=()=>{const box=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);width=box.width;height=box.height;canvas.width=width*dpr;canvas.height=height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
+    const trackScroll=()=>{const vh=Math.max(innerHeight,1);scrollTarget=Math.max(0,Math.min(4,(scrollY-vh*.72)/(vh*1.34)))}
+    const lerp=(a,b,t)=>a+(b-a)*t
+    const cameraAt=p=>{const lo=Math.floor(p),hi=Math.min(4,lo+1),t=p-lo,a=camera[lo],b=camera[hi];return{zoom:lerp(a.zoom,b.zoom,t),yaw:lerp(a.yaw,b.yaw,t),pitch:lerp(a.pitch,b.pitch,t),x:lerp(a.x,b.x,t),y:lerp(a.y,b.y,t)}}
+    const rgba=(color,alpha)=>`${color}${Math.round(Math.max(0,Math.min(1,alpha))*255).toString(16).padStart(2,'0')}`
+    const curve=(a,b,bend,alpha,color='#8d9199')=>{const mx=(a.x+b.x)/2+(a.y-b.y)*bend,my=(a.y+b.y)/2+(b.x-a.x)*bend;ctx.strokeStyle=rgba(color,alpha);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(mx,my,b.x,b.y);ctx.stroke();return{mx,my}}
+    const curvePoint=(a,b,bend,t)=>{const cx=(a.x+b.x)/2+(a.y-b.y)*bend,cy=(a.y+b.y)/2+(b.x-a.x)*bend,u=1-t;return{x:u*u*a.x+2*u*t*cx+t*t*b.x,y:u*u*a.y+2*u*t*cy+t*t*b.y}}
 
-    const draw = (time) => {
+    const drawFields=(active,cx,cy,base,time,view)=>{
+      ctx.lineWidth=.45
+      if(active===0){
+        for(let branch=0;branch<7;branch++){ctx.strokeStyle=`rgba(191,194,200,${.025+branch*.004})`;ctx.beginPath();for(let i=0;i<60;i++){const t=i/59,a=t*Math.PI*1.7+branch*.72,r=base*(.12+t*.72),x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r*.54+Math.sin(t*20+time*.0004)*base*.012;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
+      }
+      if(active===1){
+        for(let lane=0;lane<6;lane++){ctx.strokeStyle=`rgba(150,153,160,${.025+lane*.006})`;ctx.beginPath();for(let i=0;i<70;i++){const t=i/69,x=cx-base*.82+t*base*1.64,y=cy+(lane-2.5)*base*.12+Math.sin(t*7+lane+time*.00025)*base*.055;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
+      }
+      if(active===2){
+        for(let ring=0;ring<7;ring++){const wave=((time*.000035+ring/7)%1),alpha=(1-wave)*.07;ctx.strokeStyle=`rgba(191,194,200,${alpha})`;ctx.beginPath();ctx.ellipse(cx,cy,base*(.12+wave*.73),base*(.04+wave*.23),view.yaw*.4,0,Math.PI*2);ctx.stroke()}
+      }
+      if(active===3){
+        ctx.save();ctx.translate(cx,cy);ctx.rotate(view.yaw*.12);for(let row=-5;row<=5;row++){ctx.beginPath();for(let col=-8;col<=8;col++){const x=col*base*.105,y=row*base*.105+Math.sin(col*.7+row+time*.00025)*base*.018;col===-8?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.strokeStyle='rgba(160,164,172,.055)';ctx.stroke()}for(let col=-8;col<=8;col++){ctx.beginPath();for(let row=-5;row<=5;row++){const x=col*base*.105+Math.sin(row*.8)*base*.015,y=row*base*.105;row===-5?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()}ctx.restore()
+      }
+      if(active===4){
+        for(let band=0;band<8;band++){ctx.beginPath();for(let i=0;i<48;i++){const t=i/47,a=t*Math.PI*2,x=cx+Math.cos(a)*base*(.18+band*.075),y=cy+Math.sin(a)*base*(.09+band*.04)+Math.sin(a*5+band+time*.0003)*base*.012;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.strokeStyle=`rgba(174,177,184,${.025+band*.004})`;ctx.stroke()}
+      }
+    }
+
+    const draw=time=>{
       scrollCamera=lerp(scrollCamera,scrollTarget,.035);ctx.clearRect(0,0,width,height)
-      const view=interpolateCamera(scrollCamera),voice=modeRef.current,energy=voice==='listening'?.035:voice==='thinking'?.065:voice==='speaking'?.105:.008
-      spin+=voice==='thinking'?.0045:.00065
-      const signal=voice==='speaking'?Math.sin(time*.018)*.055:Math.sin(time*.002)*energy
-      const base=Math.min(width,height)*.49*view.zoom,cx=width*(.5+view.x),cy=height*(.5+view.y)
-
-      dust.forEach(p=>{const drift=(scrollCamera*.023+p.z*.02);ctx.globalAlpha=.05+p.z*.14;ctx.fillStyle='#bfc2c8';ctx.beginPath();ctx.arc((p.x+drift)%1*width,p.y*height,p.r*1.2,0,7);ctx.fill()});ctx.globalAlpha=1
-      const halo=ctx.createRadialGradient(cx,cy,base*.25,cx,cy,base*1.13);halo.addColorStop(0,'rgba(20,22,27,.4)');halo.addColorStop(.62,'rgba(9,10,13,.22)');halo.addColorStop(.88,'rgba(196,168,130,.035)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
-      ctx.fillStyle='#0b0d11';ctx.globalAlpha=.86;ctx.beginPath();ctx.arc(cx,cy,base*.985,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1
+      const view=cameraAt(scrollCamera),voice=modeRef.current,active=Math.round(scrollCamera),energy=voice==='listening'?.04:voice==='thinking'?.075:voice==='speaking'?.115:.01
+      spin+=voice==='thinking'?.0034:.00055
+      const voiceWave=voice==='speaking'?Math.sin(time*.016)*.045:Math.sin(time*.002)*energy*.35,base=Math.min(width,height)*.49*view.zoom,cx=width*(.5+view.x),cy=height*(.5+view.y)
+      dust.forEach(p=>{ctx.globalAlpha=.025+p.z*.07;ctx.fillStyle='#bfc2c8';ctx.fillRect(((p.x+scrollCamera*.008+p.z*.012)%1)*width,p.y*height,.4+p.r*.55,.4+p.r*.55)});ctx.globalAlpha=1
+      const halo=ctx.createRadialGradient(cx,cy,base*.18,cx,cy,base*1.08);halo.addColorStop(0,'rgba(23,26,32,.34)');halo.addColorStop(.72,'rgba(11,13,17,.18)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
+      ctx.fillStyle='rgba(11,13,17,.9)';ctx.beginPath();ctx.arc(cx,cy,base*.985,0,7);ctx.fill();drawFields(active,cx,cy,base,time,view)
 
       const yaw=view.yaw+spin,pitch=view.pitch
-      const projected=points.map(p=>{
-        let x=p.x*Math.cos(yaw)-p.z*Math.sin(yaw),z=p.x*Math.sin(yaw)+p.z*Math.cos(yaw)
-        const y=p.y*Math.cos(pitch)-z*Math.sin(pitch);z=p.y*Math.sin(pitch)+z*Math.cos(pitch)
-        const regional=1+(p.cluster===regionRef.current?energy*2.2:energy*.25)*Math.sin(time*.004+p.seed*30)
-        const scale=(1+signal*(.3+p.seed))*regional
-        return {x:cx+x*base*scale,y:cy+y*base*scale,z,seed:p.seed,cluster:p.cluster}
-      })
-      ctx.lineWidth=.48
-      projected.forEach((a,i)=>{if(a.z<-.25)return;for(let j=i+1;j<Math.min(i+16,projected.length);j++){const b=projected[j],d=Math.hypot(a.x-b.x,a.y-b.y),limit=base*(a.cluster===regionRef.current?.105:.075);if(d<limit&&b.z>-.25){const active=a.cluster===regionRef.current&&b.cluster===regionRef.current;line(a,b,(1-d/limit)*(active?.25:.09)*(a.z+1),active&&a.seed>.82?'#c4a882':'#737780')}}})
+      const projected=points.map(p=>{let x=p.x*Math.cos(yaw)-p.z*Math.sin(yaw),z=p.x*Math.sin(yaw)+p.z*Math.cos(yaw);const y=p.y*Math.cos(pitch)-z*Math.sin(pitch);z=p.y*Math.sin(pitch)+z*Math.cos(pitch);const activation=p.cluster===active?1:0,scale=1+voiceWave*(.35+p.seed)+Math.sin(time*.002+p.seed*40)*energy*activation*.55;return{x:cx+x*base*scale,y:cy+y*base*scale,z,seed:p.seed,cluster:p.cluster}})
 
-      const active=Math.round(scrollCamera)
-      if(active===1){projected.filter(p=>p.cluster===1&&p.z>.15).slice(0,18).forEach((p,i,arr)=>{const b=arr[(i+5)%arr.length];line(p,b,.25,'#d0d2d6')})}
-      if(active===2){for(let i=0;i<3;i++){ctx.strokeStyle=`rgba(191,194,200,${.1-i*.02})`;ctx.beginPath();ctx.ellipse(cx,cy,base*(.36+i*.13),base*(.13+i*.04),view.yaw,0,Math.PI*2);ctx.stroke()}}
-      if(active===3){projected.filter(p=>p.cluster===3&&p.z>.25&&p.seed>.72).forEach(p=>{ctx.strokeStyle='rgba(191,194,200,.16)';ctx.strokeRect(p.x-8,p.y-8,16,16)})}
-      if(active===4){projected.filter(p=>p.cluster===4&&p.z>.15&&p.seed>.6).forEach(p=>{const h=5+p.seed*15;ctx.fillStyle='rgba(122,126,135,.12)';ctx.fillRect(p.x-2,p.y-h,4,h)})}
+      ctx.lineWidth=.42
+      projected.forEach((a,i)=>{if(a.z<-.18)return;for(let j=i+1;j<Math.min(i+20,projected.length);j++){const b=projected[j],d=Math.hypot(a.x-b.x,a.y-b.y),same=a.cluster===b.cluster,limit=base*(same?.115:.068);if(d<limit&&b.z>-.18){const isActive=same&&a.cluster===active,reveal=.55+.45*Math.sin(time*.00045+a.seed*8);curve(a,b,(a.seed-.5)*.12,(1-d/limit)*(isActive?.19:.045)*(a.z+1)*reveal,isActive&&a.seed>.9?'#c4a882':'#858991')}}})
 
-      projected.sort((a,b)=>a.z-b.z).forEach(p=>{const front=Math.max(0,(p.z+1)/2),activeNode=p.cluster===regionRef.current,r=(.35+p.seed*1.25)*(1+front);ctx.fillStyle=p.seed>.965?'#d6a64b':p.seed>.66?'#e8e6e3':'#858991';ctx.globalAlpha=(.1+front*.72)*(activeNode?1:.62);ctx.beginPath();ctx.arc(p.x,p.y,r,0,7);ctx.fill();if(p.seed>.975){ctx.globalAlpha=.08+energy;ctx.beginPath();ctx.arc(p.x,p.y,r*7,0,7);ctx.fill()}});ctx.globalAlpha=1
-      ctx.strokeStyle='rgba(191,194,200,.09)';ctx.lineWidth=.7;ctx.beginPath();ctx.arc(cx,cy,base,0,Math.PI*2);ctx.stroke()
-      if(voice!=='idle')for(let i=0;i<3;i++){const wave=((time*.045+i*34)%100)/100;ctx.strokeStyle=`rgba(214,166,75,${(1-wave)*.13})`;ctx.beginPath();ctx.arc(cx,cy,base*(1+wave*.16),0,7);ctx.stroke()}
+      routes.forEach(route=>{const a=projected[route.from],b=projected[route.to];if(a.z<-.12||b.z<-.12)return;const selected=route.cluster===active,fade=selected?.15:.025,pulse=.55+.45*Math.sin(time*.00055+route.phase*8);curve(a,b,route.bend,fade*pulse,selected&&route.phase>.78?'#c4a882':'#a7aab0');if(selected){const t=(time*route.speed+route.phase)%1,p=curvePoint(a,b,route.bend,t);ctx.fillStyle=voice==='idle'?'#d7d6d2':'#d6a64b';ctx.globalAlpha=.35+energy*3;ctx.beginPath();ctx.arc(p.x,p.y,.75+energy*4,0,7);ctx.fill();ctx.globalAlpha=1}})
+
+      if(active===0){const neural=projected.filter(p=>p.cluster===0&&p.z>.05&&p.seed>.55);neural.forEach((a,i)=>{const b=neural[(i*3+7)%neural.length];if(Math.hypot(a.x-b.x,a.y-b.y)<base*.34)curve(a,b,(a.seed-.5)*.16,.11,'#bfc2c8')})}
+      if(active===3)projected.filter(p=>p.cluster===3&&p.z>.22&&p.seed>.78).forEach(p=>{ctx.strokeStyle='rgba(191,194,200,.11)';ctx.strokeRect(p.x-4-p.seed*4,p.y-4-p.seed*4,8+p.seed*8,8+p.seed*8)})
+      if(active===4)projected.filter(p=>p.cluster===4&&p.z>.12&&p.seed>.72).forEach(p=>{const s=2+p.seed*5;ctx.fillStyle='rgba(160,164,172,.13)';ctx.fillRect(p.x-s/2,p.y-s/2,s,s)})
+
+      projected.sort((a,b)=>a.z-b.z).forEach(p=>{const front=Math.max(0,(p.z+1)/2),selected=p.cluster===active,r=.22+p.seed*.72+front*.35;ctx.fillStyle=p.seed>.987?'#d6a64b':p.seed>.72?'#d6d5d2':'#81858d';ctx.globalAlpha=(.08+front*.55)*(selected?1:.45);ctx.beginPath();ctx.arc(p.x,p.y,r+(selected?energy*3:0),0,7);ctx.fill();if(p.seed>.994){ctx.globalAlpha=.04+energy*.3;ctx.beginPath();ctx.arc(p.x,p.y,r*4,0,7);ctx.fill()}});ctx.globalAlpha=1
+      ctx.strokeStyle='rgba(191,194,200,.055)';ctx.lineWidth=.55;ctx.beginPath();ctx.arc(cx,cy,base,0,7);ctx.stroke()
+      if(voice!=='idle')for(let i=0;i<3;i++){const wave=(time*.00005+i/3)%1;ctx.strokeStyle=`rgba(214,166,75,${(1-wave)*(.055+energy*.5)})`;ctx.beginPath();ctx.arc(cx,cy,base*(.45+wave*.58),0,7);ctx.stroke()}
       frame=requestAnimationFrame(draw)
     }
     resize();trackScroll();addEventListener('resize',resize);addEventListener('scroll',trackScroll,{passive:true});frame=requestAnimationFrame(draw)
