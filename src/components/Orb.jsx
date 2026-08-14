@@ -29,25 +29,25 @@ export default function Orb({ region, mode, onActivate }) {
     const lerp=(a,b,t)=>a+(b-a)*t
     const cameraAt=p=>{const lo=Math.floor(p),hi=Math.min(4,lo+1),t=p-lo,a=camera[lo],b=camera[hi];return{zoom:lerp(a.zoom,b.zoom,t),yaw:lerp(a.yaw,b.yaw,t),pitch:lerp(a.pitch,b.pitch,t),x:lerp(a.x,b.x,t),y:lerp(a.y,b.y,t)}}
     const rgba=(color,alpha)=>`${color}${Math.round(Math.max(0,Math.min(1,alpha))*255).toString(16).padStart(2,'0')}`
-    const curve=(a,b,bend,alpha,color='#8d9199')=>{const mx=(a.x+b.x)/2+(a.y-b.y)*bend,my=(a.y+b.y)/2+(b.x-a.x)*bend;ctx.strokeStyle=rgba(color,alpha);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(mx,my,b.x,b.y);ctx.stroke();return{mx,my}}
+    const curve=(a,b,bend,alpha,color='#8d9199')=>{const mx=(a.x+b.x)/2+(a.y-b.y)*bend,my=(a.y+b.y)/2+(b.x-a.x)*bend;const luminous=alpha>.2||color==='#c4a882';ctx.strokeStyle=rgba(color,alpha);ctx.shadowColor=luminous?rgba(color,Math.min(alpha,.28)):'transparent';ctx.shadowBlur=luminous?3.5:0;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(mx,my,b.x,b.y);ctx.stroke();ctx.shadowBlur=0;return{mx,my}}
     const curvePoint=(a,b,bend,t)=>{const cx=(a.x+b.x)/2+(a.y-b.y)*bend,cy=(a.y+b.y)/2+(b.x-a.x)*bend,u=1-t;return{x:u*u*a.x+2*u*t*cx+t*t*b.x,y:u*u*a.y+2*u*t*cy+t*t*b.y}}
 
     const drawFields=(active,cx,cy,base,time,view)=>{
       ctx.lineWidth=.45
       if(active===0){
-        for(let branch=0;branch<7;branch++){ctx.strokeStyle=`rgba(191,194,200,${.025+branch*.004})`;ctx.beginPath();for(let i=0;i<60;i++){const t=i/59,a=t*Math.PI*1.7+branch*.72,r=base*(.12+t*.72),x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r*.54+Math.sin(t*20+time*.0004)*base*.012;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
+        for(let branch=0;branch<7;branch++){ctx.strokeStyle=`rgba(191,194,200,${.065+branch*.008})`;ctx.beginPath();for(let i=0;i<60;i++){const t=i/59,a=t*Math.PI*1.7+branch*.72,r=base*(.12+t*.72),x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r*.54+Math.sin(t*20+time*.0004)*base*.012;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
       }
       if(active===1){
-        for(let lane=0;lane<6;lane++){ctx.strokeStyle=`rgba(150,153,160,${.025+lane*.006})`;ctx.beginPath();for(let i=0;i<70;i++){const t=i/69,x=cx-base*.82+t*base*1.64,y=cy+(lane-2.5)*base*.12+Math.sin(t*7+lane+time*.00025)*base*.055;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
+        for(let lane=0;lane<6;lane++){ctx.strokeStyle=`rgba(191,194,200,${.055+lane*.011})`;ctx.beginPath();for(let i=0;i<70;i++){const t=i/69,x=cx-base*.82+t*base*1.64,y=cy+(lane-2.5)*base*.12+Math.sin(t*7+lane+time*.00025)*base*.055;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
       }
       if(active===2){
-        for(let ring=0;ring<7;ring++){const wave=((time*.000035+ring/7)%1),alpha=(1-wave)*.07;ctx.strokeStyle=`rgba(191,194,200,${alpha})`;ctx.beginPath();ctx.ellipse(cx,cy,base*(.12+wave*.73),base*(.04+wave*.23),view.yaw*.4,0,Math.PI*2);ctx.stroke()}
+        for(let ring=0;ring<7;ring++){const wave=((time*.000035+ring/7)%1),alpha=(1-wave)*.18;ctx.strokeStyle=`rgba(191,194,200,${alpha})`;ctx.beginPath();ctx.ellipse(cx,cy,base*(.12+wave*.73),base*(.04+wave*.23),view.yaw*.4,0,Math.PI*2);ctx.stroke()}
       }
       if(active===3){
-        ctx.save();ctx.translate(cx,cy);ctx.rotate(view.yaw*.12);for(let row=-5;row<=5;row++){ctx.beginPath();for(let col=-8;col<=8;col++){const x=col*base*.105,y=row*base*.105+Math.sin(col*.7+row+time*.00025)*base*.018;col===-8?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.strokeStyle='rgba(160,164,172,.055)';ctx.stroke()}for(let col=-8;col<=8;col++){ctx.beginPath();for(let row=-5;row<=5;row++){const x=col*base*.105+Math.sin(row*.8)*base*.015,y=row*base*.105;row===-5?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()}ctx.restore()
+        ctx.save();ctx.translate(cx,cy);ctx.rotate(view.yaw*.12);ctx.strokeStyle='rgba(191,194,200,.13)';for(let row=-5;row<=5;row++){ctx.beginPath();for(let col=-8;col<=8;col++){const x=col*base*.105,y=row*base*.105+Math.sin(col*.7+row+time*.00025)*base*.018;col===-8?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()}for(let col=-8;col<=8;col++){ctx.beginPath();for(let row=-5;row<=5;row++){const x=col*base*.105+Math.sin(row*.8)*base*.015,y=row*base*.105;row===-5?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()}ctx.restore()
       }
       if(active===4){
-        for(let band=0;band<8;band++){ctx.beginPath();for(let i=0;i<48;i++){const t=i/47,a=t*Math.PI*2,x=cx+Math.cos(a)*base*(.18+band*.075),y=cy+Math.sin(a)*base*(.09+band*.04)+Math.sin(a*5+band+time*.0003)*base*.012;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.strokeStyle=`rgba(174,177,184,${.025+band*.004})`;ctx.stroke()}
+        for(let band=0;band<8;band++){ctx.beginPath();for(let i=0;i<48;i++){const t=i/47,a=t*Math.PI*2,x=cx+Math.cos(a)*base*(.18+band*.075),y=cy+Math.sin(a)*base*(.09+band*.04)+Math.sin(a*5+band+time*.0003)*base*.012;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.strokeStyle=`rgba(191,194,200,${.06+band*.008})`;ctx.stroke()}
       }
     }
 
@@ -64,11 +64,11 @@ export default function Orb({ region, mode, onActivate }) {
       const projected=points.map(p=>{let x=p.x*Math.cos(yaw)-p.z*Math.sin(yaw),z=p.x*Math.sin(yaw)+p.z*Math.cos(yaw);const y=p.y*Math.cos(pitch)-z*Math.sin(pitch);z=p.y*Math.sin(pitch)+z*Math.cos(pitch);const activation=p.cluster===active?1:0,scale=1+voiceWave*(.35+p.seed)+Math.sin(time*.002+p.seed*40)*energy*activation*.55;return{x:cx+x*base*scale,y:cy+y*base*scale,z,seed:p.seed,cluster:p.cluster}})
 
       ctx.lineWidth=.42
-      projected.forEach((a,i)=>{if(a.z<-.18)return;for(let j=i+1;j<Math.min(i+20,projected.length);j++){const b=projected[j],d=Math.hypot(a.x-b.x,a.y-b.y),same=a.cluster===b.cluster,limit=base*(same?.115:.068);if(d<limit&&b.z>-.18){const isActive=same&&a.cluster===active,reveal=.55+.45*Math.sin(time*.00045+a.seed*8);curve(a,b,(a.seed-.5)*.12,(1-d/limit)*(isActive?.19:.045)*(a.z+1)*reveal,isActive&&a.seed>.9?'#c4a882':'#858991')}}})
+      projected.forEach((a,i)=>{if(a.z<-.18)return;for(let j=i+1;j<Math.min(i+20,projected.length);j++){const b=projected[j],d=Math.hypot(a.x-b.x,a.y-b.y),same=a.cluster===b.cluster,limit=base*(same?.115:.068);if(d<limit&&b.z>-.18){const isActive=same&&a.cluster===active,reveal=.55+.45*Math.sin(time*.00045+a.seed*8);curve(a,b,(a.seed-.5)*.12,(1-d/limit)*(isActive?.38:.105)*(a.z+1)*reveal,isActive&&a.seed>.9?'#c4a882':'#bfc2c8')}}})
 
-      routes.forEach(route=>{const a=projected[route.from],b=projected[route.to];if(a.z<-.12||b.z<-.12)return;const selected=route.cluster===active,fade=selected?.15:.025,pulse=.55+.45*Math.sin(time*.00055+route.phase*8);curve(a,b,route.bend,fade*pulse,selected&&route.phase>.78?'#c4a882':'#a7aab0');if(selected){const t=(time*route.speed+route.phase)%1,p=curvePoint(a,b,route.bend,t);ctx.fillStyle=voice==='idle'?'#d7d6d2':'#d6a64b';ctx.globalAlpha=.35+energy*3;ctx.beginPath();ctx.arc(p.x,p.y,.75+energy*4,0,7);ctx.fill();ctx.globalAlpha=1}})
+      routes.forEach(route=>{const a=projected[route.from],b=projected[route.to];if(a.z<-.12||b.z<-.12)return;const selected=route.cluster===active,fade=selected?.32:.06,pulse=.55+.45*Math.sin(time*.00055+route.phase*8);curve(a,b,route.bend,fade*pulse,selected&&route.phase>.78?'#c4a882':'#bfc2c8');if(selected){const t=(time*route.speed+route.phase)%1,p=curvePoint(a,b,route.bend,t);ctx.fillStyle=voice==='idle'?'#d7d6d2':'#d6a64b';ctx.globalAlpha=.42+energy*3;ctx.beginPath();ctx.arc(p.x,p.y,.75+energy*4,0,7);ctx.fill();ctx.globalAlpha=1}})
 
-      if(active===0){const neural=projected.filter(p=>p.cluster===0&&p.z>.05&&p.seed>.55);neural.forEach((a,i)=>{const b=neural[(i*3+7)%neural.length];if(Math.hypot(a.x-b.x,a.y-b.y)<base*.34)curve(a,b,(a.seed-.5)*.16,.11,'#bfc2c8')})}
+      if(active===0){const neural=projected.filter(p=>p.cluster===0&&p.z>.05&&p.seed>.55);neural.forEach((a,i)=>{const b=neural[(i*3+7)%neural.length];if(Math.hypot(a.x-b.x,a.y-b.y)<base*.34)curve(a,b,(a.seed-.5)*.16,.24,'#bfc2c8')})}
       if(active===3)projected.filter(p=>p.cluster===3&&p.z>.22&&p.seed>.78).forEach(p=>{ctx.strokeStyle='rgba(191,194,200,.11)';ctx.strokeRect(p.x-4-p.seed*4,p.y-4-p.seed*4,8+p.seed*8,8+p.seed*8)})
       if(active===4)projected.filter(p=>p.cluster===4&&p.z>.12&&p.seed>.72).forEach(p=>{const s=2+p.seed*5;ctx.fillStyle='rgba(160,164,172,.13)';ctx.fillRect(p.x-s/2,p.y-s/2,s,s)})
 
