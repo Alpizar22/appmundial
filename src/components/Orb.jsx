@@ -26,6 +26,10 @@ export default function Orb({ region, mode, onActivate }) {
     const routes = Array.from({ length: 34 }, (_, i) => ({
       from:(i*37+11)%points.length, to:(i*83+97)%points.length, bend:((i%7)-3)*.045, speed:.000025+(i%5)*.000006, phase:(i*.173)%1, cluster:i%5,
     }))
+    const activeNodes = Array.from({ length: 25 }, (_, i) => {
+      const cluster=Math.floor(i/5),slot=i%5,theta=cluster*1.17+slot*1.31,y=-.58+slot*.29+Math.sin(cluster+slot)*.08,r=Math.sqrt(Math.max(.12,1-y*y))*.86
+      return { x:Math.cos(theta)*r, y, z:Math.sin(theta)*r, cluster, phase:i*.91, importance:slot===0||slot===3 }
+    })
     const dust=Array.from({length:65},()=>({x:Math.random(),y:Math.random(),z:Math.random(),r:Math.random()}))
     const resize=()=>{const box=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);width=box.width;height=box.height;canvas.width=width*dpr;canvas.height=height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
     const trackScroll=()=>{const vh=Math.max(innerHeight,1);scrollTarget=Math.max(0,Math.min(4,(scrollY-vh*.72)/(vh*1.34)))}
@@ -66,6 +70,7 @@ export default function Orb({ region, mode, onActivate }) {
       const yaw=view.yaw+spin,pitch=view.pitch
       const projected=points.map(p=>{let x=p.x*Math.cos(yaw)-p.z*Math.sin(yaw),z=p.x*Math.sin(yaw)+p.z*Math.cos(yaw);const y=p.y*Math.cos(pitch)-z*Math.sin(pitch);z=p.y*Math.sin(pitch)+z*Math.cos(pitch);const activation=p.cluster===active?1:0,scale=1+voiceWave*(.35+p.seed)+Math.sin(time*.002+p.seed*40)*energy*activation*.55;return{x:cx+x*base*scale,y:cy+y*base*scale,z,seed:p.seed,cluster:p.cluster}})
       const inner=membrane.map(p=>{const phase=time*.00022,fold=Math.sin(p.u*Math.PI*(1.2+active*.16)+phase)*Math.cos(p.v*Math.PI*1.35-active*.4),spread=.46+active*.025;let x=p.u*spread,y=p.v*.52,z=fold*(.18+active*.018)+Math.sin(p.v*4+phase)*.045;if(active===1)x+=Math.sin(p.v*5+phase)*.1;if(active===2)z+=Math.cos(Math.hypot(p.u,p.v)*10-phase*2)*.055;if(active===3){x=Math.round(x*8)/8;y=Math.round(y*8)/8}if(active===4)z+=Math.sin(p.u*9)*Math.sin(p.v*7)*.055;let rx=x*Math.cos(yaw*.72)-z*Math.sin(yaw*.72),rz=x*Math.sin(yaw*.72)+z*Math.cos(yaw*.72),ry=y*Math.cos(pitch)-rz*Math.sin(pitch);rz=y*Math.sin(pitch)+rz*Math.cos(pitch);return{x:cx+rx*base,y:cy+ry*base,z:rz,seed:p.seed,column:p.column,row:p.row}})
+      const principals=activeNodes.filter(p=>p.cluster===active).map(p=>{const motion=time*.00018+p.phase,drift=.035+energy*.25,x=p.x+Math.sin(motion*1.7)*drift,y=p.y+Math.cos(motion*1.25)*drift,z=p.z+Math.sin(motion*.9)*drift;let rx=x*Math.cos(yaw)-z*Math.sin(yaw),rz=x*Math.sin(yaw)+z*Math.cos(yaw),ry=y*Math.cos(pitch)-rz*Math.sin(pitch);rz=y*Math.sin(pitch)+rz*Math.cos(pitch);return{x:cx+rx*base,y:cy+ry*base,z:rz,importance:p.importance,phase:p.phase}})
 
       ctx.lineWidth=.42
       projected.forEach((a,i)=>{if(a.z<-.18)return;for(let j=i+1;j<Math.min(i+20,projected.length);j++){const b=projected[j],d=Math.hypot(a.x-b.x,a.y-b.y),same=a.cluster===b.cluster,limit=base*(same?.115:.068);if(d<limit&&b.z>-.18){const isActive=same&&a.cluster===active,reveal=.55+.45*Math.sin(time*.00045+a.seed*8);curve(a,b,(a.seed-.5)*.12,(1-d/limit)*(isActive?.38:.105)*(a.z+1)*reveal,isActive&&a.seed>.9?'#c4a882':'#bfc2c8')}}})
@@ -75,11 +80,15 @@ export default function Orb({ region, mode, onActivate }) {
 
       routes.forEach(route=>{const a=projected[route.from],b=projected[route.to];if(a.z<-.12||b.z<-.12)return;const selected=route.cluster===active,fade=selected?.32:.06,pulse=.55+.45*Math.sin(time*.00055+route.phase*8);curve(a,b,route.bend,fade*pulse,selected&&route.phase>.78?'#c4a882':'#bfc2c8');if(selected){const t=(time*route.speed+route.phase)%1,p=curvePoint(a,b,route.bend,t);ctx.fillStyle=voice==='idle'?'#d7d6d2':'#d6a64b';ctx.globalAlpha=.42+energy*3;ctx.beginPath();ctx.arc(p.x,p.y,.75+energy*4,0,7);ctx.fill();ctx.globalAlpha=1}})
 
+      ctx.lineWidth=.62
+      principals.forEach((a,i)=>{const b=principals[(i+1)%principals.length],cross=principals[(i+2)%principals.length];if(a.z>-.28&&b.z>-.28){const pulse=.78+.22*Math.sin(time*.0007+a.phase);ctx.strokeStyle=`rgba(216,215,212,${.28*pulse})`;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}if(i%2===0&&a.z>.05&&cross.z>.05){ctx.strokeStyle='rgba(196,168,130,.16)';ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(cross.x,cross.y);ctx.stroke()}})
+
       if(active===0){const neural=projected.filter(p=>p.cluster===0&&p.z>.05&&p.seed>.55);neural.forEach((a,i)=>{const b=neural[(i*3+7)%neural.length];if(Math.hypot(a.x-b.x,a.y-b.y)<base*.34)curve(a,b,(a.seed-.5)*.16,.24,'#bfc2c8')})}
       if(active===3)projected.filter(p=>p.cluster===3&&p.z>.22&&p.seed>.78).forEach(p=>{ctx.strokeStyle='rgba(191,194,200,.11)';ctx.strokeRect(p.x-4-p.seed*4,p.y-4-p.seed*4,8+p.seed*8,8+p.seed*8)})
       if(active===4)projected.filter(p=>p.cluster===4&&p.z>.12&&p.seed>.72).forEach(p=>{const s=2+p.seed*5;ctx.fillStyle='rgba(160,164,172,.13)';ctx.fillRect(p.x-s/2,p.y-s/2,s,s)})
 
       projected.sort((a,b)=>a.z-b.z).forEach(p=>{const front=Math.max(0,(p.z+1)/2),selected=p.cluster===active,r=.22+p.seed*.72+front*.35;ctx.fillStyle=p.seed>.987?'#d6a64b':p.seed>.72?'#d6d5d2':'#81858d';ctx.globalAlpha=(.08+front*.55)*(selected?1:.45);ctx.beginPath();ctx.arc(p.x,p.y,r+(selected?energy*3:0),0,7);ctx.fill();if(p.seed>.994){ctx.globalAlpha=.04+energy*.3;ctx.beginPath();ctx.arc(p.x,p.y,r*4,0,7);ctx.fill()}});ctx.globalAlpha=1
+      principals.sort((a,b)=>a.z-b.z).forEach((p,i)=>{const front=Math.max(.25,(p.z+1)/2),gold=p.importance&&i%2===0,r=(p.importance?2.35:1.7)+front*.65+energy*4;ctx.fillStyle=gold?'#d6a64b':'#e8e6e3';ctx.globalAlpha=.72+front*.25;ctx.shadowColor=gold?'rgba(214,166,75,.5)':'rgba(232,230,227,.32)';ctx.shadowBlur=p.importance?7:4;ctx.beginPath();ctx.arc(p.x,p.y,r,0,7);ctx.fill();ctx.shadowBlur=0;ctx.globalAlpha=1})
       ctx.strokeStyle='rgba(191,194,200,.055)';ctx.lineWidth=.55;ctx.beginPath();ctx.arc(cx,cy,base,0,7);ctx.stroke()
       if(voice!=='idle')for(let i=0;i<3;i++){const wave=(time*.00005+i/3)%1;ctx.strokeStyle=`rgba(214,166,75,${(1-wave)*(.055+energy*.5)})`;ctx.beginPath();ctx.arc(cx,cy,base*(.45+wave*.58),0,7);ctx.stroke()}
       frame=requestAnimationFrame(draw)
