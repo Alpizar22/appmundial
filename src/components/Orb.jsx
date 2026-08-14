@@ -26,13 +26,23 @@ export default function Orb({ region, mode, onActivate }) {
     const routes = Array.from({ length: 34 }, (_, i) => ({
       from:(i*37+11)%points.length, to:(i*83+97)%points.length, bend:((i%7)-3)*.045, speed:.000025+(i%5)*.000006, phase:(i*.173)%1, cluster:i%5,
     }))
-    const activeNodes = Array.from({ length: 25 }, (_, i) => {
-      const cluster=Math.floor(i/5),slot=i%5,theta=cluster*1.17+slot*1.31,y=-.58+slot*.29+Math.sin(cluster+slot)*.08,r=Math.sqrt(Math.max(.12,1-y*y))*.86
+    const activeNodes = Array.from({ length: 30 }, (_, i) => {
+      const cluster=Math.floor(i/6),slot=i%6,theta=cluster*1.17+slot*1.09,y=-.62+slot*.25+Math.sin(cluster+slot)*.07,r=Math.sqrt(Math.max(.12,1-y*y))*.86
       return { x:Math.cos(theta)*r, y, z:Math.sin(theta)*r, cluster, phase:i*.91, importance:slot===0||slot===3 }
     })
-    const principalLinks = Array.from({ length: 38 }, (_, i) => ({
-      from:(i*7+Math.floor(i/5))%activeNodes.length, to:(i*11+6+(i%4)*3)%activeNodes.length, phase:(i*.137)%1, speed:.00018+(i%6)*.000018,
-    })).filter(link=>link.from!==link.to)
+    const linkKeys = new Set()
+    const principalLinks = activeNodes.flatMap((node, from) => activeNodes
+      .map((target, to) => ({ to, distance:Math.hypot(node.x-target.x,node.y-target.y,node.z-target.z) }))
+      .filter(candidate=>candidate.to!==from)
+      .sort((a,b)=>a.distance-b.distance)
+      .slice(0,3)
+      .map((candidate, rank) => {
+        const low=Math.min(from,candidate.to),high=Math.max(from,candidate.to),key=`${low}-${high}`
+        if(linkKeys.has(key))return null
+        linkKeys.add(key)
+        return { from:low, to:high, stable:rank===0, phase:((low*7+high*13)*.071)%1, speed:.00015+((low+high)%6)*.000016 }
+      })
+      .filter(Boolean))
     const dust=Array.from({length:65},()=>({x:Math.random(),y:Math.random(),z:Math.random(),r:Math.random()}))
     const resize=()=>{const box=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);width=box.width;height=box.height;canvas.width=width*dpr;canvas.height=height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
     const trackScroll=()=>{const vh=Math.max(innerHeight,1);scrollTarget=Math.max(0,Math.min(4,(scrollY-vh*.72)/(vh*1.34)))}
@@ -84,7 +94,7 @@ export default function Orb({ region, mode, onActivate }) {
       routes.forEach(route=>{const a=projected[route.from],b=projected[route.to];if(a.z<-.12||b.z<-.12)return;const selected=route.cluster===active,fade=selected?.32:.06,pulse=.55+.45*Math.sin(time*.00055+route.phase*8);curve(a,b,route.bend,fade*pulse,selected&&route.phase>.78?'#c4a882':'#bfc2c8');if(selected){const t=(time*route.speed+route.phase)%1,p=curvePoint(a,b,route.bend,t);ctx.fillStyle=voice==='idle'?'#d7d6d2':'#d6a64b';ctx.globalAlpha=.42+energy*3;ctx.beginPath();ctx.arc(p.x,p.y,.75+energy*4,0,7);ctx.fill();ctx.globalAlpha=1}})
 
       ctx.lineWidth=.58
-      principalLinks.forEach(link=>{const a=principals[link.from],b=principals[link.to];if(a.z<-.2||b.z<-.2)return;const distance=Math.hypot(a.x-b.x,a.y-b.y);if(distance<base*.28||distance>base*1.72)return;const selected=a.selected||b.selected,cycle=(Math.sin(time*link.speed+link.phase*Math.PI*2)+1)/2,fade=Math.max(0,(cycle-.18)/.82),depth=Math.min(1,(a.z+b.z+1.25)/2),alpha=(selected?.27:.105)*fade*depth;ctx.strokeStyle=`rgba(216,215,212,${alpha})`;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()})
+      principalLinks.forEach(link=>{const a=principals[link.from],b=principals[link.to];if(a.z<-.3||b.z<-.3)return;const selected=a.selected||b.selected,cycle=(Math.sin(time*link.speed+link.phase*Math.PI*2)+1)/2,fade=link.stable?.72:.12+cycle*.88,depth=Math.max(.2,Math.min(1,(a.z+b.z+1.4)/2)),alpha=(selected?.3:.13)*fade*depth;ctx.strokeStyle=`rgba(216,215,212,${alpha})`;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()})
 
       if(active===0){const neural=projected.filter(p=>p.cluster===0&&p.z>.05&&p.seed>.55);neural.forEach((a,i)=>{const b=neural[(i*3+7)%neural.length];if(Math.hypot(a.x-b.x,a.y-b.y)<base*.34)curve(a,b,(a.seed-.5)*.16,.24,'#bfc2c8')})}
       if(active===3)projected.filter(p=>p.cluster===3&&p.z>.22&&p.seed>.78).forEach(p=>{ctx.strokeStyle='rgba(191,194,200,.11)';ctx.strokeRect(p.x-4-p.seed*4,p.y-4-p.seed*4,8+p.seed*8,8+p.seed*8)})
