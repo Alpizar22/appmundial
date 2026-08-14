@@ -20,6 +20,9 @@ export default function Orb({ region, mode, onActivate }) {
       const y=1-(i/559)*2,r=Math.sqrt(1-y*y),theta=Math.PI*(3-Math.sqrt(5))*i
       return { x:Math.cos(theta)*r, y, z:Math.sin(theta)*r, seed:Math.random(), cluster:i%5 }
     })
+    const membrane = Array.from({ length: 19 * 15 }, (_, i) => ({
+      u:(i%19)/18*2-1, v:Math.floor(i/19)/14*2-1, seed:Math.random(), column:i%19, row:Math.floor(i/19),
+    }))
     const routes = Array.from({ length: 34 }, (_, i) => ({
       from:(i*37+11)%points.length, to:(i*83+97)%points.length, bend:((i%7)-3)*.045, speed:.000025+(i%5)*.000006, phase:(i*.173)%1, cluster:i%5,
     }))
@@ -35,19 +38,19 @@ export default function Orb({ region, mode, onActivate }) {
     const drawFields=(active,cx,cy,base,time,view)=>{
       ctx.lineWidth=.45
       if(active===0){
-        for(let branch=0;branch<7;branch++){ctx.strokeStyle=`rgba(191,194,200,${.065+branch*.008})`;ctx.beginPath();for(let i=0;i<60;i++){const t=i/59,a=t*Math.PI*1.7+branch*.72,r=base*(.12+t*.72),x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r*.54+Math.sin(t*20+time*.0004)*base*.012;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
+        for(let branch=0;branch<3;branch++){ctx.strokeStyle=`rgba(191,194,200,${.04+branch*.01})`;ctx.beginPath();for(let i=0;i<42;i++){const t=i/41,a=t*Math.PI*1.25+branch*1.8,r=base*(.18+t*.62),x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r*.54;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
       }
       if(active===1){
-        for(let lane=0;lane<6;lane++){ctx.strokeStyle=`rgba(191,194,200,${.055+lane*.011})`;ctx.beginPath();for(let i=0;i<70;i++){const t=i/69,x=cx-base*.82+t*base*1.64,y=cy+(lane-2.5)*base*.12+Math.sin(t*7+lane+time*.00025)*base*.055;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
+        for(let lane=0;lane<3;lane++){ctx.strokeStyle=`rgba(191,194,200,${.045+lane*.012})`;ctx.beginPath();for(let i=0;i<54;i++){const t=i/53,x=cx-base*.74+t*base*1.48,y=cy+(lane-1)*base*.2+Math.sin(t*5+lane+time*.00018)*base*.025;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
       }
       if(active===2){
-        for(let ring=0;ring<7;ring++){const wave=((time*.000035+ring/7)%1),alpha=(1-wave)*.18;ctx.strokeStyle=`rgba(191,194,200,${alpha})`;ctx.beginPath();ctx.ellipse(cx,cy,base*(.12+wave*.73),base*(.04+wave*.23),view.yaw*.4,0,Math.PI*2);ctx.stroke()}
+        for(let ring=0;ring<3;ring++){const wave=((time*.000025+ring/3)%1),alpha=(1-wave)*.11;ctx.strokeStyle=`rgba(191,194,200,${alpha})`;ctx.beginPath();ctx.ellipse(cx,cy,base*(.2+wave*.62),base*(.07+wave*.19),view.yaw*.4,0,Math.PI*2);ctx.stroke()}
       }
       if(active===3){
         ctx.save();ctx.translate(cx,cy);ctx.rotate(view.yaw*.12);ctx.strokeStyle='rgba(191,194,200,.13)';for(let row=-5;row<=5;row++){ctx.beginPath();for(let col=-8;col<=8;col++){const x=col*base*.105,y=row*base*.105+Math.sin(col*.7+row+time*.00025)*base*.018;col===-8?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()}for(let col=-8;col<=8;col++){ctx.beginPath();for(let row=-5;row<=5;row++){const x=col*base*.105+Math.sin(row*.8)*base*.015,y=row*base*.105;row===-5?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()}ctx.restore()
       }
       if(active===4){
-        for(let band=0;band<8;band++){ctx.beginPath();for(let i=0;i<48;i++){const t=i/47,a=t*Math.PI*2,x=cx+Math.cos(a)*base*(.18+band*.075),y=cy+Math.sin(a)*base*(.09+band*.04)+Math.sin(a*5+band+time*.0003)*base*.012;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.strokeStyle=`rgba(191,194,200,${.06+band*.008})`;ctx.stroke()}
+        for(let band=0;band<3;band++){ctx.beginPath();for(let i=0;i<40;i++){const t=i/39,a=t*Math.PI*2,x=cx+Math.cos(a)*base*(.28+band*.16),y=cy+Math.sin(a)*base*(.12+band*.075);i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.strokeStyle=`rgba(191,194,200,${.045+band*.012})`;ctx.stroke()}
       }
     }
 
@@ -57,14 +60,18 @@ export default function Orb({ region, mode, onActivate }) {
       spin+=voice==='thinking'?.0034:.00055
       const voiceWave=voice==='speaking'?Math.sin(time*.016)*.045:Math.sin(time*.002)*energy*.35,base=Math.min(width,height)*.49*view.zoom,cx=width*(.5+view.x),cy=height*(.5+view.y)
       dust.forEach(p=>{ctx.globalAlpha=.025+p.z*.07;ctx.fillStyle='#bfc2c8';ctx.fillRect(((p.x+scrollCamera*.008+p.z*.012)%1)*width,p.y*height,.4+p.r*.55,.4+p.r*.55)});ctx.globalAlpha=1
-      const halo=ctx.createRadialGradient(cx,cy,base*.18,cx,cy,base*1.08);halo.addColorStop(0,'rgba(23,26,32,.34)');halo.addColorStop(.72,'rgba(11,13,17,.18)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
-      ctx.fillStyle='rgba(11,13,17,.9)';ctx.beginPath();ctx.arc(cx,cy,base*.985,0,7);ctx.fill();drawFields(active,cx,cy,base,time,view)
+      const halo=ctx.createRadialGradient(cx,cy,base*.08,cx,cy,base*1.08);halo.addColorStop(0,'rgba(23,26,32,.12)');halo.addColorStop(.62,'rgba(11,13,17,.055)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
+      drawFields(active,cx,cy,base,time,view)
 
       const yaw=view.yaw+spin,pitch=view.pitch
       const projected=points.map(p=>{let x=p.x*Math.cos(yaw)-p.z*Math.sin(yaw),z=p.x*Math.sin(yaw)+p.z*Math.cos(yaw);const y=p.y*Math.cos(pitch)-z*Math.sin(pitch);z=p.y*Math.sin(pitch)+z*Math.cos(pitch);const activation=p.cluster===active?1:0,scale=1+voiceWave*(.35+p.seed)+Math.sin(time*.002+p.seed*40)*energy*activation*.55;return{x:cx+x*base*scale,y:cy+y*base*scale,z,seed:p.seed,cluster:p.cluster}})
+      const inner=membrane.map(p=>{const phase=time*.00022,fold=Math.sin(p.u*Math.PI*(1.2+active*.16)+phase)*Math.cos(p.v*Math.PI*1.35-active*.4),spread=.46+active*.025;let x=p.u*spread,y=p.v*.52,z=fold*(.18+active*.018)+Math.sin(p.v*4+phase)*.045;if(active===1)x+=Math.sin(p.v*5+phase)*.1;if(active===2)z+=Math.cos(Math.hypot(p.u,p.v)*10-phase*2)*.055;if(active===3){x=Math.round(x*8)/8;y=Math.round(y*8)/8}if(active===4)z+=Math.sin(p.u*9)*Math.sin(p.v*7)*.055;let rx=x*Math.cos(yaw*.72)-z*Math.sin(yaw*.72),rz=x*Math.sin(yaw*.72)+z*Math.cos(yaw*.72),ry=y*Math.cos(pitch)-rz*Math.sin(pitch);rz=y*Math.sin(pitch)+rz*Math.cos(pitch);return{x:cx+rx*base,y:cy+ry*base,z:rz,seed:p.seed,column:p.column,row:p.row}})
 
       ctx.lineWidth=.42
       projected.forEach((a,i)=>{if(a.z<-.18)return;for(let j=i+1;j<Math.min(i+20,projected.length);j++){const b=projected[j],d=Math.hypot(a.x-b.x,a.y-b.y),same=a.cluster===b.cluster,limit=base*(same?.115:.068);if(d<limit&&b.z>-.18){const isActive=same&&a.cluster===active,reveal=.55+.45*Math.sin(time*.00045+a.seed*8);curve(a,b,(a.seed-.5)*.12,(1-d/limit)*(isActive?.38:.105)*(a.z+1)*reveal,isActive&&a.seed>.9?'#c4a882':'#bfc2c8')}}})
+
+      ctx.lineWidth=.36
+      inner.forEach((p,i)=>{if(p.z<-.32)return;const right=p.column<18?inner[i+1]:null,down=p.row<14?inner[i+19]:null,alpha=.045+Math.max(0,p.z)*.11;if(right)curve(p,right,0,alpha,'#bfc2c8');if(down&&p.column%2===0)curve(p,down,0,alpha*.7,'#858991');ctx.fillStyle=p.seed>.985?'#c4a882':'#d8d7d4';ctx.globalAlpha=.18+Math.max(0,p.z)*.38;ctx.beginPath();ctx.arc(p.x,p.y,.35+(p.seed>.9?.3:0),0,7);ctx.fill()});ctx.globalAlpha=1
 
       routes.forEach(route=>{const a=projected[route.from],b=projected[route.to];if(a.z<-.12||b.z<-.12)return;const selected=route.cluster===active,fade=selected?.32:.06,pulse=.55+.45*Math.sin(time*.00055+route.phase*8);curve(a,b,route.bend,fade*pulse,selected&&route.phase>.78?'#c4a882':'#bfc2c8');if(selected){const t=(time*route.speed+route.phase)%1,p=curvePoint(a,b,route.bend,t);ctx.fillStyle=voice==='idle'?'#d7d6d2':'#d6a64b';ctx.globalAlpha=.42+energy*3;ctx.beginPath();ctx.arc(p.x,p.y,.75+energy*4,0,7);ctx.fill();ctx.globalAlpha=1}})
 
