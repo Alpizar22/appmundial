@@ -11,11 +11,11 @@ const camera = [
   { zoom:1.92, yaw:3.25, pitch:-.16, x:.2, y:-.14 },
 ]
 const regionProfiles = [
-  { threshold:.38, neighbours:3, wander:.16, signals:7, structure:0 },
-  { threshold:.34, neighbours:2, wander:.11, signals:9, structure:0 },
-  { threshold:.36, neighbours:3, wander:.13, signals:12, structure:0 },
-  { threshold:.33, neighbours:3, wander:.08, signals:6, structure:.3 },
-  { threshold:.35, neighbours:3, wander:.09, signals:7, structure:.18 },
+  { threshold:.38, neighbours:3, wander:.16, structure:0 },
+  { threshold:.34, neighbours:2, wander:.11, structure:0 },
+  { threshold:.36, neighbours:3, wander:.13, structure:0 },
+  { threshold:.33, neighbours:3, wander:.08, structure:.3 },
+  { threshold:.35, neighbours:3, wander:.09, structure:.18 },
 ]
 
 const lerp=(a,b,t)=>a+(b-a)*t
@@ -68,13 +68,13 @@ function projectNodes(model,time,view,base,cx,cy) {
   })
 }
 
-function proximityEdges(nodes,threshold,maxNeighbours,time,activity) {
+function proximityEdges(nodes,threshold,maxNeighbours,time) {
   const cells=new Map(),key=(x,y,z)=>`${Math.floor((x+1)/threshold)}:${Math.floor((y+1)/threshold)}:${Math.floor((z+1)/threshold)}`
   nodes.forEach((node,i)=>{const k=key(node.x3,node.y3,node.z3);if(!cells.has(k))cells.set(k,[]);cells.get(k).push(i)})
   const degrees=new Uint8Array(nodes.length),edges=[]
   nodes.forEach((a,i)=>{const gx=Math.floor((a.x3+1)/threshold),gy=Math.floor((a.y3+1)/threshold),gz=Math.floor((a.z3+1)/threshold),candidates=[]
     for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)for(let dz=-1;dz<=1;dz++){const bucket=cells.get(`${gx+dx}:${gy+dy}:${gz+dz}`);if(!bucket)continue;bucket.forEach(j=>{if(j<=i)return;const b=nodes[j],distance=Math.hypot(a.x3-b.x3,a.y3-b.y3,a.z3-b.z3);if(distance<threshold)candidates.push({j,distance})})}
-    const epoch=Math.floor(time/9),nodeLimit=Math.max(2,maxNeighbours-(hash(i,epoch+33)>.58?1:0));candidates.sort((a,b)=>a.distance*(.76+hash(i+a.j,epoch+17)*.52)-b.distance*(.76+hash(i+b.j,epoch+17)*.52)).slice(0,nodeLimit).forEach(({j,distance})=>{const peerLimit=Math.max(2,maxNeighbours-(hash(j,epoch+33)>.58?1:0));if(degrees[i]>=nodeLimit||degrees[j]>=peerLimit)return;degrees[i]++;degrees[j]++;const pulse=.66+.34*Math.sin(time*(.42+activity*.45)+i*.73+j*.31);edges.push({a:i,b:j,distance,alpha:(1-distance/threshold)*pulse})})
+    const epoch=Math.floor(time/9),nodeLimit=Math.max(2,maxNeighbours-(hash(i,epoch+33)>.58?1:0));candidates.sort((a,b)=>a.distance*(.76+hash(i+a.j,epoch+17)*.52)-b.distance*(.76+hash(i+b.j,epoch+17)*.52)).slice(0,nodeLimit).forEach(({j,distance})=>{const peerLimit=Math.max(2,maxNeighbours-(hash(j,epoch+33)>.58?1:0));if(degrees[i]>=nodeLimit||degrees[j]>=peerLimit)return;degrees[i]++;degrees[j]++;edges.push({a:i,b:j,distance,alpha:1-distance/threshold})})
   })
   return edges
 }
@@ -95,13 +95,10 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,mode,reduce
   const cx=width*(.5+view.x),cy=height*(.5+view.y),t=reduced?.65:time*(1+activity*.55)
   stepSimulation(model,t,profile,region,activity,reduced,pointer,view,base,cx,cy)
   const nodes=projectNodes(model,t,view,base,cx,cy)
-  const edges=smoothEdges(model,proximityEdges(nodes,profile.threshold+.025+(activity*.018),profile.neighbours+(mode==='thinking'?1:0),t,activity))
+  const edges=smoothEdges(model,proximityEdges(nodes,profile.threshold+.025+(activity*.018),profile.neighbours+(mode==='thinking'?1:0),t))
 
   const halo=ctx.createRadialGradient(cx,cy,base*.12,cx,cy,base*1.08);halo.addColorStop(0,'rgba(23,26,32,.08)');halo.addColorStop(.78,'rgba(11,13,17,.025)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
   edges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha);paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(.64+activity*.18)*visibility,SMOKE,.47)})
 
-  const signalCount=profile.signals+(mode==='listening'?4:mode==='speaking'?7:0)
-  for(let s=0;s<signalCount;s++){if(!edges.length)break;const edge=edges[(s*17+region*7)%edges.length],a=nodes[edge.a],b=nodes[edge.b],f=frac(t*(.075+activity*.08)+s*.173),x=lerp(a.x,b.x,f),y=lerp(a.y,b.y,f),z=lerp(a.z,b.z,f),depth=Math.max(.2,(z+1)/2);ctx.fillStyle=rgba(s%5===0?GOLD:PEARL,.4+depth*.42);ctx.beginPath();ctx.arc(x,y,.65+depth*1.1+activity*.45,0,Math.PI*2);ctx.fill();if(region===2||mode==='listening'){ctx.strokeStyle=rgba(s%5===0?GOLD:PEARL,(1-f)*.07);ctx.lineWidth=.45;ctx.beginPath();ctx.arc(x,y,3+f*13,0,Math.PI*2);ctx.stroke()}}
-
-  nodes.sort((a,b)=>a.z-b.z).forEach((node,i)=>{const depth=(node.z+1)/2,pulse=1+.12*Math.sin(t*1.15+node.phase),important=node.principal,r=(important?1.68:Math.max(.42,.54+depth*.8))*pulse*(width<700?.86:1);ctx.fillStyle=rgba(important&&i%6===region?GOLD:PEARL,((important?.8:.29)+depth*(important?.18:.54))*node.alpha);ctx.beginPath();ctx.arc(node.x,node.y,r+(activity*(important?.7:.12)),0,Math.PI*2);ctx.fill()})
+  nodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,important=node.principal,r=(important?1.68:Math.max(.42,.54+depth*.8))*(width<700?.86:1);ctx.fillStyle=rgba(important&&node.index%6===region?GOLD:PEARL,((important?.8:.29)+depth*(important?.18:.54))*node.alpha);ctx.beginPath();ctx.arc(node.x,node.y,r+(activity*(important?.7:.12)),0,Math.PI*2);ctx.fill()})
 }
