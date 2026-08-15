@@ -104,18 +104,37 @@ function smoothEdges(model,targets) {
 
 function paintLine(ctx,a,b,alpha,color=PEARL,width=.55){if(a.z<-.58&&b.z<-.58)return;const raw=Math.max(0,Math.min(1,((a.z+b.z)*.5+1)/2)),depth=.025+.975*raw**1.7;ctx.strokeStyle=rgba(color,alpha*depth);ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
 
+function paintWhatsappRoute(ctx,hub,node,weight,width=.8) {
+  const depth=Math.max(.08,Math.min(1,((hub.z+node.z)*.5+1)/2))
+  const gradient=ctx.createLinearGradient(hub.x,hub.y,node.x,node.y)
+  gradient.addColorStop(0,rgba(GOLD,.82*weight*depth))
+  gradient.addColorStop(.42,rgba('#c4a882',.5*weight*depth))
+  gradient.addColorStop(1,rgba(PEARL,.2*weight*depth))
+  ctx.strokeStyle=gradient;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(hub.x,hub.y);ctx.lineTo(node.x,node.y);ctx.stroke()
+}
+
 function paintWhatsappWorld(ctx,nodes,model,weight,time) {
   const hub=nodes.find(node=>node.index===model.communicationIndex)
   if(!hub)return
-  const depth=Math.max(.22,(hub.z+1)/2),strength=weight*depth*hub.alpha
+  const depth=Math.max(.3,(hub.z+1)/2),strength=weight*depth*hub.alpha
   const byDistance=nodes.filter(node=>node.index!==hub.index).map(node=>({node,distance:Math.hypot(node.x3-hub.x3,node.y3-hub.y3,node.z3-hub.z3)})).sort((a,b)=>a.distance-b.distance)
-  const participants=byDistance.slice(0,16).map(item=>item.node),relays=byDistance.filter(item=>item.distance>.65).slice(0,4).map(item=>item.node)
-  participants.forEach((node,index)=>{paintLine(ctx,hub,node,(index<8?.38:.22)*weight,node.importance>.55?GOLD:PEARL,index<8?.72:.52);const participantDepth=Math.max(.1,(node.z+1)/2);ctx.fillStyle=rgba(index%5===0?GOLD:PEARL,(.25+participantDepth*.42)*weight*node.alpha);ctx.beginPath();ctx.arc(node.x,node.y,1.5+node.importance*1.7,0,Math.PI*2);ctx.fill();if(index>0&&index%2===0)paintLine(ctx,node,participants[index-1],.13*weight,PEARL,.4)})
-  relays.forEach(node=>paintLine(ctx,hub,node,.2*weight,GOLD,.58))
-  const field=ctx.createRadialGradient(hub.x,hub.y,2,hub.x,hub.y,82);field.addColorStop(0,rgba(GOLD,.2*strength));field.addColorStop(.35,rgba(GOLD,.055*strength));field.addColorStop(1,'transparent');ctx.fillStyle=field;ctx.beginPath();ctx.arc(hub.x,hub.y,82,0,Math.PI*2);ctx.fill()
-  for(let ring=0;ring<7;ring++){const phase=frac(time*.052+ring/7),radius=17+phase*72;ctx.strokeStyle=rgba(ring%3===0?GOLD:PEARL,Math.sin(phase*Math.PI)*.2*strength);ctx.lineWidth=ring%3===0?.7:.45;ctx.beginPath();ctx.arc(hub.x,hub.y,radius,0,Math.PI*2);ctx.stroke()}
-  for(let packet=0;packet<13;packet++){const routes=packet<9?participants:relays,node=routes[(packet*5)%routes.length],phase=frac(time*(.082+(packet%4)*.009)+packet*.113),progress=packet%2?1-phase:phase,envelope=Math.sin(phase*Math.PI)**1.3,x=lerp(hub.x,node.x,progress),y=lerp(hub.y,node.y,progress),z=lerp(hub.z,node.z,progress),packetDepth=.06+.94*Math.max(0,(z+1)/2)**1.6;ctx.fillStyle=rgba(packet%4===0?GOLD:PEARL,envelope*packetDepth*strength);ctx.beginPath();ctx.arc(x,y,1+packetDepth*.85,0,Math.PI*2);ctx.fill()}
-  ctx.fillStyle=rgba('#0b0d11',.92*strength);ctx.beginPath();ctx.arc(hub.x,hub.y,19,0,Math.PI*2);ctx.fill();ctx.strokeStyle=rgba(GOLD,.92*strength);ctx.lineWidth=1.3;ctx.beginPath();ctx.arc(hub.x,hub.y,18,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=rgba(PEARL,.78*strength);ctx.lineWidth=1.15;ctx.beginPath();ctx.arc(hub.x,hub.y,11.5,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(hub.x-6.5,hub.y+9);ctx.lineTo(hub.x-9,hub.y+14);ctx.lineTo(hub.x-3,hub.y+11.5);ctx.stroke();ctx.beginPath();ctx.arc(hub.x-1,hub.y-1,4.8,-.75,2.15);ctx.stroke();ctx.beginPath();ctx.moveTo(hub.x+2.2,hub.y+2.8);ctx.lineTo(hub.x+5.8,hub.y+6.2);ctx.stroke()
+  const participants=byDistance.slice(0,30).map(item=>item.node)
+  const secondary=byDistance.filter(({node,distance})=>distance>.38&&distance<1.18&&node.z>-.5).filter((_,index)=>index%4===0).slice(0,6).map(item=>item.node)
+
+  // Raise the regional density floor while retaining the model's clustered distribution.
+  nodes.forEach(node=>{const nodeDepth=Math.max(.03,(node.z+1)/2),hubDistance=Math.hypot(node.x-hub.x,node.y-hub.y),warmth=Math.max(0,1-hubDistance/230);ctx.fillStyle=rgba(warmth>.58?GOLD:PEARL,(.09+nodeDepth**1.75*.56)*weight*node.alpha);ctx.beginPath();ctx.arc(node.x,node.y,(.38+node.importance*1.18)*(.38+nodeDepth*.88),0,Math.PI*2);ctx.fill()})
+  participants.forEach((node,index)=>{paintLine(ctx,node,participants[(index*7+5)%participants.length],.12*weight,PEARL,.42);if(index%3===0)paintLine(ctx,node,participants[(index+1)%participants.length],.17*weight,PEARL,.46)})
+  secondary.forEach((node,index)=>{paintWhatsappRoute(ctx,hub,node,weight,index<3?1.25:1);const nodeDepth=Math.max(.12,(node.z+1)/2);ctx.strokeStyle=rgba(index<3?GOLD:PEARL,(.48+nodeDepth*.28)*weight);ctx.lineWidth=.85;ctx.beginPath();ctx.arc(node.x,node.y,5.5+node.importance*2.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle=rgba(index<3?GOLD:PEARL,.68*nodeDepth*weight);ctx.beginPath();ctx.arc(node.x,node.y,1.7+node.importance,0,Math.PI*2);ctx.fill()})
+
+  const field=ctx.createRadialGradient(hub.x,hub.y,2,hub.x,hub.y,150);field.addColorStop(0,rgba(GOLD,.3*strength));field.addColorStop(.24,rgba(GOLD,.105*strength));field.addColorStop(.62,rgba('#c4a882',.025*strength));field.addColorStop(1,'transparent');ctx.fillStyle=field;ctx.beginPath();ctx.arc(hub.x,hub.y,150,0,Math.PI*2);ctx.fill()
+  ;[25,39,57,79].forEach((radius,index)=>{const breathe=1+Math.sin(time*.22+index*1.4)*.025;ctx.strokeStyle=rgba(index<2?GOLD:PEARL,(.36-index*.055)*strength);ctx.lineWidth=index===0?1.15:.62;ctx.beginPath();ctx.arc(hub.x,hub.y,radius*breathe,0,Math.PI*2);ctx.stroke()})
+
+  secondary.slice(0,4).forEach((node,index)=>{const dx=node.x-hub.x,dy=node.y-hub.y,normal=Math.hypot(dx,dy)||1,bend=(index%2?1:-1)*(14+index*3),mx=(hub.x+node.x)/2-dy/normal*bend,my=(hub.y+node.y)/2+dx/normal*bend;ctx.strokeStyle=rgba(index<2?GOLD:PEARL,(.22-index*.025)*strength);ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(hub.x,hub.y);ctx.quadraticCurveTo(mx,my,node.x,node.y);ctx.stroke();for(let wave=1;wave<3;wave++){ctx.strokeStyle=rgba(PEARL,(.11-wave*.025)*strength);ctx.beginPath();ctx.moveTo(hub.x,hub.y);ctx.quadraticCurveTo(mx-dy/normal*wave*7,my+dx/normal*wave*7,node.x,node.y);ctx.stroke()}})
+
+  const routes=[...participants.slice(0,12),...secondary]
+  for(let packet=0;packet<18;packet++){const node=routes[(packet*7)%routes.length],phase=frac(time*(.078+(packet%5)*.008)+packet*.113),progress=packet%2?1-phase:phase,envelope=Math.sin(phase*Math.PI)**1.3,x=lerp(hub.x,node.x,progress),y=lerp(hub.y,node.y,progress),z=lerp(hub.z,node.z,progress),packetDepth=.05+.95*Math.max(0,(z+1)/2)**1.7;ctx.fillStyle=rgba(packet%3===0?GOLD:PEARL,envelope*packetDepth*strength);ctx.beginPath();ctx.arc(x,y,.85+packetDepth*1.15,0,Math.PI*2);ctx.fill()}
+
+  ctx.fillStyle=rgba('#090a0d',.96*strength);ctx.beginPath();ctx.arc(hub.x,hub.y,22,0,Math.PI*2);ctx.fill();ctx.strokeStyle=rgba(GOLD,.98*strength);ctx.lineWidth=1.45;ctx.beginPath();ctx.arc(hub.x,hub.y,21,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=rgba(PEARL,.88*strength);ctx.lineWidth=1.25;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.arc(hub.x,hub.y,12.5,0,Math.PI*2);ctx.moveTo(hub.x-7,hub.y+10);ctx.lineTo(hub.x-10,hub.y+15);ctx.lineTo(hub.x-3.5,hub.y+12);ctx.stroke();ctx.beginPath();ctx.moveTo(hub.x-5,hub.y-5);ctx.bezierCurveTo(hub.x-3,hub.y+1,hub.x+1,hub.y+5,hub.x+6,hub.y+6);ctx.lineTo(hub.x+8,hub.y+3);ctx.lineTo(hub.x+4,hub.y);ctx.lineTo(hub.x+2,hub.y+2);ctx.bezierCurveTo(hub.x,hub.y+1,hub.x-2,hub.y-1,hub.x-3,hub.y-3);ctx.lineTo(hub.x-1,hub.y-5);ctx.closePath();ctx.stroke();ctx.lineCap='butt';ctx.lineJoin='miter'
 }
 
 function paintRegionStructures(ctx,nodes,model,weights,time) {
