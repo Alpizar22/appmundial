@@ -27,21 +27,39 @@ const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return`rgba(${n>>16},${n>
 const cameraAt=p=>{const lo=Math.floor(p),hi=Math.min(4,lo+1),t=p-lo,a=camera[lo],b=camera[hi];return{zoom:lerp(a.zoom,b.zoom,t),yaw:lerp(a.yaw,b.yaw,t),pitch:lerp(a.pitch,b.pitch,t),x:lerp(a.x,b.x,t),y:lerp(a.y,b.y,t)}}
 
 export function createOrbModel(count) {
-  return Array.from({length:count},(_,i)=>{const [x,y,z]=fib(i,count);return{x,y,z,seed:hash(i,4.7),phase:hash(i,9.3)*Math.PI*2,principal:i%9===0||i%13===0}})
+  const nodes=Array.from({length:count},(_,i)=>{const [x,y,z]=fib(i,count);return{x,y,z,vx:(hash(i,2.1)-.5)*.018,vy:(hash(i,3.7)-.5)*.018,vz:(hash(i,6.4)-.5)*.018,seed:hash(i,4.7),phase:hash(i,9.3)*Math.PI*2,principal:i%9===0||i%13===0}})
+  const keys=new Set(),springs=[]
+  nodes.forEach((node,i)=>nodes.map((other,j)=>({j,d:Math.hypot(node.x-other.x,node.y-other.y,node.z-other.z)})).filter(({j})=>j!==i).sort((a,b)=>a.d-b.d).slice(0,2).forEach(({j,d})=>{const a=Math.min(i,j),b=Math.max(i,j),key=`${a}:${b}`;if(keys.has(key))return;keys.add(key);springs.push({a,b,rest:d})}))
+  nodes.springs=springs
+  nodes.lastTime=0
+  return nodes
 }
 
-function transformNodes(model,time,profile,region,voiceEnergy,view,base,cx,cy) {
+function spatialPairs(nodes,threshold,maxNeighbours=6) {
+  const cells=new Map(),cell=threshold,key=(x,y,z)=>`${Math.floor((x+1.3)/cell)}:${Math.floor((y+1.3)/cell)}:${Math.floor((z+1.3)/cell)}`
+  nodes.forEach((node,i)=>{const k=key(node.x,node.y,node.z);if(!cells.has(k))cells.set(k,[]);cells.get(k).push(i)})
+  const degree=new Uint8Array(nodes.length),pairs=[]
+  nodes.forEach((a,i)=>{const gx=Math.floor((a.x+1.3)/cell),gy=Math.floor((a.y+1.3)/cell),gz=Math.floor((a.z+1.3)/cell),near=[];for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)for(let dz=-1;dz<=1;dz++){const bucket=cells.get(`${gx+dx}:${gy+dy}:${gz+dz}`);if(!bucket)continue;bucket.forEach(j=>{if(j<=i)return;const b=nodes[j],distance=Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);if(distance<threshold)near.push({j,distance})})}near.sort((a,b)=>a.distance-b.distance).forEach(({j,distance})=>{if(degree[i]>=maxNeighbours||degree[j]>=maxNeighbours)return;degree[i]++;degree[j]++;pairs.push({a:i,b:j,distance})})})
+  return pairs
+}
+
+function stepSimulation(model,time,profile,region,activity,reduced) {
+  if(reduced)return
+  const dt=model.lastTime?Math.min(.032,Math.max(.008,time-model.lastTime)):.016
+  model.lastTime=time
+  const ax=new Float32Array(model.length),ay=new Float32Array(model.length),az=new Float32Array(model.length)
+  const dynamic=spatialPairs(model,profile.threshold+.08,6)
+  const applySpring=(edge,strength,rest)=>{const a=model[edge.a],b=model[edge.b],dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,d=Math.hypot(dx,dy,dz)||.001,force=(d-rest)*strength/d,fx=dx*force,fy=dy*force,fz=dz*force;ax[edge.a]+=fx;ay[edge.a]+=fy;az[edge.a]+=fz;ax[edge.b]-=fx;ay[edge.b]-=fy;az[edge.b]-=fz}
+  model.springs.forEach(edge=>applySpring(edge,.72+activity*.22,edge.rest))
+  dynamic.forEach(edge=>{applySpring(edge,.13+activity*.08,profile.threshold*.72);if(edge.distance<.27){const a=model[edge.a],b=model[edge.b],d=edge.distance||.001,force=(.27-d)*.32/d,fx=(a.x-b.x)*force,fy=(a.y-b.y)*force,fz=(a.z-b.z)*force;ax[edge.a]+=fx;ay[edge.a]+=fy;az[edge.a]+=fz;ax[edge.b]-=fx;ay[edge.b]-=fy;az[edge.b]-=fz}})
+  model.forEach((node,i)=>{const length=Math.hypot(node.x,node.y,node.z)||1,radial=(1-length)*1.15;ax[i]+=node.x/length*radial;ay[i]+=node.y/length*radial;az[i]+=node.z/length*radial;const drive=(profile.wander*.14)*(1+activity*.8);ax[i]+=(noise(i*.31+9,time*.11)-.5)*drive;ay[i]+=(noise(i*.53+27,time*.095)-.5)*drive;az[i]+=(noise(i*.77+55,time*.12)-.5)*drive;if(region===1)ax[i]+=.006*Math.sin(node.phase);if(region===3){ax[i]+=(Math.round(node.x*4)/4-node.x)*.018;ay[i]+=(Math.round(node.y*4)/4-node.y)*.018}if(region===4){const angle=(i%6)/6*Math.PI*2;ax[i]+=(Math.cos(angle)*.82-node.x)*.012;az[i]+=(Math.sin(angle)*.82-node.z)*.012}const damping=Math.exp(-(2.8-activity*.35)*dt);node.vx=(node.vx+ax[i]*dt)*damping;node.vy=(node.vy+ay[i]*dt)*damping;node.vz=(node.vz+az[i]*dt)*damping;node.x+=node.vx*dt;node.y+=node.vy*dt;node.z+=node.vz*dt})
+}
+
+function projectNodes(model,time,view,base,cx,cy) {
   const sy=Math.sin(view.yaw+time*.018),cyw=Math.cos(view.yaw+time*.018),st=Math.sin(view.pitch),ct=Math.cos(view.pitch)
-  return model.map((node,i)=>{
-    const drift=profile.wander*(1+voiceEnergy*1.8),speed=.055+voiceEnergy*.12
-    let x=node.x+drift*(noise(i*.31+9,time*speed)-.5)*2
-    let y=node.y+drift*(noise(i*.53+27,time*speed*.88)-.5)*2
-    let z=node.z+drift*(noise(i*.77+55,time*speed*1.08)-.5)*2
-    if(region===3&&profile.structure){x=lerp(x,Math.round(x*5)/5,profile.structure);y=lerp(y,Math.round(y*5)/5,profile.structure)}
-    if(region===4){const group=i%6,anchor=(group/6)*Math.PI*2;x+=Math.cos(anchor)*.055;y+=((group%3)-1)*.035;z+=Math.sin(anchor)*.055}
-    const length=Math.hypot(x,y,z)||1;x/=length;y/=length;z/=length
-    const x1=x*cyw+z*sy,z1=-x*sy+z*cyw,y1=y*ct-z1*st,z2=y*st+z1*ct
-    return{...node,x3:x,y3:y,z3:z,x:cx+x1*base,y:cy-y1*base,z:z2}
+  return model.map((node,index)=>{
+    const x1=node.x*cyw+node.z*sy,z1=-node.x*sy+node.z*cyw,y1=node.y*ct-z1*st,z2=node.y*st+z1*ct
+    return{...node,index,x3:node.x,y3:node.y,z3:node.z,x:cx+x1*base,y:cy-y1*base,z:z2}
   })
 }
 
@@ -63,10 +81,12 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,mode,reduce
   const activity=mode==='thinking'?1:mode==='speaking'?.85:mode==='listening'?.55:0
   const signal=mode==='speaking'?Math.sin(time*7.2)*.08:0,base=Math.min(width,height)*.49*view.zoom*(1+signal)
   const cx=width*(.5+view.x),cy=height*(.5+view.y),t=reduced?.65:time*(1+activity*.55)
-  const nodes=transformNodes(model,t,profile,region,activity,view,base,cx,cy)
+  stepSimulation(model,t,profile,region,activity,reduced)
+  const nodes=projectNodes(model,t,view,base,cx,cy)
   const edges=proximityEdges(nodes,profile.threshold+(activity*.018),profile.neighbours+(mode==='thinking'?1:0),t,activity)
 
   const halo=ctx.createRadialGradient(cx,cy,base*.12,cx,cy,base*1.08);halo.addColorStop(0,'rgba(23,26,32,.08)');halo.addColorStop(.78,'rgba(11,13,17,.025)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
+  model.springs.forEach((spring,i)=>paintLine(ctx,nodes[spring.a],nodes[spring.b],.075+.035*Math.sin(t*.23+i*.81),PEARL,.46))
   edges.forEach(edge=>paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.alpha*(.46+activity*.18),SMOKE,.42))
 
   const principals=nodes.map((node,i)=>({node,i})).filter(({node})=>node.principal)
