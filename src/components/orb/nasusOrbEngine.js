@@ -51,7 +51,7 @@ function spatialPairs(nodes,threshold,maxNeighbours=6) {
 
 function hubEdges(nodes,time) {
   const epoch=Math.floor(time/16),keys=new Set(),edges=[]
-  nodes.forEach((node,a)=>{if(!node.hub||node.alpha<.2)return;nodes.map((other,b)=>({b,distance:Math.hypot(node.x-other.x,node.y-other.y,node.z-other.z),score:hash(a+b*3,epoch+81)})).filter(({b,distance})=>b!==a&&distance>.62&&distance<1.72&&nodes[b].alpha>.2).sort((x,y)=>y.score-x.score).slice(0,2).forEach(({b,distance})=>{const low=Math.min(a,b),high=Math.max(a,b),key=`${low}:${high}`;if(keys.has(key))return;keys.add(key);edges.push({a:low,b:high,distance,alpha:.16+hash(low,high+epoch)*.12})})})
+  nodes.forEach((node,a)=>{if(!node.hub||node.alpha<.2)return;const limit=hash(a,epoch+93)>.72?2:1;nodes.map((other,b)=>({b,distance:Math.hypot(node.x-other.x,node.y-other.y,node.z-other.z),score:hash(a+b*3,epoch+81)})).filter(({b,distance})=>b!==a&&distance>.62&&distance<1.48&&nodes[b].alpha>.2).sort((x,y)=>y.score-x.score).slice(0,limit).forEach(({b,distance})=>{const low=Math.min(a,b),high=Math.max(a,b),key=`${low}:${high}`;if(keys.has(key))return;keys.add(key);edges.push({a:low,b:high,distance,alpha:.16+hash(low,high+epoch)*.12})})})
   return edges
 }
 
@@ -110,7 +110,7 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,mode,reduce
   const edges=smoothEdges(model,[...localEdges,...hubEdges(model,t)])
 
   const halo=ctx.createRadialGradient(cx,cy,base*.12,cx,cy,base*1.08);halo.addColorStop(0,'rgba(23,26,32,.08)');halo.addColorStop(.78,'rgba(11,13,17,.025)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
-  edges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.9:.7+activity*.18)*visibility,long?PEARL:SMOKE,long?.54:.49)})
+  edges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility,long?PEARL:SMOKE,long?.54:.49)})
 
   const pulseWindow=.18,pulses=[]
   edges.forEach(edge=>{const cycle=frac(t/edge.pulsePeriod+edge.pulseOffset);if(cycle>=pulseWindow||edge.opacity<.08)return;const a=nodes[edge.a],b=nodes[edge.b],progress=cycle/pulseWindow,envelope=Math.sin(progress*Math.PI)**1.5,importance=Math.max(a.importance,b.importance),long=edge.distance>.6;pulses.push({a,b,progress,envelope,importance,long,score:importance+(long?.45:0)})})
