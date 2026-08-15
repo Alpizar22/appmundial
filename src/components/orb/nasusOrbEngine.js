@@ -18,6 +18,7 @@ const regionProfiles = [
   { threshold:.33, neighbours:3, wander:.08, structure:.3 },
   { threshold:.35, neighbours:3, wander:.09, structure:.18 },
 ]
+const GLOBAL_PROFILE = { threshold:.35, neighbours:3, wander:.13, structure:0, communication:0 }
 
 const lerp=(a,b,t)=>a+(b-a)*t
 const frac=x=>x-Math.floor(x)
@@ -25,9 +26,10 @@ const hash=(a,b)=>frac(Math.sin(a*12.9898+b*78.233)*43758.5453)
 const noise=(x,y)=>{const xi=Math.floor(x),yi=Math.floor(y);let fx=x-xi,fy=y-yi;fx=fx*fx*(3-2*fx);fy=fy*fy*(3-2*fy);const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy}
 const fib=(i,n)=>{const y=1-(2*(i+.5))/n,r=Math.sqrt(1-y*y),a=i*Math.PI*(3-Math.sqrt(5));return[r*Math.cos(a),y,r*Math.sin(a)]}
 const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return`rgba(${n>>16},${n>>8&255},${n&255},${Math.max(0,Math.min(1,a))})`}
-const cameraAt=p=>{const lo=Math.floor(p),hi=Math.min(4,lo+1),t=p-lo,a=camera[lo],b=camera[hi];return{zoom:lerp(a.zoom,b.zoom,t),yaw:lerp(a.yaw,b.yaw,t),pitch:lerp(a.pitch,b.pitch,t),x:lerp(a.x,b.x,t),y:lerp(a.y,b.y,t)}}
-const regionMix=p=>{const lo=Math.floor(p),hi=Math.min(4,lo+1),t=p-lo,weights=[0,0,0,0,0];weights[lo]=1-t;weights[hi]+=t;return weights}
-const profileAt=p=>{const lo=Math.floor(p),hi=Math.min(4,lo+1),t=p-lo,a=regionProfiles[lo],b=regionProfiles[hi],weights=regionMix(p);return{threshold:lerp(a.threshold,b.threshold,t),neighbours:Math.round(lerp(a.neighbours,b.neighbours,t)),wander:lerp(a.wander,b.wander,t),structure:lerp(a.structure,b.structure,t),communication:weights[2]}}
+const smoothstep=t=>t*t*(3-2*t)
+const regionalStateAt=p=>{const index=Math.max(0,Math.min(4,Math.round(p))),distance=Math.abs(p-index),focus=1-smoothstep(Math.max(0,Math.min(1,(distance-.12)/.38))),weights=[0,0,0,0,0];weights[index]=focus;return{index,focus,weights}}
+const cameraAt=(p,state)=>{const lo=Math.floor(p),hi=Math.min(4,lo+1),t=p-lo,a=camera[lo],b=camera[hi],regional=camera[state.index];return{zoom:lerp(.86,regional.zoom,state.focus),yaw:lerp(a.yaw,b.yaw,t),pitch:lerp(0,regional.pitch,state.focus),x:regional.x*state.focus,y:regional.y*state.focus}}
+const profileAt=state=>{const regional=regionProfiles[state.index],focus=state.focus;return{threshold:lerp(GLOBAL_PROFILE.threshold,regional.threshold,focus),neighbours:Math.round(lerp(GLOBAL_PROFILE.neighbours,regional.neighbours,focus)),wander:lerp(GLOBAL_PROFILE.wander,regional.wander,focus),structure:lerp(GLOBAL_PROFILE.structure,regional.structure,focus),communication:state.index===2?focus:0}}
 
 export function createOrbModel(count) {
   const transientCount=Math.ceil(count/17)
@@ -59,20 +61,19 @@ function hubEdges(nodes,time,automation=0) {
   return edges
 }
 
-function stepSimulation(model,time,profile,region,activity,reduced,pointer,view,base,cx,cy) {
+function stepSimulation(model,time,profile,region,regionFocus,activity,reduced,pointer,view,base,cx,cy) {
   if(reduced)return
   const dt=model.lastTime?Math.min(.032,Math.max(.008,time-model.lastTime)):.016
   model.lastTime=time
   model.frameDt=dt
   const ax=new Float32Array(model.length),ay=new Float32Array(model.length),az=new Float32Array(model.length)
-  const dynamic=spatialPairs(model,profile.threshold+.08,6)
+  const dynamic=spatialPairs(model,GLOBAL_PROFILE.threshold+.08,6)
   const longRange=hubEdges(model,time)
   const applySpring=(edge,strength,rest)=>{const a=model[edge.a],b=model[edge.b],dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,d=Math.hypot(dx,dy,dz)||.001,force=(d-rest)*strength/d,fx=dx*force,fy=dy*force,fz=dz*force;ax[edge.a]+=fx;ay[edge.a]+=fy;az[edge.a]+=fz;ax[edge.b]-=fx;ay[edge.b]-=fy;az[edge.b]-=fz}
   model.springs.forEach(edge=>{const visibility=Math.min(model[edge.a].alpha,model[edge.b].alpha);if(visibility>.15)applySpring(edge,(.5+activity*.18)*visibility,edge.rest)})
   dynamic.forEach(edge=>{const visibility=Math.min(model[edge.a].alpha,model[edge.b].alpha);if(visibility<.12)return;applySpring(edge,(.24+activity*.1)*visibility,profile.threshold*.7);if(edge.distance<.29){const a=model[edge.a],b=model[edge.b],d=edge.distance||.001,force=(.29-d)*.5/d,fx=(a.x-b.x)*force,fy=(a.y-b.y)*force,fz=(a.z-b.z)*force;ax[edge.a]+=fx;ay[edge.a]+=fy;az[edge.a]+=fz;ax[edge.b]-=fx;ay[edge.b]-=fy;az[edge.b]-=fz}})
-  if(profile.communication>.01){const hubIndex=model.communicationIndex,hub=model[hubIndex];model.map((node,index)=>({index,distance:index===hubIndex?Infinity:Math.hypot(hub.x-node.x,hub.y-node.y,hub.z-node.z)})).sort((a,b)=>a.distance-b.distance).slice(0,16).forEach(({index,distance},rank)=>applySpring({a:hubIndex,b:index},(.28-rank*.006)*profile.communication,Math.min(.58,Math.max(.24,distance*.72))))}
   longRange.forEach(edge=>applySpring(edge,.035,.9+hash(edge.a,edge.b)*.28))
-  model.forEach((node,i)=>{if(node.transient){node.age+=dt;if(node.state==='alive'&&node.age>node.life)node.state='dying';if(node.state==='dying'){node.alpha=Math.max(0,node.alpha-dt/4);if(node.alpha===0){node.generation++;node.cluster=Math.floor(hash(i,node.generation+91)*7);const anchor=model.anchors[node.cluster],u=hash(i+node.generation*17,21.3)*Math.PI*2,spread=.28+hash(i+node.generation*23,31.7)*.5;node.x=anchor.x+Math.cos(u)*spread;node.y=anchor.y+(hash(i,node.generation+29)-.5)*spread;node.z=anchor.z+Math.sin(u)*spread;const bornLength=Math.hypot(node.x,node.y,node.z);node.x/=bornLength;node.y/=bornLength;node.z/=bornLength;node.importance=.12+Math.pow(hash(i,node.generation+101),5)*.88;node.hub=node.importance>.64;node.vx=(hash(i,node.generation+41)-.5)*.08;node.vy=(hash(i,node.generation+53)-.5)*.08;node.vz=(hash(i,node.generation+67)-.5)*.08;node.age=0;node.life=34+hash(i,node.generation+79)*18;node.state='born'}}else if(node.state==='born'){node.alpha=Math.min(1,node.alpha+dt/4.5);if(node.alpha===1)node.state='alive'}}let length=Math.hypot(node.x,node.y,node.z)||1,nx=node.x/length,ny=node.y/length,nz=node.z/length;const drive=(profile.wander*.78)*(1+activity*.65),anchor=model.anchors[node.cluster];ax[i]+=(noise(i*.31+9,time*.23)-.5)*drive+(anchor.x-node.x)*anchor.strength;ay[i]+=(noise(i*.53+27,time*.2)-.5)*drive+(anchor.y-node.y)*anchor.strength;az[i]+=(noise(i*.77+55,time*.25)-.5)*drive+(anchor.z-node.z)*anchor.strength;if(region===1)ax[i]+=.012*Math.sin(node.phase);if(region===3){ax[i]+=(Math.round(node.x*4)/4-node.x)*.018;ay[i]+=(Math.round(node.y*4)/4-node.y)*.018}if(region===4){const angle=(i%6)/6*Math.PI*2;ax[i]+=(Math.cos(angle)*.82-node.x)*.014;az[i]+=(Math.sin(angle)*.82-node.z)*.014}if(pointer?.active){const sy=Math.sin(view.yaw+time*WORLD_SPIN),cyw=Math.cos(view.yaw+time*WORLD_SPIN),st=Math.sin(view.pitch),ct=Math.cos(view.pitch),x1=node.x*cyw+node.z*sy,z1=-node.x*sy+node.z*cyw,y1=node.y*ct-z1*st,z2=node.y*st+z1*ct,perspective=1+z2*.055,px=cx+x1*base*perspective,py=cy-y1*base*perspective,dx=px-pointer.x,dy=py-pointer.y,distance=Math.hypot(dx,dy),radius=Math.min(base*.34,180);if(distance<radius&&distance>1){const strength=(1-distance/radius)*.28,fx=dx/distance*strength,fy=dy/distance*strength;ax[i]+=cyw*fx+(-sy*st)*fy;ay[i]+=-ct*fy;az[i]+=sy*fx+(cyw*st)*fy}}const forceNormal=ax[i]*nx+ay[i]*ny+az[i]*nz;ax[i]-=forceNormal*nx;ay[i]-=forceNormal*ny;az[i]-=forceNormal*nz;const velocityNormal=node.vx*nx+node.vy*ny+node.vz*nz;node.vx-=velocityNormal*nx;node.vy-=velocityNormal*ny;node.vz-=velocityNormal*nz;const damping=Math.exp(-(1.05-activity*.12)*dt);node.vx=(node.vx+ax[i]*dt)*damping;node.vy=(node.vy+ay[i]*dt)*damping;node.vz=(node.vz+az[i]*dt)*damping;const speed=Math.hypot(node.vx,node.vy,node.vz),maxSpeed=.14+activity*.025+(pointer?.active?.008:0);if(speed>maxSpeed){const limit=maxSpeed/speed;node.vx*=limit;node.vy*=limit;node.vz*=limit}node.x+=node.vx*dt;node.y+=node.vy*dt;node.z+=node.vz*dt;length=Math.hypot(node.x,node.y,node.z)||1;node.x/=length;node.y/=length;node.z/=length;nx=node.x;ny=node.y;nz=node.z;const transportedNormal=node.vx*nx+node.vy*ny+node.vz*nz;node.vx-=transportedNormal*nx;node.vy-=transportedNormal*ny;node.vz-=transportedNormal*nz})
+  model.forEach((node,i)=>{if(node.transient){node.age+=dt;if(node.state==='alive'&&node.age>node.life)node.state='dying';if(node.state==='dying'){node.alpha=Math.max(0,node.alpha-dt/4);if(node.alpha===0){node.generation++;node.cluster=Math.floor(hash(i,node.generation+91)*7);const anchor=model.anchors[node.cluster],u=hash(i+node.generation*17,21.3)*Math.PI*2,spread=.28+hash(i+node.generation*23,31.7)*.5;node.x=anchor.x+Math.cos(u)*spread;node.y=anchor.y+(hash(i,node.generation+29)-.5)*spread;node.z=anchor.z+Math.sin(u)*spread;const bornLength=Math.hypot(node.x,node.y,node.z);node.x/=bornLength;node.y/=bornLength;node.z/=bornLength;node.importance=.12+Math.pow(hash(i,node.generation+101),5)*.88;node.hub=node.importance>.64;node.vx=(hash(i,node.generation+41)-.5)*.08;node.vy=(hash(i,node.generation+53)-.5)*.08;node.vz=(hash(i,node.generation+67)-.5)*.08;node.age=0;node.life=34+hash(i,node.generation+79)*18;node.state='born'}}else if(node.state==='born'){node.alpha=Math.min(1,node.alpha+dt/4.5);if(node.alpha===1)node.state='alive'}}let length=Math.hypot(node.x,node.y,node.z)||1,nx=node.x/length,ny=node.y/length,nz=node.z/length;const drive=(profile.wander*.78)*(1+activity*.65),anchor=model.anchors[node.cluster];ax[i]+=(noise(i*.31+9,time*.23)-.5)*drive+(anchor.x-node.x)*anchor.strength;ay[i]+=(noise(i*.53+27,time*.2)-.5)*drive+(anchor.y-node.y)*anchor.strength;az[i]+=(noise(i*.77+55,time*.25)-.5)*drive+(anchor.z-node.z)*anchor.strength;if(region===1)ax[i]+=.012*Math.sin(node.phase)*regionFocus;if(region===3){ax[i]+=(Math.round(node.x*4)/4-node.x)*.018*regionFocus;ay[i]+=(Math.round(node.y*4)/4-node.y)*.018*regionFocus}if(region===4){const angle=(i%6)/6*Math.PI*2;ax[i]+=(Math.cos(angle)*.82-node.x)*.014*regionFocus;az[i]+=(Math.sin(angle)*.82-node.z)*.014*regionFocus}if(pointer?.active){const sy=Math.sin(view.yaw+time*WORLD_SPIN),cyw=Math.cos(view.yaw+time*WORLD_SPIN),st=Math.sin(view.pitch),ct=Math.cos(view.pitch),x1=node.x*cyw+node.z*sy,z1=-node.x*sy+node.z*cyw,y1=node.y*ct-z1*st,z2=node.y*st+z1*ct,perspective=1+z2*.055,px=cx+x1*base*perspective,py=cy-y1*base*perspective,dx=px-pointer.x,dy=py-pointer.y,distance=Math.hypot(dx,dy),radius=Math.min(base*.34,180);if(distance<radius&&distance>1){const strength=(1-distance/radius)*.28,fx=dx/distance*strength,fy=dy/distance*strength;ax[i]+=cyw*fx+(-sy*st)*fy;ay[i]+=-ct*fy;az[i]+=sy*fx+(cyw*st)*fy}}const forceNormal=ax[i]*nx+ay[i]*ny+az[i]*nz;ax[i]-=forceNormal*nx;ay[i]-=forceNormal*ny;az[i]-=forceNormal*nz;const velocityNormal=node.vx*nx+node.vy*ny+node.vz*nz;node.vx-=velocityNormal*nx;node.vy-=velocityNormal*ny;node.vz-=velocityNormal*nz;const damping=Math.exp(-(1.05-activity*.12)*dt);node.vx=(node.vx+ax[i]*dt)*damping;node.vy=(node.vy+ay[i]*dt)*damping;node.vz=(node.vz+az[i]*dt)*damping;const speed=Math.hypot(node.vx,node.vy,node.vz),maxSpeed=.14+activity*.025+(pointer?.active?.008:0);if(speed>maxSpeed){const limit=maxSpeed/speed;node.vx*=limit;node.vy*=limit;node.vz*=limit}node.x+=node.vx*dt;node.y+=node.vy*dt;node.z+=node.vz*dt;length=Math.hypot(node.x,node.y,node.z)||1;node.x/=length;node.y/=length;node.z/=length;nx=node.x;ny=node.y;nz=node.z;const transportedNormal=node.vx*nx+node.vy*ny+node.vz*nz;node.vx-=transportedNormal*nx;node.vy-=transportedNormal*ny;node.vz-=transportedNormal*nz})
 }
 
 function projectNodes(model,time,view,base,cx,cy) {
@@ -113,6 +114,23 @@ function paintWhatsappRoute(ctx,hub,node,weight,width=.8) {
   ctx.strokeStyle=gradient;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(hub.x,hub.y);ctx.lineTo(node.x,node.y);ctx.stroke()
 }
 
+function paintWhatsappNetworkLine(ctx,a,b,hub,weight,width=.45) {
+  const distanceA=Math.hypot(a.x-hub.x,a.y-hub.y),distanceB=Math.hypot(b.x-hub.x,b.y-hub.y)
+  const warmthA=Math.max(0,1-distanceA/240),warmthB=Math.max(0,1-distanceB/240)
+  const depth=Math.max(.04,Math.min(1,((a.z+b.z)*.5+1)/2))
+  const gradient=ctx.createLinearGradient(a.x,a.y,b.x,b.y)
+  gradient.addColorStop(0,rgba(warmthA>.45?GOLD:PEARL,(.12+warmthA*.27)*weight*depth))
+  gradient.addColorStop(1,rgba(warmthB>.45?GOLD:PEARL,(.12+warmthB*.27)*weight*depth))
+  ctx.strokeStyle=gradient;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()
+}
+
+function paintSignalWave(ctx,hub,node,weight,time,index) {
+  const dx=node.x-hub.x,dy=node.y-hub.y,length=Math.hypot(dx,dy)||1,nx=-dy/length,ny=dx/length,segments=28
+  ctx.strokeStyle=rgba(index<2?GOLD:PEARL,(.2-index*.022)*weight);ctx.lineWidth=index<2?.72:.48;ctx.beginPath()
+  for(let step=0;step<=segments;step++){const progress=step/segments,envelope=Math.sin(progress*Math.PI),wave=Math.sin(progress*Math.PI*(4+index%3)+time*.32+index)*envelope*(4.5+index*1.1),x=lerp(hub.x,node.x,progress)+nx*wave,y=lerp(hub.y,node.y,progress)+ny*wave;if(step===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
+  ctx.stroke()
+}
+
 function paintWhatsappWorld(ctx,nodes,model,weight,time) {
   const hub=nodes.find(node=>node.index===model.communicationIndex)
   if(!hub)return
@@ -122,14 +140,14 @@ function paintWhatsappWorld(ctx,nodes,model,weight,time) {
   const secondary=byDistance.filter(({node,distance})=>distance>.38&&distance<1.18&&node.z>-.5).filter((_,index)=>index%4===0).slice(0,6).map(item=>item.node)
 
   // Raise the regional density floor while retaining the model's clustered distribution.
-  nodes.forEach(node=>{const nodeDepth=Math.max(.03,(node.z+1)/2),hubDistance=Math.hypot(node.x-hub.x,node.y-hub.y),warmth=Math.max(0,1-hubDistance/230);ctx.fillStyle=rgba(warmth>.58?GOLD:PEARL,(.09+nodeDepth**1.75*.56)*weight*node.alpha);ctx.beginPath();ctx.arc(node.x,node.y,(.38+node.importance*1.18)*(.38+nodeDepth*.88),0,Math.PI*2);ctx.fill()})
-  participants.forEach((node,index)=>{paintLine(ctx,node,participants[(index*7+5)%participants.length],.12*weight,PEARL,.42);if(index%3===0)paintLine(ctx,node,participants[(index+1)%participants.length],.17*weight,PEARL,.46)})
+  nodes.forEach(node=>{const nodeDepth=Math.max(.02,(node.z+1)/2),hubDistance=Math.hypot(node.x-hub.x,node.y-hub.y),warmth=Math.max(0,1-hubDistance/235),nodeColor=warmth>.42?GOLD:PEARL;ctx.fillStyle=rgba(nodeColor,(.075+nodeDepth**1.85*(.48+warmth*.22))*weight*node.alpha);ctx.beginPath();ctx.arc(node.x,node.y,(.34+node.importance*1.22)*(.3+nodeDepth*1.05),0,Math.PI*2);ctx.fill()})
+  participants.forEach((node,index)=>{paintWhatsappNetworkLine(ctx,node,participants[(index*7+5)%participants.length],hub,weight,.42);if(index%3===0)paintWhatsappNetworkLine(ctx,node,participants[(index+1)%participants.length],hub,weight,.46)})
   secondary.forEach((node,index)=>{paintWhatsappRoute(ctx,hub,node,weight,index<3?1.25:1);const nodeDepth=Math.max(.12,(node.z+1)/2);ctx.strokeStyle=rgba(index<3?GOLD:PEARL,(.48+nodeDepth*.28)*weight);ctx.lineWidth=.85;ctx.beginPath();ctx.arc(node.x,node.y,5.5+node.importance*2.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle=rgba(index<3?GOLD:PEARL,.68*nodeDepth*weight);ctx.beginPath();ctx.arc(node.x,node.y,1.7+node.importance,0,Math.PI*2);ctx.fill()})
 
   const field=ctx.createRadialGradient(hub.x,hub.y,2,hub.x,hub.y,150);field.addColorStop(0,rgba(GOLD,.3*strength));field.addColorStop(.24,rgba(GOLD,.105*strength));field.addColorStop(.62,rgba('#c4a882',.025*strength));field.addColorStop(1,'transparent');ctx.fillStyle=field;ctx.beginPath();ctx.arc(hub.x,hub.y,150,0,Math.PI*2);ctx.fill()
   ;[25,39,57,79].forEach((radius,index)=>{const breathe=1+Math.sin(time*.22+index*1.4)*.025;ctx.strokeStyle=rgba(index<2?GOLD:PEARL,(.36-index*.055)*strength);ctx.lineWidth=index===0?1.15:.62;ctx.beginPath();ctx.arc(hub.x,hub.y,radius*breathe,0,Math.PI*2);ctx.stroke()})
 
-  secondary.slice(0,4).forEach((node,index)=>{const dx=node.x-hub.x,dy=node.y-hub.y,normal=Math.hypot(dx,dy)||1,bend=(index%2?1:-1)*(14+index*3),mx=(hub.x+node.x)/2-dy/normal*bend,my=(hub.y+node.y)/2+dx/normal*bend;ctx.strokeStyle=rgba(index<2?GOLD:PEARL,(.22-index*.025)*strength);ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(hub.x,hub.y);ctx.quadraticCurveTo(mx,my,node.x,node.y);ctx.stroke();for(let wave=1;wave<3;wave++){ctx.strokeStyle=rgba(PEARL,(.11-wave*.025)*strength);ctx.beginPath();ctx.moveTo(hub.x,hub.y);ctx.quadraticCurveTo(mx-dy/normal*wave*7,my+dx/normal*wave*7,node.x,node.y);ctx.stroke()}})
+  secondary.slice(0,5).forEach((node,index)=>paintSignalWave(ctx,hub,node,strength,time,index))
 
   const routes=[...participants.slice(0,12),...secondary]
   for(let packet=0;packet<18;packet++){const node=routes[(packet*7)%routes.length],phase=frac(time*(.078+(packet%5)*.008)+packet*.113),progress=packet%2?1-phase:phase,envelope=Math.sin(phase*Math.PI)**1.3,x=lerp(hub.x,node.x,progress),y=lerp(hub.y,node.y,progress),z=lerp(hub.z,node.z,progress),packetDepth=.05+.95*Math.max(0,(z+1)/2)**1.7;ctx.fillStyle=rgba(packet%3===0?GOLD:PEARL,envelope*packetDepth*strength);ctx.beginPath();ctx.arc(x,y,.85+packetDepth*1.15,0,Math.PI*2);ctx.fill()}
@@ -137,7 +155,7 @@ function paintWhatsappWorld(ctx,nodes,model,weight,time) {
   ctx.fillStyle=rgba('#090a0d',.96*strength);ctx.beginPath();ctx.arc(hub.x,hub.y,22,0,Math.PI*2);ctx.fill();ctx.strokeStyle=rgba(GOLD,.98*strength);ctx.lineWidth=1.45;ctx.beginPath();ctx.arc(hub.x,hub.y,21,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=rgba(PEARL,.88*strength);ctx.lineWidth=1.25;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.arc(hub.x,hub.y,12.5,0,Math.PI*2);ctx.moveTo(hub.x-7,hub.y+10);ctx.lineTo(hub.x-10,hub.y+15);ctx.lineTo(hub.x-3.5,hub.y+12);ctx.stroke();ctx.beginPath();ctx.moveTo(hub.x-5,hub.y-5);ctx.bezierCurveTo(hub.x-3,hub.y+1,hub.x+1,hub.y+5,hub.x+6,hub.y+6);ctx.lineTo(hub.x+8,hub.y+3);ctx.lineTo(hub.x+4,hub.y);ctx.lineTo(hub.x+2,hub.y+2);ctx.bezierCurveTo(hub.x,hub.y+1,hub.x-2,hub.y-1,hub.x-3,hub.y-3);ctx.lineTo(hub.x-1,hub.y-5);ctx.closePath();ctx.stroke();ctx.lineCap='butt';ctx.lineJoin='miter'
 }
 
-function paintRegionStructures(ctx,nodes,model,weights,time) {
+function paintRegionalLayer(ctx,nodes,model,weights,time) {
   const ia=weights[0],whatsapp=weights[2],web=weights[3],data=weights[4]
   if(ia>.01){const hubs=nodes.filter(node=>node.hub&&node.z>-.35);hubs.forEach((hub,index)=>nodes.filter(node=>node.index!==hub.index).sort((a,b)=>Math.hypot(a.x-hub.x,a.y-hub.y)-Math.hypot(b.x-hub.x,b.y-hub.y)).slice(0,2+(index%2)).forEach(node=>paintLine(ctx,hub,node,.11*ia,hub.importance>.75?GOLD:PEARL,.38)))}
   if(web>.01)nodes.filter(node=>node.z>.02&&node.seed>.72).forEach(node=>{const depth=(node.z+1)/2,height=(8+node.importance*32+node.seed*10)*depth*web;ctx.strokeStyle=rgba(node.importance>.65?GOLD:PEARL,(.035+depth*.11)*web*node.alpha);ctx.lineWidth=.45;ctx.beginPath();ctx.moveTo(node.x,node.y);ctx.lineTo(node.x,node.y-height);ctx.stroke();ctx.fillStyle=rgba(PEARL,.08*web*depth*node.alpha);ctx.fillRect(node.x-1.5,node.y-height-1.5,3,3)})
@@ -146,7 +164,7 @@ function paintRegionStructures(ctx,nodes,model,weights,time) {
 }
 
 export function renderNasusOrb(ctx,model,{width,height,time,progress,mode,reduced,pointer}) {
-  const region=Math.round(progress),weights=regionMix(progress),profile=profileAt(progress),view=cameraAt(progress)
+  const regional=regionalStateAt(progress),region=regional.index,weights=regional.weights,profile=profileAt(regional),view=cameraAt(progress,regional)
   if(weights[2]>.001){
     const hub=model[model.communicationIndex],targetYaw=Math.atan2(-hub.x,hub.z)-time*WORLD_SPIN
     const yawDelta=Math.atan2(Math.sin(targetYaw-view.yaw),Math.cos(targetYaw-view.yaw))
@@ -156,18 +174,21 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,mode,reduce
   const activity=mode==='thinking'?1:mode==='speaking'?.85:mode==='listening'?.55:0
   const signal=mode==='speaking'?Math.sin(time*7.2)*.08:0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+weights[2]*.16)
   const cx=width*(.5+view.x),cy=height*(.5+view.y),t=reduced?.65:time*(1+activity*.55)
-  stepSimulation(model,t,profile,region,activity,reduced,pointer,view,base,cx,cy)
+  stepSimulation(model,t,GLOBAL_PROFILE,-1,0,activity,reduced,pointer,view,base,cx,cy)
   const nodes=projectNodes(model,t,view,base,cx,cy)
   const localEdges=proximityEdges(nodes,profile.threshold+.025+(activity*.018),profile.neighbours+(mode==='thinking'?1:0),t)
   const edges=smoothEdges(model,[...localEdges,...hubEdges(model,t,weights[1])])
+  const whatsappFocus=weights[2],globalOpacity=1-whatsappFocus*.68,edgeBudget=1-whatsappFocus*.58,nodeBudget=1-whatsappFocus*.45
+  const globalEdges=edges.filter(edge=>hash(edge.a+11,edge.b+29)<=edgeBudget)
+  const globalNodes=nodes.filter(node=>hash(node.index,71.3)<=nodeBudget)
 
   const halo=ctx.createRadialGradient(cx,cy,base*.12,cx,cy,base*1.08);halo.addColorStop(0,'rgba(23,26,32,.08)');halo.addColorStop(.78,'rgba(11,13,17,.025)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
-  edges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility,long?PEARL:SMOKE,long?.54:.49)})
+  globalEdges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility*globalOpacity,long?PEARL:SMOKE,long?.54:.49)})
 
   const pulseWindow=.18+weights[1]*.08,pulses=[]
-  edges.forEach(edge=>{const cycle=frac(t/edge.pulsePeriod+edge.pulseOffset);if(cycle>=pulseWindow||edge.opacity<.08)return;const a=nodes[edge.a],b=nodes[edge.b],progress=cycle/pulseWindow,envelope=Math.sin(progress*Math.PI)**1.5,importance=Math.max(a.importance,b.importance),long=edge.distance>.6;pulses.push({a,b,progress,envelope,importance,long,score:importance+(long?.45:0)})})
-  pulses.sort((a,b)=>b.score-a.score).slice(0,(width<700?4:7)+Math.round(weights[1]*3)).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24);ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD:PEARL,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
+  globalEdges.forEach(edge=>{const cycle=frac(t/edge.pulsePeriod+edge.pulseOffset);if(cycle>=pulseWindow||edge.opacity<.08)return;const a=nodes[edge.a],b=nodes[edge.b],progress=cycle/pulseWindow,envelope=Math.sin(progress*Math.PI)**1.5,importance=Math.max(a.importance,b.importance),long=edge.distance>.6;pulses.push({a,b,progress,envelope,importance,long,score:importance+(long?.45:0)})})
+  pulses.sort((a,b)=>b.score-a.score).slice(0,(width<700?4:7)+Math.round(weights[1]*3)).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24)*globalOpacity;ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD:PEARL,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
 
-  nodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,important=node.importance>.58,weight=.68+node.importance*1.65,r=Math.max(.22,.31+depth*.86)*weight*(width<700?.86:1),opacity=(.08+depth*.72)*(.62+node.importance*.5);ctx.fillStyle=rgba(important&&node.index%6===region?GOLD:PEARL,opacity*node.alpha);ctx.beginPath();ctx.arc(node.x,node.y,r+(activity*(important?.65:.1)),0,Math.PI*2);ctx.fill()})
-  paintRegionStructures(ctx,nodes,model,weights,t)
+  globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,important=node.importance>.58,weight=.68+node.importance*1.65,r=Math.max(.22,.31+depth*.86)*weight*(width<700?.86:1),opacity=(.08+depth*.72)*(.62+node.importance*.5);ctx.fillStyle=rgba(important&&node.index%6===region?GOLD:PEARL,opacity*node.alpha*globalOpacity);ctx.beginPath();ctx.arc(node.x,node.y,r+(activity*(important?.65:.1)),0,Math.PI*2);ctx.fill()})
+  paintRegionalLayer(ctx,nodes,model,weights,t)
 }
