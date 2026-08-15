@@ -155,10 +155,27 @@ function paintWhatsappWorld(ctx,nodes,model,weight,time) {
   ctx.fillStyle=rgba('#090a0d',.96*strength);ctx.beginPath();ctx.arc(hub.x,hub.y,22,0,Math.PI*2);ctx.fill();ctx.strokeStyle=rgba(GOLD,.98*strength);ctx.lineWidth=1.45;ctx.beginPath();ctx.arc(hub.x,hub.y,21,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=rgba(PEARL,.88*strength);ctx.lineWidth=1.25;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.arc(hub.x,hub.y,12.5,0,Math.PI*2);ctx.moveTo(hub.x-7,hub.y+10);ctx.lineTo(hub.x-10,hub.y+15);ctx.lineTo(hub.x-3.5,hub.y+12);ctx.stroke();ctx.beginPath();ctx.moveTo(hub.x-5,hub.y-5);ctx.bezierCurveTo(hub.x-3,hub.y+1,hub.x+1,hub.y+5,hub.x+6,hub.y+6);ctx.lineTo(hub.x+8,hub.y+3);ctx.lineTo(hub.x+4,hub.y);ctx.lineTo(hub.x+2,hub.y+2);ctx.bezierCurveTo(hub.x,hub.y+1,hub.x-2,hub.y-1,hub.x-3,hub.y-3);ctx.lineTo(hub.x-1,hub.y-5);ctx.closePath();ctx.stroke();ctx.lineCap='butt';ctx.lineJoin='miter'
 }
 
+function paintWebTower(ctx,node,weight,time,index) {
+  const depth=Math.max(.06,(node.z+1)/2),importance=.35+node.importance*.9,growth=smoothstep(weight),height=(16+node.seed*34+node.importance*68)*(.35+depth*.8)*growth,width=(3.5+node.importance*8)*(.45+depth*.72),lean=(node.seed-.5)*width*.7,topX=node.x+lean,topY=node.y-height,color=node.importance>.62?GOLD:PEARL,alpha=(.12+depth**1.65*.5)*weight*node.alpha
+  ctx.strokeStyle=rgba(color,alpha);ctx.lineWidth=node.importance>.62?.85:.48;ctx.beginPath();ctx.moveTo(node.x-width,node.y);ctx.lineTo(topX-width*.62,topY);ctx.lineTo(topX+width*.62,topY);ctx.lineTo(node.x+width,node.y);ctx.moveTo(node.x-width,node.y);ctx.lineTo(node.x+width,node.y);ctx.moveTo(topX-width*.62,topY);ctx.lineTo(node.x+width,node.y);ctx.moveTo(topX+width*.62,topY);ctx.lineTo(node.x-width,node.y);ctx.stroke()
+  const levels=2+Math.floor(node.importance*4);for(let level=1;level<levels;level++){const progress=level/levels,y=lerp(node.y,topY,progress),x=lerp(node.x,topX,progress),half=lerp(width,width*.62,progress);ctx.strokeStyle=rgba(level===levels-1&&node.importance>.62?GOLD:SMOKE,alpha*.55);ctx.beginPath();ctx.moveTo(x-half,y);ctx.lineTo(x+half,y);ctx.stroke()}
+  if(index%3===0){const panelY=lerp(node.y,topY,.58),panelX=lerp(node.x,topX,.58),panelWidth=width*1.45,panelHeight=Math.max(5,height*.15);ctx.fillStyle=rgba('#171a20',alpha*.18);ctx.fillRect(panelX-panelWidth,panelY-panelHeight,panelWidth*2,panelHeight);ctx.strokeStyle=rgba(PEARL,alpha*.42);ctx.strokeRect(panelX-panelWidth,panelY-panelHeight,panelWidth*2,panelHeight)}
+  const construction=frac(time*.035+node.seed),travel=Math.sin(construction*Math.PI),px=lerp(node.x,topX,construction),py=lerp(node.y,topY,construction);ctx.fillStyle=rgba(color,travel*alpha*1.35);ctx.beginPath();ctx.arc(px,py,.7+importance*.55,0,Math.PI*2);ctx.fill()
+  return{...node,topX,topY,width,depth,alpha}
+}
+
+function paintWebWorld(ctx,nodes,weight,time) {
+  const candidates=nodes.filter(node=>node.z>-.52&&node.alpha>.2).sort((a,b)=>(b.importance+b.seed*.22)-(a.importance+a.seed*.22)).slice(0,22).sort((a,b)=>a.z-b.z)
+  const towers=candidates.map((node,index)=>paintWebTower(ctx,node,weight,time,index))
+  towers.forEach((tower,index)=>{const peers=towers.filter(other=>other.index!==tower.index).sort((a,b)=>Math.hypot(a.x-tower.x,a.y-tower.y)-Math.hypot(b.x-tower.x,b.y-tower.y)).slice(0,index%4===0?2:1);peers.forEach((peer,peerIndex)=>{const depth=Math.max(.06,(tower.depth+peer.depth)/2),active=tower.importance>.62||peer.importance>.62;ctx.strokeStyle=rgba(active&&peerIndex===0?GOLD:PEARL,(active?.2:.105)*depth*weight);ctx.lineWidth=active?.7:.42;ctx.beginPath();ctx.moveTo(tower.topX,tower.topY);ctx.lineTo(peer.topX,peer.topY);ctx.stroke()})})
+  const planeNodes=towers.filter((_,index)=>index%3===0).slice(0,7);if(planeNodes.length>3){ctx.strokeStyle=rgba(SMOKE,.1*weight);ctx.lineWidth=.4;ctx.beginPath();planeNodes.forEach((node,index)=>{if(index===0)ctx.moveTo(node.x,node.y);else ctx.lineTo(node.x,node.y)});ctx.stroke();planeNodes.forEach((node,index)=>{const next=planeNodes[(index+2)%planeNodes.length];ctx.strokeStyle=rgba(PEARL,.055*weight*Math.max(.1,node.depth));ctx.beginPath();ctx.moveTo(node.x,node.y);ctx.lineTo(next.x,next.y);ctx.stroke()})}
+  const backbones=towers.filter(tower=>tower.importance>.62).slice(0,5);for(let packet=0;packet<10&&backbones.length>1;packet++){const a=backbones[packet%backbones.length],b=backbones[(packet+1+packet%2)%backbones.length],phase=frac(time*(.045+(packet%3)*.008)+packet*.127),envelope=Math.sin(phase*Math.PI),x=lerp(a.topX,b.topX,phase),y=lerp(a.topY,b.topY,phase),depth=Math.max(.08,lerp(a.depth,b.depth,phase));ctx.fillStyle=rgba(packet%3===0?GOLD:PEARL,envelope*depth*.72*weight);ctx.beginPath();ctx.arc(x,y,.8+depth*.7,0,Math.PI*2);ctx.fill()}
+}
+
 function paintRegionalLayer(ctx,nodes,model,weights,time) {
   const ia=weights[0],whatsapp=weights[2],web=weights[3],data=weights[4]
   if(ia>.01){const hubs=nodes.filter(node=>node.hub&&node.z>-.35);hubs.forEach((hub,index)=>nodes.filter(node=>node.index!==hub.index).sort((a,b)=>Math.hypot(a.x-hub.x,a.y-hub.y)-Math.hypot(b.x-hub.x,b.y-hub.y)).slice(0,2+(index%2)).forEach(node=>paintLine(ctx,hub,node,.11*ia,hub.importance>.75?GOLD:PEARL,.38)))}
-  if(web>.01)nodes.filter(node=>node.z>.02&&node.seed>.72).forEach(node=>{const depth=(node.z+1)/2,height=(8+node.importance*32+node.seed*10)*depth*web;ctx.strokeStyle=rgba(node.importance>.65?GOLD:PEARL,(.035+depth*.11)*web*node.alpha);ctx.lineWidth=.45;ctx.beginPath();ctx.moveTo(node.x,node.y);ctx.lineTo(node.x,node.y-height);ctx.stroke();ctx.fillStyle=rgba(PEARL,.08*web*depth*node.alpha);ctx.fillRect(node.x-1.5,node.y-height-1.5,3,3)})
+  if(web>.01)paintWebWorld(ctx,nodes,web,time)
   if(data>.01)nodes.filter(node=>node.z>-.05&&node.seed>.67).forEach(node=>{const depth=(node.z+1)/2,size=(2+node.importance*5)*depth;ctx.strokeStyle=rgba(node.importance>.7?GOLD:PEARL,(.045+depth*.1)*data*node.alpha);ctx.lineWidth=.4;ctx.strokeRect(node.x-size/2,node.y-size/2,size,size);if(node.seed>.88)ctx.strokeRect(node.x-size*.32,node.y-size*1.25,size*.64,size*.64)})
   if(whatsapp>.01)paintWhatsappWorld(ctx,nodes,model,whatsapp,time)
 }
@@ -172,13 +189,13 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,mode,reduce
     view.pitch=lerp(view.pitch,Math.atan2(hub.y,Math.hypot(hub.x,hub.z)),weights[2]*.62)
   }
   const activity=mode==='thinking'?1:mode==='speaking'?.85:mode==='listening'?.55:0
-  const signal=mode==='speaking'?Math.sin(time*7.2)*.08:0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+weights[2]*.16)
+  const signal=mode==='speaking'?Math.sin(time*7.2)*.08:0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+weights[2]*.16+weights[3]*.13)
   const cx=width*(.5+view.x),cy=height*(.5+view.y),t=reduced?.65:time*(1+activity*.55)
   stepSimulation(model,t,GLOBAL_PROFILE,-1,0,activity,reduced,pointer,view,base,cx,cy)
   const nodes=projectNodes(model,t,view,base,cx,cy)
   const localEdges=proximityEdges(nodes,profile.threshold+.025+(activity*.018),profile.neighbours+(mode==='thinking'?1:0),t)
   const edges=smoothEdges(model,[...localEdges,...hubEdges(model,t,weights[1])])
-  const whatsappFocus=weights[2],globalOpacity=1-whatsappFocus*.68,edgeBudget=1-whatsappFocus*.58,nodeBudget=1-whatsappFocus*.45
+  const regionalBudgetFocus=Math.max(weights[2],weights[3]*.9),globalOpacity=1-regionalBudgetFocus*.68,edgeBudget=1-regionalBudgetFocus*.58,nodeBudget=1-regionalBudgetFocus*.45
   const globalEdges=edges.filter(edge=>hash(edge.a+11,edge.b+29)<=edgeBudget)
   const globalNodes=nodes.filter(node=>hash(node.index,71.3)<=nodeBudget)
 
