@@ -1,4 +1,5 @@
 import { renderIaSubworld } from './regions/iaSubworld'
+import { REGION_ANCHORS, cameraTargetForAnchor, projectAnchor, selectNodesAroundAnchor } from './regions/regionAnchors'
 
 // Large-format Nasus renderer adapted from the MIT-licensed Thinking Orbs
 // primitives: Fibonacci sphere, value-noise drift, depth projection, proximity
@@ -39,8 +40,6 @@ export function createOrbModel(count) {
   const anchors=Array.from({length:7},(_,i)=>{const y=hash(i,52.4)*1.7-.85,a=hash(i,63.8)*Math.PI*2,r=Math.sqrt(1-y*y);return{x:Math.cos(a)*r,y,z:Math.sin(a)*r,strength:.01+hash(i,74.2)*.011}})
   const nodes=Array.from({length:count},(_,i)=>{let [x,y,z]=fib(i,count);const transient=i%17===0,life=34+hash(i,8.1)*18,slot=transient?transientIndex++:0,seed=hash(i,4.7),importance=.12+Math.pow(hash(i,26.4),5)*.88,cluster=Math.floor(hash(i,18.6)*7),anchor=anchors[cluster],pull=.14+hash(i,38.7)*.3;x=lerp(x,anchor.x,pull);y=lerp(y,anchor.y,pull);z=lerp(z,anchor.z,pull);const length=Math.hypot(x,y,z);return{x:x/length,y:y/length,z:z/length,vx:(hash(i,2.1)-.5)*.07,vy:(hash(i,3.7)-.5)*.07,vz:(hash(i,6.4)-.5)*.07,seed,importance,phase:hash(i,9.3)*Math.PI*2,principal:i%9===0||i%13===0,hub:importance>.64,cluster,transient,alpha:1,age:transient?(slot/transientCount)*34:0,life,generation:0,state:'alive'}})
   nodes.anchors=anchors
-  const communicationView=camera[2]
-  nodes.communicationIndex=nodes.reduce((best,node,i)=>{const sy=Math.sin(communicationView.yaw),cy=Math.cos(communicationView.yaw),z=-node.x*sy+node.z*cy;return z>best.z&&node.importance>.35?{i,z}:best},{i:0,z:-Infinity}).i
   nodes.webDistrictIndices=[]
   const keys=new Set(),springs=[]
   nodes.forEach((node,i)=>{const nearest=nodes.map((other,j)=>({j,d:Math.hypot(node.x-other.x,node.y-other.y,node.z-other.z)})).filter(({j})=>j!==i).sort((a,b)=>a.d-b.d),choices=[nearest[0],nearest[2+Math.floor(hash(i,14.2)*Math.min(4,nearest.length-2))]];choices.forEach(({j,d})=>{const a=Math.min(i,j),b=Math.max(i,j),key=`${a}:${b}`;if(keys.has(key))return;keys.add(key);springs.push({a,b,rest:d})})})
@@ -137,13 +136,10 @@ function paintSignalWave(ctx,hub,node,weight,time,index) {
   ctx.stroke()
 }
 
-function paintWhatsappWorld(ctx,nodes,model,weight,time) {
-  const hub=nodes.find(node=>node.index===model.communicationIndex)
-  if(!hub)return
-  const depth=Math.max(.3,(hub.z+1)/2),strength=weight*depth*hub.alpha
-  const byDistance=nodes.filter(node=>node.index!==hub.index).map(node=>({node,distance:Math.hypot(node.x3-hub.x3,node.y3-hub.y3,node.z3-hub.z3)})).sort((a,b)=>a.distance-b.distance)
-  const participants=byDistance.slice(0,30).map(item=>item.node)
-  const secondary=byDistance.filter(({node,distance})=>distance>.38&&distance<1.18&&node.z>-.5).filter((_,index)=>index%4===0).slice(0,6).map(item=>item.node)
+function paintWhatsappWorld(ctx,nodes,hub,weight,time) {
+  const depth=Math.max(.3,(hub.z+1)/2),strength=weight*depth
+  const participants=selectNodesAroundAnchor(nodes,REGION_ANCHORS.whatsapp,{innerAngle:.34,outerAngle:1.08,minAlpha:.2,limit:30})
+  const secondary=participants.filter(node=>node.anchorAngle>.34&&node.anchorAngle<.92&&node.z>-.5).filter((_,index)=>index%4===0).slice(0,6)
 
   // Raise the regional density floor while retaining the model's clustered distribution.
   nodes.forEach(node=>{const nodeDepth=Math.max(.02,(node.z+1)/2),hubDistance=Math.hypot(node.x-hub.x,node.y-hub.y),warmth=Math.max(0,1-hubDistance/235),nodeColor=warmth>.42?GOLD:PEARL;ctx.fillStyle=rgba(nodeColor,(.075+nodeDepth**1.85*(.48+warmth*.22))*weight*node.alpha);ctx.beginPath();ctx.arc(node.x,node.y,(.34+node.importance*1.22)*(.3+nodeDepth*1.05),0,Math.PI*2);ctx.fill()})
@@ -203,23 +199,25 @@ function paintRegionalLayer(ctx,nodes,model,weights,time,regionalContext) {
   if(ia>.01){const {view,width,height}=regionalContext,focus={x:width*.56,y:height*.49},iaNodes=[...nodes].filter(node=>node.z>-.62&&node.alpha>.2).sort((a,b)=>Math.hypot(a.x-focus.x,a.y-focus.y)-Math.hypot(b.x-focus.x,b.y-focus.y)).slice(0,24);renderIaSubworld({ctx,camera:view,time,viewport:{width,height},nodes:iaNodes,focus,intensity:ia,palette:{gold:GOLD,pearl:PEARL,smoke:SMOKE,rgba}})}
   if(web>.01)paintWebWorld(ctx,nodes,model,web,time)
   if(data>.01)nodes.filter(node=>node.z>-.05&&node.seed>.67).forEach(node=>{const depth=(node.z+1)/2,size=(2+node.importance*5)*depth;ctx.strokeStyle=rgba(node.importance>.7?GOLD:PEARL,(.045+depth*.1)*data*node.alpha);ctx.lineWidth=.4;ctx.strokeRect(node.x-size/2,node.y-size/2,size,size);if(node.seed>.88)ctx.strokeRect(node.x-size*.32,node.y-size*1.25,size*.64,size*.64)})
-  if(whatsapp>.01)paintWhatsappWorld(ctx,nodes,model,whatsapp,time)
+  if(whatsapp>.01)paintWhatsappWorld(ctx,nodes,regionalContext.whatsappHub,whatsapp,time)
 }
 
 export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFocus,mode,reduced,pointer}) {
   const regional=regionalStateAt(progress),region=regional.index,weights=regional.weights,profile=profileAt(regional),view=cameraAt(progress,regional),iaExit=1-smoothstep(Math.max(0,Math.min(1,(progress-.3)/.52))),iaWeight=(regionalFocus||0)*iaExit
   if(iaWeight>.001){const anchor=model.reduce((best,node,index)=>!node.transient&&node.importance>best.importance?{index,importance:node.importance}:best,{index:0,importance:-1}),target=model[anchor.index],targetYaw=Math.atan2(-target.x,target.z)-time*WORLD_SPIN,yawDelta=Math.atan2(Math.sin(targetYaw-view.yaw),Math.cos(targetYaw-view.yaw)),targetPitch=Math.atan2(target.y,Math.hypot(target.x,target.z)),orbitArc=Math.sin(iaWeight*Math.PI);view.zoom=lerp(view.zoom,1.62,iaWeight);view.yaw+=yawDelta*iaWeight*.78+orbitArc*.18;view.pitch=lerp(view.pitch,targetPitch,iaWeight*.68);view.x=lerp(view.x,.06,iaWeight)+orbitArc*.045;view.y=lerp(view.y,-.01,iaWeight)-orbitArc*.018}
   if(weights[2]>.001){
-    const hub=model[model.communicationIndex],targetYaw=Math.atan2(-hub.x,hub.z)-time*WORLD_SPIN
-    const yawDelta=Math.atan2(Math.sin(targetYaw-view.yaw),Math.cos(targetYaw-view.yaw))
-    view.yaw+=yawDelta*weights[2]*.72
-    view.pitch=lerp(view.pitch,Math.atan2(hub.y,Math.hypot(hub.x,hub.z)),weights[2]*.62)
+    const target=cameraTargetForAnchor(REGION_ANCHORS.whatsapp,time*WORLD_SPIN)
+    const yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw))
+    view.yaw+=yawDelta*weights[2]
+    view.pitch=lerp(view.pitch,target.pitch,weights[2])
   }
   const activity=mode==='thinking'?1:mode==='speaking'?.85:mode==='listening'?.55:0
   const signal=mode==='speaking'?Math.sin(time*7.2)*.08:0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+weights[2]*.16+weights[3]*.04)
   const cx=width*(.5+view.x),cy=height*(.5+view.y),t=reduced?.65:time*(1+activity*.55)
   stepSimulation(model,t,GLOBAL_PROFILE,-1,0,activity,reduced,pointer,view,base,cx,cy)
   const nodes=projectNodes(model,t,view,base,cx,cy)
+  const whatsappProjection=projectAnchor(REGION_ANCHORS.whatsapp,{yaw:view.yaw,pitch:view.pitch,worldRotation:t*WORLD_SPIN,base,cx,cy})
+  const whatsappHub={...whatsappProjection,x3:REGION_ANCHORS.whatsapp.position.x,y3:REGION_ANCHORS.whatsapp.position.y,z3:REGION_ANCHORS.whatsapp.position.z,alpha:1,importance:1,index:-1}
   const localEdges=proximityEdges(nodes,profile.threshold+.025+(activity*.018),profile.neighbours+(mode==='thinking'?1:0),t)
   const edges=smoothEdges(model,[...localEdges,...hubEdges(model,t,weights[1])])
   const regionalBudgetFocus=Math.max(iaWeight,weights[2],weights[3]*.9),globalOpacity=Math.min(1-regionalBudgetFocus*.68,1-iaWeight*.94),edgeBudget=Math.min(1-regionalBudgetFocus*.58,1-iaWeight*.88),nodeBudget=Math.min(1-regionalBudgetFocus*.45,1-iaWeight*.84)
@@ -234,5 +232,5 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   pulses.sort((a,b)=>b.score-a.score).slice(0,(width<700?4:7)+Math.round(weights[1]*3)).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24)*globalOpacity;ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD:PEARL,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
 
   globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,important=node.importance>.58,weight=.68+node.importance*1.65,r=Math.max(.22,.31+depth*.86)*weight*(width<700?.86:1),opacity=(.08+depth*.72)*(.62+node.importance*.5);ctx.fillStyle=rgba(important&&node.index%6===region?GOLD:PEARL,opacity*node.alpha*globalOpacity);ctx.beginPath();ctx.arc(node.x,node.y,r+(activity*(important?.65:.1)),0,Math.PI*2);ctx.fill()})
-  paintRegionalLayer(ctx,nodes,model,weights,t,{view,width,height,iaWeight})
+  paintRegionalLayer(ctx,nodes,model,weights,t,{view,width,height,iaWeight,whatsappHub})
 }
