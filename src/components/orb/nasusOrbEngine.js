@@ -26,6 +26,8 @@ const noise=(x,y)=>{const xi=Math.floor(x),yi=Math.floor(y);let fx=x-xi,fy=y-yi;
 const fib=(i,n)=>{const y=1-(2*(i+.5))/n,r=Math.sqrt(1-y*y),a=i*Math.PI*(3-Math.sqrt(5));return[r*Math.cos(a),y,r*Math.sin(a)]}
 const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return`rgba(${n>>16},${n>>8&255},${n&255},${Math.max(0,Math.min(1,a))})`}
 const cameraAt=p=>{const lo=Math.floor(p),hi=Math.min(4,lo+1),t=p-lo,a=camera[lo],b=camera[hi];return{zoom:lerp(a.zoom,b.zoom,t),yaw:lerp(a.yaw,b.yaw,t),pitch:lerp(a.pitch,b.pitch,t),x:lerp(a.x,b.x,t),y:lerp(a.y,b.y,t)}}
+const regionMix=p=>{const lo=Math.floor(p),hi=Math.min(4,lo+1),t=p-lo,weights=[0,0,0,0,0];weights[lo]=1-t;weights[hi]+=t;return weights}
+const profileAt=p=>{const lo=Math.floor(p),hi=Math.min(4,lo+1),t=p-lo,a=regionProfiles[lo],b=regionProfiles[hi];return{threshold:lerp(a.threshold,b.threshold,t),neighbours:Math.round(lerp(a.neighbours,b.neighbours,t)),wander:lerp(a.wander,b.wander,t),structure:lerp(a.structure,b.structure,t)}}
 
 export function createOrbModel(count) {
   const transientCount=Math.ceil(count/17)
@@ -33,6 +35,8 @@ export function createOrbModel(count) {
   const anchors=Array.from({length:7},(_,i)=>{const y=hash(i,52.4)*1.7-.85,a=hash(i,63.8)*Math.PI*2,r=Math.sqrt(1-y*y);return{x:Math.cos(a)*r,y,z:Math.sin(a)*r,strength:.01+hash(i,74.2)*.011}})
   const nodes=Array.from({length:count},(_,i)=>{let [x,y,z]=fib(i,count);const transient=i%17===0,life=34+hash(i,8.1)*18,slot=transient?transientIndex++:0,seed=hash(i,4.7),importance=.12+Math.pow(hash(i,26.4),5)*.88,cluster=Math.floor(hash(i,18.6)*7),anchor=anchors[cluster],pull=.14+hash(i,38.7)*.3;x=lerp(x,anchor.x,pull);y=lerp(y,anchor.y,pull);z=lerp(z,anchor.z,pull);const length=Math.hypot(x,y,z);return{x:x/length,y:y/length,z:z/length,vx:(hash(i,2.1)-.5)*.07,vy:(hash(i,3.7)-.5)*.07,vz:(hash(i,6.4)-.5)*.07,seed,importance,phase:hash(i,9.3)*Math.PI*2,principal:i%9===0||i%13===0,hub:importance>.64,cluster,transient,alpha:1,age:transient?(slot/transientCount)*34:0,life,generation:0,state:'alive'}})
   nodes.anchors=anchors
+  const communicationView=camera[2]
+  nodes.communicationIndex=nodes.reduce((best,node,i)=>{const sy=Math.sin(communicationView.yaw),cy=Math.cos(communicationView.yaw),z=-node.x*sy+node.z*cy;return z>best.z&&node.importance>.35?{i,z}:best},{i:0,z:-Infinity}).i
   const keys=new Set(),springs=[]
   nodes.forEach((node,i)=>{const nearest=nodes.map((other,j)=>({j,d:Math.hypot(node.x-other.x,node.y-other.y,node.z-other.z)})).filter(({j})=>j!==i).sort((a,b)=>a.d-b.d),choices=[nearest[0],nearest[2+Math.floor(hash(i,14.2)*Math.min(4,nearest.length-2))]];choices.forEach(({j,d})=>{const a=Math.min(i,j),b=Math.max(i,j),key=`${a}:${b}`;if(keys.has(key))return;keys.add(key);springs.push({a,b,rest:d})})})
   nodes.springs=springs
@@ -49,9 +53,9 @@ function spatialPairs(nodes,threshold,maxNeighbours=6) {
   return pairs
 }
 
-function hubEdges(nodes,time) {
+function hubEdges(nodes,time,automation=0) {
   const epoch=Math.floor(time/16),keys=new Set(),edges=[]
-  nodes.forEach((node,a)=>{if(!node.hub||node.alpha<.2)return;const limit=hash(a,epoch+93)>.72?2:1;nodes.map((other,b)=>({b,distance:Math.hypot(node.x-other.x,node.y-other.y,node.z-other.z),score:hash(a+b*3,epoch+81)})).filter(({b,distance})=>b!==a&&distance>.62&&distance<1.48&&nodes[b].alpha>.2).sort((x,y)=>y.score-x.score).slice(0,limit).forEach(({b,distance})=>{const low=Math.min(a,b),high=Math.max(a,b),key=`${low}:${high}`;if(keys.has(key))return;keys.add(key);edges.push({a:low,b:high,distance,alpha:.16+hash(low,high+epoch)*.12})})})
+  nodes.forEach((node,a)=>{if(!node.hub||node.alpha<.2)return;const limit=hash(a,epoch+93)>.72-automation*.35?2:1,maxDistance=1.48+automation*.1;nodes.map((other,b)=>({b,distance:Math.hypot(node.x-other.x,node.y-other.y,node.z-other.z),score:hash(a+b*3,epoch+81)})).filter(({b,distance})=>b!==a&&distance>.62&&distance<maxDistance&&nodes[b].alpha>.2).sort((x,y)=>y.score-x.score).slice(0,limit).forEach(({b,distance})=>{const low=Math.min(a,b),high=Math.max(a,b),key=`${low}:${high}`;if(keys.has(key))return;keys.add(key);edges.push({a:low,b:high,distance,alpha:.16+hash(low,high+epoch)*.12})})})
   return edges
 }
 
@@ -99,22 +103,31 @@ function smoothEdges(model,targets) {
 
 function paintLine(ctx,a,b,alpha,color=PEARL,width=.55){if(a.z<-.58&&b.z<-.58)return;const raw=Math.max(0,Math.min(1,((a.z+b.z)*.5+1)/2)),depth=.025+.975*raw**1.7;ctx.strokeStyle=rgba(color,alpha*depth);ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
 
+function paintRegionStructures(ctx,nodes,model,weights,time) {
+  const ia=weights[0],whatsapp=weights[2],web=weights[3],data=weights[4]
+  if(ia>.01){const hubs=nodes.filter(node=>node.hub&&node.z>-.35);hubs.forEach((hub,index)=>nodes.filter(node=>node.index!==hub.index).sort((a,b)=>Math.hypot(a.x-hub.x,a.y-hub.y)-Math.hypot(b.x-hub.x,b.y-hub.y)).slice(0,2+(index%2)).forEach(node=>paintLine(ctx,hub,node,.11*ia,hub.importance>.75?GOLD:PEARL,.38)))}
+  if(web>.01)nodes.filter(node=>node.z>.02&&node.seed>.72).forEach(node=>{const depth=(node.z+1)/2,height=(8+node.importance*32+node.seed*10)*depth*web;ctx.strokeStyle=rgba(node.importance>.65?GOLD:PEARL,(.035+depth*.11)*web*node.alpha);ctx.lineWidth=.45;ctx.beginPath();ctx.moveTo(node.x,node.y);ctx.lineTo(node.x,node.y-height);ctx.stroke();ctx.fillStyle=rgba(PEARL,.08*web*depth*node.alpha);ctx.fillRect(node.x-1.5,node.y-height-1.5,3,3)})
+  if(data>.01)nodes.filter(node=>node.z>-.05&&node.seed>.67).forEach(node=>{const depth=(node.z+1)/2,size=(2+node.importance*5)*depth;ctx.strokeStyle=rgba(node.importance>.7?GOLD:PEARL,(.045+depth*.1)*data*node.alpha);ctx.lineWidth=.4;ctx.strokeRect(node.x-size/2,node.y-size/2,size,size);if(node.seed>.88)ctx.strokeRect(node.x-size*.32,node.y-size*1.25,size*.64,size*.64)})
+  if(whatsapp>.01){const hub=nodes.find(node=>node.index===model.communicationIndex);if(hub){const depth=Math.max(.15,(hub.z+1)/2),strength=whatsapp*depth*hub.alpha;for(let ring=0;ring<3;ring++){const phase=frac(time*.075+ring/3),radius=9+phase*24;ctx.strokeStyle=rgba(ring===0?GOLD:PEARL,(1-phase)*.13*strength);ctx.lineWidth=.5;ctx.beginPath();ctx.arc(hub.x,hub.y,radius,0,Math.PI*2);ctx.stroke()}ctx.strokeStyle=rgba(GOLD,.72*strength);ctx.lineWidth=1;ctx.beginPath();ctx.arc(hub.x,hub.y,7.5,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(hub.x-1,hub.y-1,3.2,-.7,2.1);ctx.stroke();ctx.beginPath();ctx.moveTo(hub.x+1.5,hub.y+2);ctx.lineTo(hub.x+4,hub.y+4.5);ctx.stroke()}}
+}
+
 export function renderNasusOrb(ctx,model,{width,height,time,progress,mode,reduced,pointer}) {
-  const region=Math.round(progress),profile=regionProfiles[region],view=cameraAt(progress)
+  const region=Math.round(progress),weights=regionMix(progress),profile=profileAt(progress),view=cameraAt(progress)
   const activity=mode==='thinking'?1:mode==='speaking'?.85:mode==='listening'?.55:0
   const signal=mode==='speaking'?Math.sin(time*7.2)*.08:0,base=Math.min(width,height)*.49*view.zoom*(1+signal)
   const cx=width*(.5+view.x),cy=height*(.5+view.y),t=reduced?.65:time*(1+activity*.55)
   stepSimulation(model,t,profile,region,activity,reduced,pointer,view,base,cx,cy)
   const nodes=projectNodes(model,t,view,base,cx,cy)
   const localEdges=proximityEdges(nodes,profile.threshold+.025+(activity*.018),profile.neighbours+(mode==='thinking'?1:0),t)
-  const edges=smoothEdges(model,[...localEdges,...hubEdges(model,t)])
+  const edges=smoothEdges(model,[...localEdges,...hubEdges(model,t,weights[1])])
 
   const halo=ctx.createRadialGradient(cx,cy,base*.12,cx,cy,base*1.08);halo.addColorStop(0,'rgba(23,26,32,.08)');halo.addColorStop(.78,'rgba(11,13,17,.025)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
+  paintRegionStructures(ctx,nodes,model,weights,t)
   edges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility,long?PEARL:SMOKE,long?.54:.49)})
 
-  const pulseWindow=.18,pulses=[]
+  const pulseWindow=.18+weights[1]*.08,pulses=[]
   edges.forEach(edge=>{const cycle=frac(t/edge.pulsePeriod+edge.pulseOffset);if(cycle>=pulseWindow||edge.opacity<.08)return;const a=nodes[edge.a],b=nodes[edge.b],progress=cycle/pulseWindow,envelope=Math.sin(progress*Math.PI)**1.5,importance=Math.max(a.importance,b.importance),long=edge.distance>.6;pulses.push({a,b,progress,envelope,importance,long,score:importance+(long?.45:0)})})
-  pulses.sort((a,b)=>b.score-a.score).slice(0,width<700?4:7).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24);ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD:PEARL,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
+  pulses.sort((a,b)=>b.score-a.score).slice(0,(width<700?4:7)+Math.round(weights[1]*3)).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24);ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD:PEARL,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
 
   nodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,important=node.importance>.58,weight=.68+node.importance*1.65,r=Math.max(.22,.31+depth*.86)*weight*(width<700?.86:1),opacity=(.08+depth*.72)*(.62+node.importance*.5);ctx.fillStyle=rgba(important&&node.index%6===region?GOLD:PEARL,opacity*node.alpha);ctx.beginPath();ctx.arc(node.x,node.y,r+(activity*(important?.65:.1)),0,Math.PI*2);ctx.fill()})
 }
