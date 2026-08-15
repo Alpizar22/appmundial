@@ -8,11 +8,11 @@ export default function Orb({ region, mode, onActivate }) {
 
   useEffect(()=>{
     const canvas=canvasRef.current,ctx=canvas.getContext('2d'),reducedQuery=matchMedia('(prefers-reduced-motion: reduce)')
-    let frame=0,width=0,height=0,scrollTarget=0,scrollProgress=0,running=true,reduced=reducedQuery.matches,model=[]
+    let frame=0,width=0,height=0,scrollTarget=0,scrollProgress=0,journeyTarget=0,journeyFocus=0,running=true,reduced=reducedQuery.matches,model=[]
     const pointer={x:0,y:0,active:false}
     const resize=()=>{const box=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);width=box.width;height=box.height;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);const count=width<700?82:width<1100?118:148;if(model.length!==count)model=createOrbModel(count)}
-    const trackScroll=()=>{const vh=Math.max(innerHeight,1);scrollTarget=Math.max(0,Math.min(4,(scrollY-vh*.72)/(vh*1.34)))}
-    const paint=time=>{scrollProgress+=((reduced?regionRef.current:scrollTarget)-scrollProgress)*(reduced?1:.04);ctx.clearRect(0,0,width,height);renderNasusOrb(ctx,model,{width,height,time:time/1000,progress:scrollProgress,mode:modeRef.current,reduced,pointer});if(running&&!reduced)frame=requestAnimationFrame(paint)}
+    const trackScroll=()=>{const vh=Math.max(innerHeight,1);scrollTarget=Math.max(0,Math.min(4,(scrollY-vh*.72)/(vh*1.34)));journeyTarget=Math.max(0,Math.min(1,(scrollY-vh*.58)/(vh*.28)))}
+    const paint=time=>{scrollProgress+=((reduced?regionRef.current:scrollTarget)-scrollProgress)*(reduced?1:.04);journeyFocus+=(journeyTarget-journeyFocus)*(reduced?1:.055);ctx.clearRect(0,0,width,height);renderNasusOrb(ctx,model,{width,height,time:time/1000,progress:scrollProgress,regionalFocus:journeyFocus,mode:modeRef.current,reduced,pointer});if(running&&!reduced)frame=requestAnimationFrame(paint)}
     const restart=()=>{cancelAnimationFrame(frame);ctx.clearRect(0,0,width,height);if(!running)return;if(reduced)paint(650);else frame=requestAnimationFrame(paint)}
     const onMotion=event=>{reduced=event.matches;restart()}
     const onVisibility=()=>{running=document.visibilityState!=='hidden';restart()}
