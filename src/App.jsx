@@ -24,6 +24,12 @@ export default function App() {
   const [contactOpen, setContactOpen] = useState(false)
 
   useEffect(() => {
+    if (performance.getEntriesByName('UI_INTERACTIVE', 'mark').length) return
+    performance.mark('UI_INTERACTIVE')
+    performance.measure('UI_INTERACTIVE_DURATION', { start: 0, end: 'UI_INTERACTIVE' })
+  }, [])
+
+  useEffect(() => {
     const sections = [...document.querySelectorAll('[data-region]')]
     const observer = new IntersectionObserver((entries) => {
       const current = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
