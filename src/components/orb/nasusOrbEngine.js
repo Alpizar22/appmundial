@@ -27,14 +27,18 @@ const GLOBAL_PROFILE = { threshold:.35, neighbours:3, wander:.15, structure:0, c
 
 const lerp=(a,b,t)=>a+(b-a)*t
 const frac=x=>x-Math.floor(x)
+const clamp01=value=>Math.max(0,Math.min(1,value))
 const hash=(a,b)=>frac(Math.sin(a*12.9898+b*78.233)*43758.5453)
 const noise=(x,y)=>{const xi=Math.floor(x),yi=Math.floor(y);let fx=x-xi,fy=y-yi;fx=fx*fx*(3-2*fx);fy=fy*fy*(3-2*fy);const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy}
 const fib=(i,n)=>{const y=1-(2*(i+.5))/n,r=Math.sqrt(1-y*y),a=i*Math.PI*(3-Math.sqrt(5));return[r*Math.cos(a),y,r*Math.sin(a)]}
 const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return`rgba(${n>>16},${n>>8&255},${n&255},${Math.max(0,Math.min(1,a))})`}
 const smoothstep=t=>t*t*(3-2*t)
+const cinematicTravel=weight=>1-Math.pow(1-clamp01(weight),2.25)
+const cinematicReveal=weight=>smoothstep(clamp01((weight-.3)/.7))
+const cinematicIsolation=weight=>smoothstep(clamp01((weight-.7)/.3))
 const regionalWeightAt=(progress,index)=>1-smoothstep(Math.max(0,Math.min(1,(Math.abs(progress-index)-.12)/.32)))
 const regionalStateAt=p=>{const index=Math.max(0,Math.min(4,Math.round(p))),weights=Array.from({length:5},(_,regionIndex)=>regionalWeightAt(p,regionIndex)),focus=weights[index];return{index,focus,weights}}
-const cameraAt=(p,state)=>{const lo=Math.floor(p),hi=Math.min(4,lo+1),t=p-lo,a=camera[lo],b=camera[hi],regional=camera[state.index];return{zoom:lerp(.86,regional.zoom,state.focus),yaw:lerp(a.yaw,b.yaw,t),pitch:lerp(0,regional.pitch,state.focus),x:regional.x*state.focus,y:regional.y*state.focus}}
+const cameraAt=(p,state)=>{const lo=Math.floor(p),hi=Math.min(4,lo+1),t=p-lo,a=camera[lo],b=camera[hi],regional=camera[state.index],travel=cinematicTravel(state.focus);return{zoom:lerp(.86,regional.zoom,travel),yaw:lerp(a.yaw,b.yaw,t),pitch:lerp(0,regional.pitch,travel),x:regional.x*travel,y:regional.y*travel}}
 const profileAt=state=>{const regional=regionProfiles[state.index],focus=state.focus;return{threshold:lerp(GLOBAL_PROFILE.threshold,regional.threshold,focus),neighbours:Math.round(lerp(GLOBAL_PROFILE.neighbours,regional.neighbours,focus)),wander:lerp(GLOBAL_PROFILE.wander,regional.wander,focus),structure:lerp(GLOBAL_PROFILE.structure,regional.structure,focus),communication:state.index===2?focus:0}}
 
 export function createOrbModel(count) {
@@ -215,17 +219,18 @@ function paintRegionalLayer(ctx,nodes,model,weights,time,regionalContext) {
 
 export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFocus,mode,reduced,pointer}) {
   const regional=regionalStateAt(progress),region=regional.index,weights=regional.weights,profile=profileAt(regional),view=cameraAt(progress,regional),iaWeight=weights[0]*(regionalFocus||0),automationWeight=weights[1]
-  if(iaWeight>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.ia,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(iaWeight*Math.PI);view.zoom=lerp(view.zoom,1.62,iaWeight);view.yaw+=yawDelta*iaWeight+orbitArc*.18;view.pitch=lerp(view.pitch,target.pitch,iaWeight);view.x=lerp(view.x,.06,iaWeight)+orbitArc*.045;view.y=lerp(view.y,-.01,iaWeight)-orbitArc*.018}
-  if(automationWeight>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.automation,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(automationWeight*Math.PI);view.zoom=lerp(view.zoom,1.58,automationWeight);view.yaw+=yawDelta*automationWeight-orbitArc*.16;view.pitch=lerp(view.pitch,target.pitch,automationWeight);view.x=lerp(view.x,.08,automationWeight)-orbitArc*.042;view.y=lerp(view.y,0,automationWeight)+orbitArc*.016}
+  const iaTravel=cinematicTravel(iaWeight),automationTravel=cinematicTravel(automationWeight),whatsappTravel=cinematicTravel(weights[2]),dataTravel=cinematicTravel(weights[4])
+  if(iaTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.ia,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(iaTravel*Math.PI);view.zoom=lerp(view.zoom,1.62,iaTravel);view.yaw+=yawDelta*iaTravel+orbitArc*.18;view.pitch=lerp(view.pitch,target.pitch,iaTravel);view.x=lerp(view.x,.06,iaTravel)+orbitArc*.045;view.y=lerp(view.y,-.01,iaTravel)-orbitArc*.018}
+  if(automationTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.automation,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(automationTravel*Math.PI);view.zoom=lerp(view.zoom,1.58,automationTravel);view.yaw+=yawDelta*automationTravel-orbitArc*.16;view.pitch=lerp(view.pitch,target.pitch,automationTravel);view.x=lerp(view.x,.08,automationTravel)-orbitArc*.042;view.y=lerp(view.y,0,automationTravel)+orbitArc*.016}
   if(weights[2]>.001){
     const target=cameraTargetForAnchor(REGION_ANCHORS.whatsapp,time*WORLD_SPIN)
     const yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw))
-    view.yaw+=yawDelta*weights[2]
-    view.pitch=lerp(view.pitch,target.pitch,weights[2])
+    view.yaw+=yawDelta*whatsappTravel
+    view.pitch=lerp(view.pitch,target.pitch,whatsappTravel)
   }
-  if(weights[4]>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.data,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(weights[4]*Math.PI);view.zoom=lerp(view.zoom,1.92,weights[4]);view.yaw+=yawDelta*weights[4]+orbitArc*.12;view.pitch=lerp(view.pitch,target.pitch,weights[4]);view.x=lerp(view.x,.2,weights[4])+orbitArc*.035;view.y=lerp(view.y,-.14,weights[4])-orbitArc*.014}
+  if(dataTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.data,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(dataTravel*Math.PI);view.zoom=lerp(view.zoom,1.92,dataTravel);view.yaw+=yawDelta*dataTravel+orbitArc*.12;view.pitch=lerp(view.pitch,target.pitch,dataTravel);view.x=lerp(view.x,.2,dataTravel)+orbitArc*.035;view.y=lerp(view.y,-.14,dataTravel)-orbitArc*.014}
   const activity=mode==='thinking'?1:mode==='speaking'?.85:mode==='listening'?.55:0
-  const signal=mode==='speaking'?Math.sin(time*7.2)*.08:0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+weights[2]*.16+weights[3]*.04)
+  const signal=mode==='speaking'?Math.sin(time*7.2)*.08:0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+whatsappTravel*.16+cinematicTravel(weights[3])*.04)
   const cx=width*(.5+view.x),cy=height*(.5+view.y),t=reduced?.65:time*(1+activity*.55)
   stepSimulation(model,t,GLOBAL_PROFILE,-1,0,activity,reduced,pointer,view,base,cx,cy)
   const nodes=projectNodes(model,t,view,base,cx,cy)
@@ -236,7 +241,7 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   const whatsappHub={...whatsappProjection,x3:REGION_ANCHORS.whatsapp.position.x,y3:REGION_ANCHORS.whatsapp.position.y,z3:REGION_ANCHORS.whatsapp.position.z,alpha:1,importance:1,index:-1}
   const localEdges=proximityEdges(nodes,profile.threshold+.025+(activity*.018),profile.neighbours+(mode==='thinking'?1:0),t)
   const edges=smoothEdges(model,[...localEdges,...hubEdges(model,t,weights[1])])
-  const regionalBudgetFocus=Math.max(iaWeight,automationWeight,weights[2],weights[3]*.9,weights[4]),globalOpacity=Math.min(1-regionalBudgetFocus*.68,1-iaWeight*.94,1-automationWeight*.94,1-weights[4]*.94),edgeBudget=Math.min(1-regionalBudgetFocus*.58,1-iaWeight*.88,1-automationWeight*.88,1-weights[4]*.88),nodeBudget=Math.min(1-regionalBudgetFocus*.45,1-iaWeight*.84,1-automationWeight*.84,1-weights[4]*.84)
+  const isolationWeights=[cinematicIsolation(iaWeight),cinematicIsolation(automationWeight),cinematicIsolation(weights[2]),cinematicIsolation(weights[3]),cinematicIsolation(weights[4])],regionalBudgetFocus=Math.max(...isolationWeights),globalOpacity=1-regionalBudgetFocus*.94,edgeBudget=1-regionalBudgetFocus*.88,nodeBudget=1-regionalBudgetFocus*.84
   const globalEdges=edges.filter(edge=>hash(edge.a+11,edge.b+29)<=edgeBudget)
   const globalNodes=nodes.filter(node=>hash(node.index,71.3)<=nodeBudget)
 
@@ -249,5 +254,6 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   pulses.sort((a,b)=>b.score-a.score).slice(0,(width<700?6:11)+Math.round(weights[1]*3)).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha)*globalDepthVisibility(z),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24)*globalOpacity;ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD:PEARL,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
 
   globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,hub=node.importance>.64,weight=.58+node.importance*1.55,r=Math.max(.2,.29+depth*.76)*weight*(hub?1.42:.78)*(width<700?.86:1),opacity=(.09+depth*.68)*(.54+node.importance*.42)*(hub?1.32:.62)*globalDepthVisibility(node.z);ctx.fillStyle=rgba(hub&&node.index%5===region?GOLD:PEARL,opacity*node.alpha*globalOpacity);ctx.beginPath();ctx.arc(node.x,node.y,r+(activity*(hub?.7:.08)),0,Math.PI*2);ctx.fill()})
-  paintRegionalLayer(ctx,nodes,model,weights,t,{view,width,height,iaWeight,automationWeight,iaFocus,automationFocus,dataFocus,whatsappHub})
+  const visualWeights=weights.map(cinematicReveal)
+  paintRegionalLayer(ctx,nodes,model,visualWeights,t,{view,width,height,iaWeight:cinematicReveal(iaWeight),automationWeight:cinematicReveal(automationWeight),iaFocus,automationFocus,dataFocus,whatsappHub})
 }
