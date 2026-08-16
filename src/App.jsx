@@ -14,6 +14,8 @@ export default function App() {
   const [activeRegion, setActiveRegion] = useState(0)
   const [voiceState, setVoiceState] = useState('idle')
   const voiceTimer = useRef(null)
+  const panelRef = useRef(null)
+  const [casesOpen, setCasesOpen] = useState(false)
 
   useEffect(() => {
     const sections = [...document.querySelectorAll('[data-region]')]
@@ -25,6 +27,22 @@ export default function App() {
     return () => observer.disconnect()
   }, [])
   useEffect(() => () => window.clearTimeout(voiceTimer.current), [])
+  useEffect(() => {
+    if (!casesOpen) return undefined
+    const previous = document.activeElement
+    const panel = panelRef.current
+    const focusable = () => [...panel.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])')]
+    panel.querySelector('button')?.focus()
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setCasesOpen(false)
+      if (event.key !== 'Tab') return
+      const items = focusable(), first = items[0], last = items.at(-1)
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => { document.removeEventListener('keydown', onKeyDown); previous?.focus?.() }
+  }, [casesOpen])
 
   const beginConversation = () => {
     window.clearTimeout(voiceTimer.current)
@@ -48,10 +66,23 @@ export default function App() {
     </header>
 
     <div className="world" aria-live="polite">
-      <Orb region={activeRegion} mode={voiceState} onActivate={beginConversation} />
+      <Orb region={activeRegion} mode={voiceState} onActivate={beginConversation} onOpenCases={() => setCasesOpen(true)} />
       <p className={`voice-state voice-state--${voiceState}`}>{labels[voiceState]}</p>
       <div className="world__crosshair world__crosshair--a" /><div className="world__crosshair world__crosshair--b" />
     </div>
+
+    {casesOpen && <div className="cases-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setCasesOpen(false) }}>
+      <aside ref={panelRef} className="cases-panel" role="dialog" aria-modal="true" aria-labelledby="cases-title">
+        <button type="button" className="cases-panel__close" onClick={() => setCasesOpen(false)} aria-label="Cerrar casos reales">×</button>
+        <p className="eyebrow">CASOS REALES</p>
+        <h2 id="cases-title">Trabajo aplicado en sistemas reales.</h2>
+        <div className="cases-panel__projects">
+          {[1, 2, 3].map(number => <article key={number}><span>0{number}</span><h3>Proyecto por definir</h3><p>Contexto, solución y resultado del caso.</p></article>)}
+        </div>
+        <div className="cases-panel__metrics"><span>MÉTRICAS</span><strong>— / — / —</strong></div>
+        <a className="cases-panel__cta" href="#contacto" onClick={() => setCasesOpen(false)}>Hablar sobre un proyecto <i>→</i></a>
+      </aside>
+    </div>}
 
     <section className="hero" id="top">
       <div className="hero__copy">

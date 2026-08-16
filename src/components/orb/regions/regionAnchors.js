@@ -17,6 +17,10 @@ export const REGION_ANCHORS=Object.freeze({
   data:createAnchor('data',3.25,-.16,{zoom:1.92,x:.2,y:-.14}),
 })
 
+export const WORLD_HOTSPOTS=Object.freeze({
+  cases:createAnchor('cases',-.62,.3,{zoom:.86,x:0,y:0}),
+})
+
 export function cameraTargetForAnchor(anchor,worldRotation=0) {
   const {x,y,z}=anchor.position
   return Object.freeze({yaw:normalizeAngle(Math.atan2(-x,z)-worldRotation),pitch:Math.atan2(y,Math.hypot(x,z))})
