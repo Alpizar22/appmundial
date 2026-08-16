@@ -226,8 +226,8 @@ function paintWebTower(ctx,node,weight,time,buildState) {
 
 function paintWebSky(ctx,width,height,weight,time) {
   const stars=Array.from({length:54},(_,index)=>{const depth=.22+hash(index,401.3)*.78,drift=Math.sin(time*.028+index*1.17)*(1-depth)*3;return{index,x:width*(.045+hash(index,413.7)*.91)+drift,y:height*(.035+hash(index,427.1)*.48),depth}}),keys=new Set()
-  stars.forEach(star=>{[...stars].filter(other=>other.index!==star.index).sort((a,b)=>Math.hypot(a.x-star.x,a.y-star.y)-Math.hypot(b.x-star.x,b.y-star.y)).slice(0,2).forEach(other=>{const low=Math.min(star.index,other.index),high=Math.max(star.index,other.index),key=`${low}:${high}`,distance=Math.hypot(star.x-other.x,star.y-other.y);if(keys.has(key)||distance>width*.16)return;keys.add(key);ctx.strokeStyle=rgba(SMOKE_SECONDARY,(.035+Math.min(star.depth,other.depth)*.09)*weight);ctx.lineWidth=.42;ctx.beginPath();ctx.moveTo(star.x,star.y);ctx.lineTo(other.x,other.y);ctx.stroke()})})
-  stars.forEach(star=>{const active=star.index%17===0;ctx.fillStyle=rgba(active?GOLD_ACTIVE:TEXT_IVORY,(active?.34:.12+star.depth*.2)*weight);ctx.beginPath();ctx.arc(star.x,star.y,active?1.05:.32+star.depth*.54,0,Math.PI*2);ctx.fill()})
+  stars.forEach(star=>{[...stars].filter(other=>other.index!==star.index).sort((a,b)=>Math.hypot(a.x-star.x,a.y-star.y)-Math.hypot(b.x-star.x,b.y-star.y)).slice(0,2).forEach(other=>{const low=Math.min(star.index,other.index),high=Math.max(star.index,other.index),key=`${low}:${high}`,distance=Math.hypot(star.x-other.x,star.y-other.y),depth=Math.min(star.depth,other.depth);if(keys.has(key)||distance>width*.16)return;keys.add(key);ctx.strokeStyle=rgba(depth>.62?TEXT_IVORY:SMOKE_SECONDARY,(.09+depth*.16)*weight);ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(star.x,star.y);ctx.lineTo(other.x,other.y);ctx.stroke()})})
+  stars.forEach(star=>{const active=star.index%17===0;ctx.fillStyle=rgba(active?GOLD_ACTIVE:TEXT_IVORY,(active?.62:.25+star.depth*.34)*weight);ctx.beginPath();ctx.arc(star.x,star.y,active?1.5:.55+star.depth*.75,0,Math.PI*2);ctx.fill()})
 }
 
 function paintWebWorld(ctx,nodes,model,weight,time) {
