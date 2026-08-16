@@ -18,11 +18,13 @@ const caseStudies = [
 
 export default function App() {
   const [activeRegion, setActiveRegion] = useState(0)
-  const { session: voiceSession, start: beginConversation } = useVoiceAssistant()
+  const { session: voiceSession, microphoneActive, start: beginConversation, stop: stopConversation } = useVoiceAssistant()
   const voiceState = voiceSession.status
   const panelRef = useRef(null)
   const [casesOpen, setCasesOpen] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
+  const [voiceConsentOpen, setVoiceConsentOpen] = useState(false)
+  const [voiceConsentGiven, setVoiceConsentGiven] = useState(() => localStorage.getItem('nasus-voice-consent') === 'accepted')
 
   useEffect(() => {
     if (performance.getEntriesByName('UI_INTERACTIVE', 'mark').length) return
@@ -40,13 +42,13 @@ export default function App() {
     return () => observer.disconnect()
   }, [])
   useEffect(() => {
-    if (!casesOpen && !contactOpen) return undefined
+    if (!casesOpen && !contactOpen && !voiceConsentOpen) return undefined
     const previous = document.activeElement
     const panel = panelRef.current
     const focusable = () => [...panel.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])')]
     panel.querySelector('button')?.focus()
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') { setCasesOpen(false); setContactOpen(false) }
+      if (event.key === 'Escape') { setCasesOpen(false); setContactOpen(false); setVoiceConsentOpen(false) }
       if (event.key !== 'Tab') return
       const items = focusable(), first = items[0], last = items.at(-1)
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
@@ -54,7 +56,18 @@ export default function App() {
     }
     document.addEventListener('keydown', onKeyDown)
     return () => { document.removeEventListener('keydown', onKeyDown); previous?.focus?.() }
-  }, [casesOpen, contactOpen])
+  }, [casesOpen, contactOpen, voiceConsentOpen])
+
+  const requestConversation = () => {
+    if (!voiceConsentGiven && voiceState === 'idle') return setVoiceConsentOpen(true)
+    beginConversation()
+  }
+  const acceptVoiceConsent = () => {
+    localStorage.setItem('nasus-voice-consent', 'accepted')
+    setVoiceConsentGiven(true)
+    setVoiceConsentOpen(false)
+    beginConversation()
+  }
 
   const goTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
 
@@ -66,8 +79,9 @@ export default function App() {
     </header>
 
     <div className="world" aria-live="polite">
-      <Orb region={activeRegion} mode={voiceState} onActivate={beginConversation} onOpenCases={() => setCasesOpen(true)} />
+      <Orb region={activeRegion} mode={voiceState} onActivate={requestConversation} onOpenCases={() => setCasesOpen(true)} />
       <p className={`voice-state voice-state--${voiceState}`} role="status">{voiceStateLabel(voiceSession)}</p>
+      {microphoneActive && <div className="microphone-indicator" role="status"><i />MICRÓFONO ACTIVO <button type="button" onClick={stopConversation}>DETENER</button></div>}
       <div className="world__crosshair world__crosshair--a" /><div className="world__crosshair world__crosshair--b" />
     </div>
 
@@ -92,10 +106,22 @@ export default function App() {
         <h2 id="contact-title">¿Tienes algo en mente?</h2>
         <p className="contact-panel__intro">Cuéntanos qué quieres construir.</p>
         <div className="contact-panel__actions">
-          <button type="button" className="contact-panel__primary" onClick={() => { setContactOpen(false); beginConversation() }}>Hablar con Nasus <i>→</i></button>
+          <button type="button" className="contact-panel__primary" onClick={() => { setContactOpen(false); requestConversation() }}>Hablar con Nasus <i>→</i></button>
           <button type="button" className="contact-panel__secondary" aria-disabled="true">Enviar mensaje <span>PRÓXIMAMENTE</span></button>
         </div>
         <div className="contact-panel__channels"><span>CANAL / 01</span><p>Arquitectura preparada para WhatsApp, correo, formulario y agenda.</p></div>
+      </aside>
+    </div>}
+
+    {voiceConsentOpen && <div className="cases-overlay voice-consent-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setVoiceConsentOpen(false) }}>
+      <aside ref={panelRef} className="voice-consent" role="dialog" aria-modal="true" aria-labelledby="voice-consent-title">
+        <button type="button" className="cases-panel__close" onClick={() => setVoiceConsentOpen(false)} aria-label="Cerrar aviso de voz">×</button>
+        <p className="eyebrow">ASISTENTE DE VOZ</p>
+        <h2 id="voice-consent-title">Tu voz activa la experiencia.</h2>
+        <p>Usaremos el reconocimiento de voz de tu navegador. La transcripción se procesa con inteligencia artificial para generar una respuesta y convertirla en audio.</p>
+        <small>El navegador solicitará permiso antes de abrir el micrófono. Podrás detenerlo en cualquier momento.</small>
+        <button type="button" className="voice-consent__accept" onClick={acceptVoiceConsent}>CONTINUAR Y ACTIVAR <i>→</i></button>
+        <span className="voice-consent__privacy">POLÍTICA DE PRIVACIDAD · CONTENIDO PENDIENTE</span>
       </aside>
     </div>}
 
@@ -104,7 +130,7 @@ export default function App() {
         <p className="eyebrow">NASUS</p>
         <h1>Habla con<br />Nasus</h1>
         <p>Interactúa con inteligencia viva.</p>
-        <button className="talk-button" onClick={beginConversation}>{voiceState === 'idle' ? 'Hablar con Nasus' : 'Terminar'}<i /></button>
+        <button className="talk-button" onClick={requestConversation}>{voiceState === 'idle' ? 'Hablar con Nasus' : 'Terminar'}<i /></button>
       </div>
       <span className="scroll-cue">SCROLL <i /></span>
     </section>

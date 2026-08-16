@@ -11,6 +11,7 @@ export function useVoiceAssistant() {
   const [session, dispatch] = useReducer(voiceSessionReducer, initialVoiceSession)
   const [inputLevel, setInputLevel] = useState(0)
   const [outputLevel, setOutputLevel] = useState(0)
+  const [microphoneActive, setMicrophoneActive] = useState(false)
   const streamRef = useRef(null)
   const inputContextRef = useRef(null)
   const analyserRef = useRef(null)
@@ -32,6 +33,7 @@ export function useVoiceAssistant() {
     recognitionRef.current = null
     streamRef.current?.getTracks().forEach(track => track.stop())
     streamRef.current = null
+    setMicrophoneActive(false)
     analyserRef.current?.disconnect?.()
     analyserRef.current = null
     if (inputContextRef.current && inputContextRef.current.state !== 'closed') inputContextRef.current.close().catch(() => {})
@@ -150,6 +152,7 @@ export function useVoiceAssistant() {
         video: false,
       })
       streamRef.current = stream
+      setMicrophoneActive(true)
       const AudioContextClass = window.AudioContext || window.webkitAudioContext
       const context = new AudioContextClass()
       inputContextRef.current = context
@@ -214,5 +217,5 @@ export function useVoiceAssistant() {
     if (outputContextRef.current && outputContextRef.current.state !== 'closed') outputContextRef.current.close().catch(() => {})
   }, [stopInput, stopOutput])
 
-  return { session, inputLevel, outputLevel, microphoneActive: Boolean(streamRef.current), start, stop: settle }
+  return { session, inputLevel, outputLevel, microphoneActive, start, stop: settle }
 }
