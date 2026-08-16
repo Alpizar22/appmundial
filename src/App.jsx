@@ -16,6 +16,7 @@ export default function App() {
   const voiceTimer = useRef(null)
   const panelRef = useRef(null)
   const [casesOpen, setCasesOpen] = useState(false)
+  const [contactOpen, setContactOpen] = useState(false)
 
   useEffect(() => {
     const sections = [...document.querySelectorAll('[data-region]')]
@@ -28,13 +29,13 @@ export default function App() {
   }, [])
   useEffect(() => () => window.clearTimeout(voiceTimer.current), [])
   useEffect(() => {
-    if (!casesOpen) return undefined
+    if (!casesOpen && !contactOpen) return undefined
     const previous = document.activeElement
     const panel = panelRef.current
     const focusable = () => [...panel.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])')]
     panel.querySelector('button')?.focus()
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') setCasesOpen(false)
+      if (event.key === 'Escape') { setCasesOpen(false); setContactOpen(false) }
       if (event.key !== 'Tab') return
       const items = focusable(), first = items[0], last = items.at(-1)
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
@@ -42,7 +43,7 @@ export default function App() {
     }
     document.addEventListener('keydown', onKeyDown)
     return () => { document.removeEventListener('keydown', onKeyDown); previous?.focus?.() }
-  }, [casesOpen])
+  }, [casesOpen, contactOpen])
 
   const beginConversation = () => {
     window.clearTimeout(voiceTimer.current)
@@ -62,7 +63,7 @@ export default function App() {
     <div className="noise" />
     <header className="topbar">
       <a className="brand" href="#top" aria-label="Nasus, inicio"><span className="brand__mark"><i /><i /><i /></span>NASUS</a>
-      <span className="topbar__coordinate">WORLD / NL-001</span>
+      <div className="topbar__actions"><span className="topbar__coordinate">WORLD / NL-001</span><button type="button" className="contact-trigger" onClick={() => setContactOpen(true)}>CONTACTO <i>↗</i></button></div>
     </header>
 
     <div className="world" aria-live="polite">
@@ -81,6 +82,20 @@ export default function App() {
         </div>
         <div className="cases-panel__metrics"><span>MÉTRICAS</span><strong>— / — / —</strong></div>
         <a className="cases-panel__cta" href="#contacto" onClick={() => setCasesOpen(false)}>Hablar sobre un proyecto <i>→</i></a>
+      </aside>
+    </div>}
+
+    {contactOpen && <div className="cases-overlay contact-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setContactOpen(false) }}>
+      <aside ref={panelRef} className="cases-panel contact-panel" role="dialog" aria-modal="true" aria-labelledby="contact-title">
+        <button type="button" className="cases-panel__close" onClick={() => setContactOpen(false)} aria-label="Cerrar contacto">×</button>
+        <p className="eyebrow">CONTACTO</p>
+        <h2 id="contact-title">¿Tienes algo en mente?</h2>
+        <p className="contact-panel__intro">Cuéntanos qué quieres construir.</p>
+        <div className="contact-panel__actions">
+          <button type="button" className="contact-panel__primary" onClick={() => { setContactOpen(false); beginConversation() }}>Hablar con Nasus <i>→</i></button>
+          <button type="button" className="contact-panel__secondary" aria-disabled="true">Enviar mensaje <span>PRÓXIMAMENTE</span></button>
+        </div>
+        <div className="contact-panel__channels"><span>CANAL / 01</span><p>Arquitectura preparada para WhatsApp, correo, formulario y agenda.</p></div>
       </aside>
     </div>}
 
