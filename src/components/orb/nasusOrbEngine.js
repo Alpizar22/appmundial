@@ -111,7 +111,7 @@ function smoothEdges(model,targets) {
   return [...model.edgeStates.values()]
 }
 
-const globalDepthVisibility=z=>smoothstep((z+.42)/.48)
+const globalDepthVisibility=z=>smoothstep((z+.78)/.8)
 
 function paintLine(ctx,a,b,alpha,color=PEARL,width=.55){const visibilityA=globalDepthVisibility(a.z),visibilityB=globalDepthVisibility(b.z);if(visibilityA<.002&&visibilityB<.002)return;const raw=Math.max(0,Math.min(1,((a.z+b.z)*.5+1)/2)),depth=.025+.975*raw**1.7,gradient=ctx.createLinearGradient(a.x,a.y,b.x,b.y);gradient.addColorStop(0,rgba(color,alpha*depth*visibilityA));gradient.addColorStop(1,rgba(color,alpha*depth*visibilityB));ctx.strokeStyle=gradient;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
 
