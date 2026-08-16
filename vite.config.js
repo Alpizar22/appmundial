@@ -9,7 +9,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
-        name: 'Nasus Labs',
+        name: 'NASUS',
         short_name: 'Nasus',
         description: 'Una nueva forma de interactuar con la inteligencia.',
         theme_color: '#050608',

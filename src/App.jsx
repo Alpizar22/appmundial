@@ -61,7 +61,7 @@ export default function App() {
   return <main className={voiceState === 'idle' ? 'experience' : 'experience is-speaking'}>
     <div className="noise" />
     <header className="topbar">
-      <a className="brand" href="#top" aria-label="Nasus Labs, inicio"><span className="brand__mark"><i /><i /><i /></span>NASUS <em>LABS</em></a>
+      <a className="brand" href="#top" aria-label="Nasus, inicio"><span className="brand__mark"><i /><i /><i /></span>NASUS</a>
       <span className="topbar__coordinate">WORLD / NL-001</span>
     </header>
 
@@ -86,7 +86,7 @@ export default function App() {
 
     <section className="hero" id="top">
       <div className="hero__copy">
-        <p className="eyebrow">NASUS LABS</p>
+        <p className="eyebrow">NASUS</p>
         <h1>Habla con Nasus</h1>
         <p>Interactúa con inteligencia viva.</p>
         <button className="talk-button" onClick={beginConversation}>{voiceState === 'idle' ? 'Hablar con Nasus' : 'Terminar'}<i /></button>
@@ -102,7 +102,7 @@ export default function App() {
       </section>)}
     </div>
 
-    <footer id="contacto"><span>NASUS LABS / INTELLIGENCE WORLD</span></footer>
+    <footer id="contacto"><span>NASUS / INTELLIGENCE WORLD</span></footer>
     <nav className="route-nav" aria-label="Mapa de regiones">
       <span className="route-nav__origin">NL</span>
       {regions.map((region, index) => <button className={activeRegion === index ? 'is-active' : ''} onClick={() => goTo(region.id)} key={region.id} aria-label={`Ir a ${region.label}`}><i />{region.label}</button>)}
