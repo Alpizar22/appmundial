@@ -166,7 +166,7 @@ function paintSignalWave(ctx,hub,node,weight,time,index) {
 
 function createWhatsappPopulation() {
   const zones=[[-145,-48,155,102],[18,-88,178,98],[-72,76,172,106],[128,70,154,94]],points=[]
-  for(let candidate=0;candidate<980;candidate++){const offsetX=(hash(candidate,211.7)-.5)*620,offsetY=(hash(candidate,223.9)-.5)*390,density=zones.reduce((sum,[x,y,rx,ry])=>sum+Math.exp(-(Math.pow((offsetX-x)/rx,2)+Math.pow((offsetY-y)/ry,2))*1.42),0),acceptance=clamp01((density-.12)*.92);if(hash(candidate,239.3)>acceptance)continue;points.push({index:10000+points.length,offsetX,offsetY,density:clamp01(density*.58),importance:.18+Math.pow(hash(candidate,251.1),4)*.72,size:.3+hash(candidate,263.5)*.62,alpha:.07+hash(candidate,277.9)*.2})}
+  for(let candidate=0;candidate<2500;candidate++){const offsetX=(hash(candidate,211.7)-.5)*620,offsetY=(hash(candidate,223.9)-.5)*390,density=zones.reduce((sum,[x,y,rx,ry])=>sum+Math.exp(-(Math.pow((offsetX-x)/rx,2)+Math.pow((offsetY-y)/ry,2))*1.42),0),acceptance=clamp01((density-.1)*1.02);if(hash(candidate,239.3)>acceptance)continue;points.push({index:10000+points.length,offsetX,offsetY,density:clamp01(density*.58),importance:.18+Math.pow(hash(candidate,251.1),4)*.72,size:.62+hash(candidate,263.5)*.82,alpha:.14+hash(candidate,277.9)*.25})}
   return points
 }
 
@@ -182,7 +182,7 @@ function paintWhatsappWorld(ctx,nodes,hub,weight,time,model) {
   desired.forEach((edge,key)=>{if(!model.whatsappLinks.has(key))model.whatsappLinks.set(key,{...edge,alpha:0});else Object.assign(model.whatsappLinks.get(key),edge)})
   const byIndex=new Map(allByIndex);activeClusters.flat().forEach(node=>byIndex.set(node.index,node))
 
-  population.forEach((point,index)=>{const collective=.55+point.density*.65;ctx.fillStyle=rgba(index%23===0?GOLD:PEARL,point.alpha*collective);ctx.fillRect(point.x-point.size*.5,point.y-point.size*.5,point.size,point.size)})
+  population.forEach((point,index)=>{const collective=.72+point.density*.78;ctx.fillStyle=rgba(index%29===0?GOLD:PEARL,point.alpha*collective);ctx.fillRect(point.x-point.size*.5,point.y-point.size*.5,point.size,point.size)})
   for(let star=0;star<88;star++){const angle=hash(star,81.2)*Math.PI*2,radius=70+hash(star,92.6)*390,drift=Math.sin(time*(.025+hash(star,15.4)*.025)+star)*7,x=hub.x+Math.cos(angle)*radius+drift,y=hub.y+Math.sin(angle)*radius*.68+Math.cos(time*.022+star)*4,alpha=.06+hash(star,33.9)*.18;ctx.fillStyle=rgba(star%19===0?GOLD:PEARL,alpha*weight);ctx.beginPath();ctx.arc(x,y,star%19===0?1.05:.42+hash(star,4.8)*.52,0,Math.PI*2);ctx.fill()}
   nodes.forEach(node=>{const nodeDepth=Math.max(.02,(node.z+1)/2),hubDistance=Math.hypot(node.x-hub.x,node.y-hub.y),warmth=Math.max(0,1-hubDistance/235),nodeColor=warmth>.42?GOLD:PEARL;ctx.fillStyle=rgba(nodeColor,(.075+nodeDepth**1.85*(.48+warmth*.22))*weight*node.alpha);ctx.beginPath();ctx.arc(node.x,node.y,(.34+node.importance*1.22)*(.3+nodeDepth*1.05),0,Math.PI*2);ctx.fill()})
   activeClusters.forEach((cluster,index)=>{const centerX=cluster.reduce((sum,node)=>sum+node.x,0)/cluster.length,centerY=cluster.reduce((sum,node)=>sum+node.y,0)/cluster.length,radius=42+cluster.length*4,glow=ctx.createRadialGradient(centerX,centerY,2,centerX,centerY,radius);glow.addColorStop(0,rgba(index<2?GOLD:PEARL,.18*weight));glow.addColorStop(.48,rgba(index<2?GOLD:PEARL,.07*weight));glow.addColorStop(1,'transparent');ctx.fillStyle=glow;ctx.beginPath();ctx.arc(centerX,centerY,radius,0,Math.PI*2);ctx.fill()})
