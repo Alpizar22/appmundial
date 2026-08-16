@@ -241,8 +241,11 @@ function paintWebSky(ctx,width,height,weight,time) {
   stars.forEach(star=>{const active=star.index%17===0;ctx.fillStyle=rgba(active?GOLD_ACTIVE:TEXT_IVORY,(active?.62:.25+star.depth*.34)*weight);ctx.beginPath();ctx.arc(star.x,star.y,active?1.5:.55+star.depth*.75,0,Math.PI*2);ctx.fill()})
 }
 
-function paintWebWorld(ctx,nodes,model,weight,time) {
-  const dpr=ctx.getTransform().a||1,viewportWidth=ctx.canvas.width/dpr,viewportHeight=ctx.canvas.height/dpr,radius=Math.min(viewportWidth,viewportHeight)*.25
+// Recibe el viewport ya resuelto en vez de recalcularlo desde el backing store del canvas:
+// esa derivacion era una segunda fuente de verdad que se desfasaba de la que usa el resto del
+// render (clearRect, halo, subworlds), y desplazaba verticalmente toda la escena de Web.
+function paintWebWorld(ctx,nodes,model,weight,time,viewportWidth,viewportHeight) {
+  const radius=Math.min(viewportWidth,viewportHeight)*.25
   const driftX=(1-weight)*13+Math.sin(time*.09)*2.2,driftY=(1-weight)*-5+Math.cos(time*.075)*1.4,sceneNodes=nodes.map(node=>({...node,x:node.x+node.z*driftX,y:node.y+node.z*driftY}))
   const eligible=sceneNodes.filter(node=>node.z>-.58&&node.alpha>.2&&node.x>viewportWidth*.08&&node.x<viewportWidth*.98&&node.y>viewportHeight*.015&&node.y<viewportHeight*.98)
   if(model.webDistrictIndices.length<1){if(weight<.62)return;const districtRadius=radius*1.08,centerCandidates=eligible.filter(node=>node.z>-.38&&node.x>viewportWidth*.34&&node.x<viewportWidth*.9&&node.y>viewportHeight*.42&&node.y<viewportHeight*.76).map(node=>({...node,density:eligible.filter(other=>Math.hypot(node.x-other.x,node.y-other.y)<districtRadius).length}));const center=centerCandidates.sort((a,b)=>(b.density*1.8+b.importance)-(a.density*1.8+a.importance))[0];if(center)model.webDistrictIndices=[center.index]}
@@ -272,7 +275,7 @@ function paintRegionalLayer(ctx,nodes,model,weights,time,regionalContext) {
   const ia=regionalContext.iaWeight,automation=regionalContext.automationWeight,whatsapp=weights[2],web=weights[3],data=weights[4]
   if(ia>.01){const {view,width,height,iaFocus}=regionalContext,iaNodes=selectNodesAroundAnchor(nodes,REGION_ANCHORS.ia,{innerAngle:.34,outerAngle:1.04,minAlpha:.2,limit:48});renderIaSubworld({ctx,camera:view,time,viewport:{width,height},nodes:iaNodes,focus:iaFocus,intensity:ia,palette:{gold:GOLD_ACTIVE,pearl:TEXT_IVORY,smoke:SMOKE_SECONDARY,rgba}})}
   if(automation>.01){const {view,width,height,automationFocus}=regionalContext,automationNodes=selectNodesAroundAnchor(nodes,REGION_ANCHORS.automation,{innerAngle:.34,outerAngle:1.04,minAlpha:.2,limit:42});renderAutomationSubworld({ctx,camera:view,time,viewport:{width,height},nodes:automationNodes,focus:automationFocus,intensity:automation,palette:{gold:GOLD_ACTIVE,pearl:TEXT_IVORY,smoke:SMOKE_SECONDARY,rgba}})}
-  if(web>.01)paintWebWorld(ctx,nodes,model,web,time)
+  if(web>.01)paintWebWorld(ctx,nodes,model,web,time,regionalContext.width,regionalContext.height)
   if(data>.01){const {view,width,height,dataFocus,dataMotion}=regionalContext;renderDataSubworld({ctx,camera:view,time,viewport:{width,height},focus:dataFocus,intensity:data,motion:dataMotion,palette:{gold:GOLD_ACTIVE,pearl:TEXT_IVORY,smoke:SMOKE_SECONDARY,rgba}})}
   if(whatsapp>.01)paintWhatsappWorld(ctx,nodes,regionalContext.whatsappHub,whatsapp,time,model)
 }
