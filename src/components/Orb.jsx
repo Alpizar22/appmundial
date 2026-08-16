@@ -4,6 +4,7 @@ import { preloadDataIllustration } from './orb/regions/dataSubworld'
 
 export default function Orb({ region, mode, voiceSignals, onActivate, onOpenCases }) {
   const canvasRef=useRef(null),hotspotRef=useRef(null),regionRef=useRef(region),modeRef=useRef(mode),voiceSignalsRef=useRef(voiceSignals)
+  const suppressClickRef=useRef(false)
   const [ready,setReady]=useState(false)
   useEffect(()=>{regionRef.current=region;canvasRef.current?.dispatchEvent(new Event('orbinvalidate'))},[region])
   useEffect(()=>{modeRef.current=mode;canvasRef.current?.dispatchEvent(new Event('orbinvalidate'))},[mode])
@@ -13,7 +14,7 @@ export default function Orb({ region, mode, voiceSignals, onActivate, onOpenCase
   useEffect(()=>{
     const canvas=canvasRef.current,ctx=canvas.getContext('2d'),reducedQuery=matchMedia('(prefers-reduced-motion: reduce)')
     let frame=0,startFrame=0,revealTimer=0,width=0,height=0,scrollTarget=0,scrollProgress=0,journeyTarget=0,journeyFocus=0,running=true,reduced=reducedQuery.matches,model=[],hasPainted=false
-    const pointer={x:0,y:0,active:false}
+    const pointer={x:0,y:0,active:false,touching:false,startX:0,startY:0,dragged:false}
     const markOnce=name=>{if(performance.getEntriesByName(name,'mark').length)return;performance.mark(name);performance.measure(`${name}_DURATION`,{start:0,end:name})}
     const resize=()=>{const box=canvas.getBoundingClientRect();width=box.width;height=box.height;const dpr=Math.min(devicePixelRatio||1,width<700?1:width<1100?1.6:2);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);const count=width<700?100:width<1100?180:360;if(model.length!==count)model=createOrbModel(count)}
     const trackScroll=()=>{const vh=Math.max(innerHeight,1),raw=Math.max(0,(scrollY-vh*.72)/(vh*1.34)),stretched=raw<=1.25?raw/1.25:raw<=2.5?1+(raw-1.25)/1.25:raw<=3.75?2+(raw-2.5)/1.25:raw<=5?3+(raw-3.75)/1.25:4+(raw-5)/1.25;scrollTarget=Math.max(0,Math.min(5,stretched));journeyTarget=Math.max(0,Math.min(1,(scrollY-vh*.58)/(vh*.28)))}
@@ -21,13 +22,16 @@ export default function Orb({ region, mode, voiceSignals, onActivate, onOpenCase
     const restart=()=>{cancelAnimationFrame(frame);ctx.clearRect(0,0,width,height);if(!running)return;if(reduced)paint(650);else frame=requestAnimationFrame(paint)}
     const onMotion=event=>{reduced=event.matches;restart()}
     const onVisibility=()=>{running=document.visibilityState!=='hidden';restart()}
-    const onPointerMove=event=>{const box=canvas.getBoundingClientRect();pointer.x=event.clientX-box.left;pointer.y=event.clientY-box.top;pointer.active=true}
-    const onPointerLeave=()=>{pointer.active=false}
+    const locatePointer=event=>{const box=canvas.getBoundingClientRect();pointer.x=event.clientX-box.left;pointer.y=event.clientY-box.top}
+    const onPointerDown=event=>{if(event.pointerType!=='touch'&&event.pointerType!=='pen')return;locatePointer(event);pointer.touching=true;pointer.active=true;pointer.dragged=false;pointer.startX=event.clientX;pointer.startY=event.clientY;suppressClickRef.current=false}
+    const onPointerMove=event=>{if((event.pointerType==='touch'||event.pointerType==='pen')&&!pointer.touching)return;locatePointer(event);pointer.active=true;if(pointer.touching&&Math.hypot(event.clientX-pointer.startX,event.clientY-pointer.startY)>8)pointer.dragged=true}
+    const onPointerEnd=event=>{if(event.pointerType!=='touch'&&event.pointerType!=='pen')return;suppressClickRef.current=pointer.dragged;pointer.touching=false;pointer.active=false}
+    const onPointerLeave=()=>{if(!pointer.touching)pointer.active=false}
     const invalidate=()=>{if(reduced)restart()}
     const onRevealEnd=event=>{if(event.propertyName!=='opacity')return;window.clearTimeout(revealTimer);markOnce('ORB_VISIBLE')}
-    addEventListener('resize',resize);addEventListener('scroll',trackScroll,{passive:true});addEventListener('pointermove',onPointerMove,{passive:true});addEventListener('blur',onPointerLeave);reducedQuery.addEventListener('change',onMotion);document.addEventListener('visibilitychange',onVisibility);document.documentElement.addEventListener('pointerleave',onPointerLeave);canvas.addEventListener('orbinvalidate',invalidate);canvas.addEventListener('transitionend',onRevealEnd);startFrame=requestAnimationFrame(()=>{if(!running)return;resize();trackScroll();markOnce('CANVAS_READY');restart()})
-    return()=>{running=false;window.clearTimeout(revealTimer);cancelAnimationFrame(startFrame);cancelAnimationFrame(frame);removeEventListener('resize',resize);removeEventListener('scroll',trackScroll);removeEventListener('pointermove',onPointerMove);removeEventListener('blur',onPointerLeave);reducedQuery.removeEventListener('change',onMotion);document.removeEventListener('visibilitychange',onVisibility);document.documentElement.removeEventListener('pointerleave',onPointerLeave);canvas.removeEventListener('orbinvalidate',invalidate);canvas.removeEventListener('transitionend',onRevealEnd)}
+    addEventListener('resize',resize);addEventListener('scroll',trackScroll,{passive:true});addEventListener('pointermove',onPointerMove,{passive:true});addEventListener('blur',onPointerLeave);reducedQuery.addEventListener('change',onMotion);document.addEventListener('visibilitychange',onVisibility);document.documentElement.addEventListener('pointerleave',onPointerLeave);canvas.addEventListener('pointerdown',onPointerDown,{passive:true});canvas.addEventListener('pointerup',onPointerEnd,{passive:true});canvas.addEventListener('pointercancel',onPointerEnd,{passive:true});canvas.addEventListener('orbinvalidate',invalidate);canvas.addEventListener('transitionend',onRevealEnd);startFrame=requestAnimationFrame(()=>{if(!running)return;resize();trackScroll();markOnce('CANVAS_READY');restart()})
+    return()=>{running=false;window.clearTimeout(revealTimer);cancelAnimationFrame(startFrame);cancelAnimationFrame(frame);removeEventListener('resize',resize);removeEventListener('scroll',trackScroll);removeEventListener('pointermove',onPointerMove);removeEventListener('blur',onPointerLeave);reducedQuery.removeEventListener('change',onMotion);document.removeEventListener('visibilitychange',onVisibility);document.documentElement.removeEventListener('pointerleave',onPointerLeave);canvas.removeEventListener('pointerdown',onPointerDown);canvas.removeEventListener('pointerup',onPointerEnd);canvas.removeEventListener('pointercancel',onPointerEnd);canvas.removeEventListener('orbinvalidate',invalidate);canvas.removeEventListener('transitionend',onRevealEnd)}
   },[])
 
-  return <div className="orb-shell"><canvas ref={canvasRef} className={`orb ${ready?'is-ready':''}`} onClick={onActivate} aria-label="Orbe de Nasus. Activar conversación." role="button" tabIndex="0" onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onActivate()}}} /><button ref={hotspotRef} type="button" className="cases-hotspot" onClick={onOpenCases} aria-label="Abrir casos reales"><span>CASOS</span></button></div>
+  return <div className="orb-shell"><canvas ref={canvasRef} className={`orb ${ready?'is-ready':''}`} onClick={()=>{if(suppressClickRef.current){suppressClickRef.current=false;return}onActivate()}} aria-label="Orbe de Nasus. Activar conversación." role="button" tabIndex="0" onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onActivate()}}} /><button ref={hotspotRef} type="button" className="cases-hotspot" onClick={onOpenCases} aria-label="Abrir casos reales"><span>CASOS</span></button></div>
 }
