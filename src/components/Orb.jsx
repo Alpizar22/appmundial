@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { createOrbModel, renderNasusOrb } from './orb/nasusOrbEngine'
 import { preloadDataIllustration } from './orb/regions/dataSubworld'
 
-export default function Orb({ region, mode, onActivate, onOpenCases }) {
-  const canvasRef=useRef(null),hotspotRef=useRef(null),regionRef=useRef(region),modeRef=useRef(mode)
+export default function Orb({ region, mode, voiceSignals, onActivate, onOpenCases }) {
+  const canvasRef=useRef(null),hotspotRef=useRef(null),regionRef=useRef(region),modeRef=useRef(mode),voiceSignalsRef=useRef(voiceSignals)
   const [ready,setReady]=useState(false)
   useEffect(()=>{regionRef.current=region;canvasRef.current?.dispatchEvent(new Event('orbinvalidate'))},[region])
   useEffect(()=>{modeRef.current=mode;canvasRef.current?.dispatchEvent(new Event('orbinvalidate'))},[mode])
+  useEffect(()=>{voiceSignalsRef.current=voiceSignals},[voiceSignals])
   useEffect(()=>{preloadDataIllustration(()=>canvasRef.current?.dispatchEvent(new Event('orbinvalidate')))},[])
 
   useEffect(()=>{
@@ -16,7 +17,7 @@ export default function Orb({ region, mode, onActivate, onOpenCases }) {
     const markOnce=name=>{if(performance.getEntriesByName(name,'mark').length)return;performance.mark(name);performance.measure(`${name}_DURATION`,{start:0,end:name})}
     const resize=()=>{const box=canvas.getBoundingClientRect();width=box.width;height=box.height;const dpr=Math.min(devicePixelRatio||1,width<700?1:width<1100?1.6:2);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);const count=width<700?100:width<1100?180:360;if(model.length!==count)model=createOrbModel(count)}
     const trackScroll=()=>{const vh=Math.max(innerHeight,1),raw=Math.max(0,(scrollY-vh*.72)/(vh*1.34)),stretched=raw<=1.25?raw/1.25:raw<=2.5?1+(raw-1.25)/1.25:raw<=3.75?2+(raw-2.5)/1.25:raw<=5?3+(raw-3.75)/1.25:4+(raw-5)/1.25;scrollTarget=Math.max(0,Math.min(5,stretched));journeyTarget=Math.max(0,Math.min(1,(scrollY-vh*.58)/(vh*.28)))}
-    const paint=time=>{scrollProgress+=((reduced?regionRef.current:scrollTarget)-scrollProgress)*(reduced?1:.04);journeyFocus+=(journeyTarget-journeyFocus)*(reduced?1:.055);ctx.clearRect(0,0,width,height);const result=renderNasusOrb(ctx,model,{width,height,time:time/1000,progress:scrollProgress,regionalFocus:journeyFocus,mode:modeRef.current,reduced,pointer}),hotspot=hotspotRef.current;if(!hasPainted){hasPainted=true;setReady(true);revealTimer=window.setTimeout(()=>markOnce('ORB_VISIBLE'),1550)}if(hotspot&&result?.cases){hotspot.style.setProperty('--hotspot-x',`${result.cases.x}px`);hotspot.style.setProperty('--hotspot-y',`${result.cases.y}px`);hotspot.style.opacity=result.cases.visibility;hotspot.style.pointerEvents=result.cases.visibility>.32?'auto':'none';hotspot.classList.toggle('is-frontal',result.cases.visibility>.72);hotspot.tabIndex=result.cases.visibility>.32?0:-1}if(running&&!reduced)frame=requestAnimationFrame(paint)}
+    const paint=time=>{scrollProgress+=((reduced?regionRef.current:scrollTarget)-scrollProgress)*(reduced?1:.04);journeyFocus+=(journeyTarget-journeyFocus)*(reduced?1:.055);ctx.clearRect(0,0,width,height);const result=renderNasusOrb(ctx,model,{width,height,time:time/1000,progress:scrollProgress,regionalFocus:journeyFocus,mode:modeRef.current,voiceSignals:voiceSignalsRef.current,reduced,pointer}),hotspot=hotspotRef.current;if(!hasPainted){hasPainted=true;setReady(true);revealTimer=window.setTimeout(()=>markOnce('ORB_VISIBLE'),1550)}if(hotspot&&result?.cases){hotspot.style.setProperty('--hotspot-x',`${result.cases.x}px`);hotspot.style.setProperty('--hotspot-y',`${result.cases.y}px`);hotspot.style.opacity=result.cases.visibility;hotspot.style.pointerEvents=result.cases.visibility>.32?'auto':'none';hotspot.classList.toggle('is-frontal',result.cases.visibility>.72);hotspot.tabIndex=result.cases.visibility>.32?0:-1}if(running&&!reduced)frame=requestAnimationFrame(paint)}
     const restart=()=>{cancelAnimationFrame(frame);ctx.clearRect(0,0,width,height);if(!running)return;if(reduced)paint(650);else frame=requestAnimationFrame(paint)}
     const onMotion=event=>{reduced=event.matches;restart()}
     const onVisibility=()=>{running=document.visibilityState!=='hidden';restart()}

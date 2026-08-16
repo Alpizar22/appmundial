@@ -9,9 +9,8 @@ const permissionError = error => {
 
 export function useVoiceAssistant() {
   const [session, dispatch] = useReducer(voiceSessionReducer, initialVoiceSession)
-  const [inputLevel, setInputLevel] = useState(0)
-  const [outputLevel, setOutputLevel] = useState(0)
   const [microphoneActive, setMicrophoneActive] = useState(false)
+  const signalsRef = useRef({ inputLevel: 0, outputLevel: 0, activationImpulse: 0 })
   const streamRef = useRef(null)
   const inputContextRef = useRef(null)
   const analyserRef = useRef(null)
@@ -38,7 +37,7 @@ export function useVoiceAssistant() {
     analyserRef.current = null
     if (inputContextRef.current && inputContextRef.current.state !== 'closed') inputContextRef.current.close().catch(() => {})
     inputContextRef.current = null
-    setInputLevel(0)
+    signalsRef.current.inputLevel = 0
   }, [])
 
   const stopOutput = useCallback(() => {
@@ -47,7 +46,7 @@ export function useVoiceAssistant() {
     if (audio) { audio.pause(); audio.removeAttribute('src'); audio.load() }
     if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current)
     audioUrlRef.current = ''
-    setOutputLevel(0)
+    signalsRef.current.outputLevel = 0
   }, [])
 
   const settle = useCallback(() => {
@@ -96,7 +95,7 @@ export function useVoiceAssistant() {
       analyser.getByteFrequencyData(samples)
       let sum = 0
       for (const value of samples) sum += value
-      setOutputLevel(Math.min(1, (sum / samples.length) / 96))
+      signalsRef.current.outputLevel = Math.min(1, (sum / samples.length) / 96)
       outputFrameRef.current = requestAnimationFrame(measure)
     }
     await audio.play()
@@ -106,7 +105,7 @@ export function useVoiceAssistant() {
       audio.onerror = () => reject(new Error('audio_playback_failed'))
     })
     cancelAnimationFrame(outputFrameRef.current)
-    setOutputLevel(0)
+    signalsRef.current.outputLevel = 0
     URL.revokeObjectURL(url)
     audioUrlRef.current = ''
     return true
@@ -144,6 +143,7 @@ export function useVoiceAssistant() {
 
   const start = useCallback(async () => {
     if (statusRef.current !== VOICE_STATUS.IDLE && statusRef.current !== VOICE_STATUS.ERROR) return settle()
+    signalsRef.current.activationImpulse += 1
     unlockOutput()
     dispatch({ type: 'ACTIVATE' })
     try {
@@ -167,7 +167,7 @@ export function useVoiceAssistant() {
         analyser.getByteTimeDomainData(samples)
         let sum = 0
         for (const value of samples) { const normalized = (value - 128) / 128; sum += normalized * normalized }
-        setInputLevel(Math.min(1, Math.sqrt(sum / samples.length) * 4.2))
+        signalsRef.current.inputLevel = Math.min(1, Math.sqrt(sum / samples.length) * 4.2)
         levelFrameRef.current = requestAnimationFrame(measure)
       }
       measure()
@@ -217,5 +217,5 @@ export function useVoiceAssistant() {
     if (outputContextRef.current && outputContextRef.current.state !== 'closed') outputContextRef.current.close().catch(() => {})
   }, [stopInput, stopOutput])
 
-  return { session, inputLevel, outputLevel, microphoneActive, start, stop: settle }
+  return { session, signals: signalsRef.current, microphoneActive, start, stop: settle }
 }

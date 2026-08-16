@@ -18,7 +18,7 @@ const caseStudies = [
 
 export default function App() {
   const [activeRegion, setActiveRegion] = useState(0)
-  const { session: voiceSession, microphoneActive, start: beginConversation, stop: stopConversation } = useVoiceAssistant()
+  const { session: voiceSession, signals: voiceSignals, microphoneActive, start: beginConversation, stop: stopConversation } = useVoiceAssistant()
   const voiceState = voiceSession.status
   const panelRef = useRef(null)
   const [casesOpen, setCasesOpen] = useState(false)
@@ -79,7 +79,7 @@ export default function App() {
     </header>
 
     <div className="world" aria-live="polite">
-      <Orb region={activeRegion} mode={voiceState} onActivate={requestConversation} onOpenCases={() => setCasesOpen(true)} />
+      <Orb region={activeRegion} mode={voiceState} voiceSignals={voiceSignals} onActivate={requestConversation} onOpenCases={() => setCasesOpen(true)} />
       <p className={`voice-state voice-state--${voiceState}`} role="status">{voiceStateLabel(voiceSession)}</p>
       {microphoneActive && <div className="microphone-indicator" role="status"><i />MICRÓFONO ACTIVO <button type="button" onClick={stopConversation}>DETENER</button></div>}
       <div className="world__crosshair world__crosshair--a" /><div className="world__crosshair world__crosshair--b" />

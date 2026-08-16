@@ -103,12 +103,15 @@ function stepSimulation(model,time,profile,region,regionFocus,activity,reduced,p
   model.forEach((node,i)=>{if(node.transient){node.age+=dt;if(node.state==='alive'&&node.age>node.life)node.state='dying';if(node.state==='dying'){node.alpha=Math.max(0,node.alpha-dt/4);if(node.alpha===0){node.generation++;node.cluster=Math.floor(hash(i,node.generation+91)*7);const anchor=model.anchors[node.cluster],u=hash(i+node.generation*17,21.3)*Math.PI*2,spread=.28+hash(i+node.generation*23,31.7)*.5;node.x=anchor.x+Math.cos(u)*spread;node.y=anchor.y+(hash(i,node.generation+29)-.5)*spread;node.z=anchor.z+Math.sin(u)*spread;const bornLength=Math.hypot(node.x,node.y,node.z);node.x/=bornLength;node.y/=bornLength;node.z/=bornLength;node.importance=.12+Math.pow(hash(i,node.generation+101),5)*.88;node.hub=node.importance>.64;node.vx=(hash(i,node.generation+41)-.5)*.08;node.vy=(hash(i,node.generation+53)-.5)*.08;node.vz=(hash(i,node.generation+67)-.5)*.08;node.age=0;node.life=34+hash(i,node.generation+79)*18;node.state='born'}}else if(node.state==='born'){node.alpha=Math.min(1,node.alpha+dt/4.5);if(node.alpha===1)node.state='alive'}}let length=Math.hypot(node.x,node.y,node.z)||1,nx=node.x/length,ny=node.y/length,nz=node.z/length;const drive=(profile.wander*.78)*(1+activity*.65),anchor=model.anchors[node.cluster];ax[i]+=(noise(i*.31+9,time*.23)-.5)*drive+(anchor.x-node.x)*anchor.strength;ay[i]+=(noise(i*.53+27,time*.2)-.5)*drive+(anchor.y-node.y)*anchor.strength;az[i]+=(noise(i*.77+55,time*.25)-.5)*drive+(anchor.z-node.z)*anchor.strength;if(region===1)ax[i]+=.012*Math.sin(node.phase)*regionFocus;if(region===3){ax[i]+=(Math.round(node.x*4)/4-node.x)*.018*regionFocus;ay[i]+=(Math.round(node.y*4)/4-node.y)*.018*regionFocus}if(region===4){const angle=(i%6)/6*Math.PI*2;ax[i]+=(Math.cos(angle)*.82-node.x)*.014*regionFocus;az[i]+=(Math.sin(angle)*.82-node.z)*.014*regionFocus}if(pointer?.active){const sy=Math.sin(view.yaw+time*WORLD_SPIN),cyw=Math.cos(view.yaw+time*WORLD_SPIN),st=Math.sin(view.pitch),ct=Math.cos(view.pitch),x1=node.x*cyw+node.z*sy,z1=-node.x*sy+node.z*cyw,y1=node.y*ct-z1*st,z2=node.y*st+z1*ct,perspective=1+z2*.055,px=cx+x1*base*perspective,py=cy-y1*base*perspective,dx=px-pointer.x,dy=py-pointer.y,distance=Math.hypot(dx,dy),radius=Math.min(base*.34,180);if(distance<radius&&distance>1){const strength=(1-distance/radius)*.28,fx=dx/distance*strength,fy=dy/distance*strength;ax[i]+=cyw*fx+(-sy*st)*fy;ay[i]+=-ct*fy;az[i]+=sy*fx+(cyw*st)*fy}}const forceNormal=ax[i]*nx+ay[i]*ny+az[i]*nz;ax[i]-=forceNormal*nx;ay[i]-=forceNormal*ny;az[i]-=forceNormal*nz;const velocityNormal=node.vx*nx+node.vy*ny+node.vz*nz;node.vx-=velocityNormal*nx;node.vy-=velocityNormal*ny;node.vz-=velocityNormal*nz;const damping=Math.exp(-(1.05-activity*.12)*dt);node.vx=(node.vx+ax[i]*dt)*damping;node.vy=(node.vy+ay[i]*dt)*damping;node.vz=(node.vz+az[i]*dt)*damping;const speed=Math.hypot(node.vx,node.vy,node.vz),maxSpeed=.14+activity*.025+(pointer?.active?.008:0);if(speed>maxSpeed){const limit=maxSpeed/speed;node.vx*=limit;node.vy*=limit;node.vz*=limit}node.x+=node.vx*dt;node.y+=node.vy*dt;node.z+=node.vz*dt;length=Math.hypot(node.x,node.y,node.z)||1;node.x/=length;node.y/=length;node.z/=length;nx=node.x;ny=node.y;nz=node.z;const transportedNormal=node.vx*nx+node.vy*ny+node.vz*nz;node.vx-=transportedNormal*nx;node.vy-=transportedNormal*ny;node.vz-=transportedNormal*nz})
 }
 
-function projectNodes(model,time,view,base,cx,cy) {
+function projectNodes(model,time,view,base,cx,cy,mode,voiceSignals) {
   const sy=Math.sin(view.yaw+time*WORLD_SPIN),cyw=Math.cos(view.yaw+time*WORLD_SPIN),st=Math.sin(view.pitch),ct=Math.cos(view.pitch)
+  const dt=model.frameDt||.016,input=clamp01(voiceSignals?.inputLevel||0),output=clamp01(voiceSignals?.outputLevel||0),impulse=model.voiceImpulse||0
   return model.map((node,index)=>{
     const x1=node.x*cyw+node.z*sy,z1=-node.x*sy+node.z*cyw,y1=node.y*ct-z1*st,z2=node.y*st+z1*ct
-    const perspective=1+z2*.055
-    return{...node,index,x3:node.x,y3:node.y,z3:node.z,x:cx+x1*base*perspective,y:cy-y1*base*perspective,z:z2}
+    const front=smoothstep(clamp01((z2-.08)/.84)),breath=mode==='listening'?.008*(.5+.5*Math.sin(time*1.7)):mode==='speaking'?.006*(.5+.5*Math.sin(time*2.4)):0,target=front*(impulse*.155+(mode==='listening'?input*.065+breath:0)+(mode==='speaking'?output*.095+breath:0)),spring=mode==='settling'?24:38,damping=mode==='settling'?8.8:7.2
+    node.voiceIndent??=0;node.voiceIndentVelocity??=0;node.voiceIndentVelocity+=(target-node.voiceIndent)*spring*dt;node.voiceIndentVelocity*=Math.exp(-damping*dt);node.voiceIndent+=node.voiceIndentVelocity*dt
+    const perspective=1+z2*.055,radialScale=1-clamp01(node.voiceIndent)*.78
+    return{...node,index,x3:node.x,y3:node.y,z3:node.z,x:cx+x1*base*perspective*radialScale,y:cy-y1*base*perspective*radialScale,z:z2}
   })
 }
 
@@ -285,7 +288,7 @@ function paintTravelReticle(ctx,point,visibility,time) {
   ctx.fillStyle=rgba(GOLD_ACTIVE,.72*visibility);ctx.beginPath();ctx.arc(0,0,1.25,0,Math.PI*2);ctx.fill();ctx.restore()
 }
 
-export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFocus,mode,reduced,pointer}) {
+export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFocus,mode,voiceSignals,reduced,pointer}) {
   const regional=regionalStateAt(progress),region=regional.index,weights=regional.weights,profile=profileAt(regional),view=cameraAt(progress,regional),iaWeight=weights[0]*(regionalFocus||0),automationWeight=weights[1]
   const iaAutomationProgress=clamp01((progress-.12)/.76),iaAutomationTransit=progress>.12&&progress<.88?Math.sin(iaAutomationProgress*Math.PI):0
   if(iaAutomationTransit>0){const easedArc=smoothstep(iaAutomationTransit);view.yaw+=easedArc*.2;view.x+=Math.sin(iaAutomationProgress*Math.PI)*.045;view.y-=Math.sin(iaAutomationProgress*Math.PI*2)*.012;view.zoom-=easedArc*.1}
@@ -308,11 +311,14 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   }
   if(webTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.web,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(webTravel*Math.PI);view.zoom=lerp(view.zoom,2.28,webTravel);view.yaw+=yawDelta*webTravel-orbitArc*.12;view.pitch=lerp(view.pitch,target.pitch-.4,webTravel);view.x=-orbitArc*.03;view.y=lerp(view.y,.26,webTravel)}
   if(dataTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.data,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(dataTravel*Math.PI);view.zoom=lerp(view.zoom,1.92,dataTravel);view.yaw+=yawDelta*dataTravel+orbitArc*.12;view.pitch=lerp(view.pitch,target.pitch,dataTravel);view.x=lerp(view.x,.2,dataTravel)+orbitArc*.035;view.y=lerp(view.y,-.14,dataTravel)-orbitArc*.014}
-  const activity=mode==='thinking'?1:mode==='speaking'?.85:mode==='listening'?.55:0
-  const signal=mode==='speaking'?Math.sin(time*7.2)*.08:0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+whatsappTravel*.16+cinematicTravel(weights[3])*.04)
+  const activity=mode==='thinking'?1:mode==='speaking'?.85:mode==='listening'?.55:mode==='activating'?.7:0
+  if(model.lastActivationImpulse===undefined)model.lastActivationImpulse=voiceSignals?.activationImpulse||0
+  else if(model.lastActivationImpulse!==voiceSignals?.activationImpulse){model.lastActivationImpulse=voiceSignals?.activationImpulse;model.voiceImpulse=1}
+  model.voiceImpulse=(model.voiceImpulse||0)*Math.exp(-((model.frameDt||.016)*3.4))
+  const outputSignal=mode==='speaking'?clamp01(voiceSignals?.outputLevel||0):0,signal=mode==='speaking'?Math.sin(time*7.2)*(.018+outputSignal*.045):0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+whatsappTravel*.16+cinematicTravel(weights[3])*.04)
   const cx=width*(.5+view.x),cy=height*(.5+view.y),t=reduced?.65:time*(1+activity*.55)
   stepSimulation(model,t,GLOBAL_PROFILE,-1,0,activity,reduced,pointer,view,base,cx,cy)
-  const nodes=projectNodes(model,t,view,base,cx,cy)
+  const nodes=projectNodes(model,t,view,base,cx,cy,mode,voiceSignals)
   const iaFocus=projectAnchor(REGION_ANCHORS.ia,{yaw:view.yaw,pitch:view.pitch,worldRotation:t*WORLD_SPIN,base,cx,cy})
   const automationFocus=projectAnchor(REGION_ANCHORS.automation,{yaw:view.yaw,pitch:view.pitch,worldRotation:t*WORLD_SPIN,base,cx,cy})
   const dataFocus=projectAnchor(REGION_ANCHORS.data,{yaw:view.yaw,pitch:view.pitch,worldRotation:t*WORLD_SPIN,base,cx,cy})
