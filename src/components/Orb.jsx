@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { createOrbModel, renderNasusOrb } from './orb/nasusOrbEngine'
+import { preloadDataIllustration } from './orb/regions/dataSubworld'
 
 export default function Orb({ region, mode, onActivate, onOpenCases }) {
   const canvasRef=useRef(null),hotspotRef=useRef(null),regionRef=useRef(region),modeRef=useRef(mode)
   useEffect(()=>{regionRef.current=region;canvasRef.current?.dispatchEvent(new Event('orbinvalidate'))},[region])
   useEffect(()=>{modeRef.current=mode;canvasRef.current?.dispatchEvent(new Event('orbinvalidate'))},[mode])
+  useEffect(()=>{preloadDataIllustration(()=>canvasRef.current?.dispatchEvent(new Event('orbinvalidate')))},[])
 
   useEffect(()=>{
     const canvas=canvasRef.current,ctx=canvas.getContext('2d'),reducedQuery=matchMedia('(prefers-reduced-motion: reduce)')

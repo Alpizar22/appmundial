@@ -262,7 +262,7 @@ function paintRegionalLayer(ctx,nodes,model,weights,time,regionalContext) {
   if(ia>.01){const {view,width,height,iaFocus}=regionalContext,iaNodes=selectNodesAroundAnchor(nodes,REGION_ANCHORS.ia,{innerAngle:.34,outerAngle:1.04,minAlpha:.2,limit:48});renderIaSubworld({ctx,camera:view,time,viewport:{width,height},nodes:iaNodes,focus:iaFocus,intensity:ia,palette:{gold:GOLD_ACTIVE,pearl:TEXT_IVORY,smoke:SMOKE_SECONDARY,rgba}})}
   if(automation>.01){const {view,width,height,automationFocus}=regionalContext,automationNodes=selectNodesAroundAnchor(nodes,REGION_ANCHORS.automation,{innerAngle:.34,outerAngle:1.04,minAlpha:.2,limit:42});renderAutomationSubworld({ctx,camera:view,time,viewport:{width,height},nodes:automationNodes,focus:automationFocus,intensity:automation,palette:{gold:GOLD_ACTIVE,pearl:TEXT_IVORY,smoke:SMOKE_SECONDARY,rgba}})}
   if(web>.01)paintWebWorld(ctx,nodes,model,web,time)
-  if(data>.01){const {view,width,height,dataFocus}=regionalContext;renderDataSubworld({ctx,camera:view,time,viewport:{width,height},focus:dataFocus,intensity:data,palette:{gold:GOLD_ACTIVE,pearl:TEXT_IVORY,smoke:SMOKE_SECONDARY,rgba}})}
+  if(data>.01){const {view,width,height,dataFocus,dataMotion}=regionalContext;renderDataSubworld({ctx,camera:view,time,viewport:{width,height},focus:dataFocus,intensity:data,motion:dataMotion,palette:{gold:GOLD_ACTIVE,pearl:TEXT_IVORY,smoke:SMOKE_SECONDARY,rgba}})}
   if(whatsapp>.01)paintWhatsappWorld(ctx,nodes,regionalContext.whatsappHub,whatsapp,time,model)
 }
 
@@ -342,7 +342,7 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   paintTravelReticle(ctx,dataFocus,webDataTransit*.72,t)
   paintTravelReticle(ctx,{x:cx,y:cy},dataClosingTransit*.62,t)
   const visualWeights=weights.map(cinematicReveal)
-  paintRegionalLayer(ctx,nodes,model,visualWeights,t,{view,width,height,iaWeight:cinematicReveal(iaWeight),automationWeight:cinematicReveal(automationWeight),iaFocus,automationFocus,dataFocus,whatsappHub})
+  paintRegionalLayer(ctx,nodes,model,visualWeights,t,{view,width,height,iaWeight:cinematicReveal(iaWeight),automationWeight:cinematicReveal(automationWeight),iaFocus,automationFocus,dataFocus,dataMotion:clamp01(Math.max(webDataTransit,dataClosingTransit,1-weights[4])),whatsappHub})
   const hotspotVisibility=clamp01(1-Math.max(cinematicIsolation(iaWeight),cinematicIsolation(automationWeight),cinematicIsolation(weights[2]),cinematicIsolation(weights[3]),cinematicIsolation(weights[4]))*1.25)*clamp01((casesProjection.z+.18)/.42)
   paintCasesHotspot(ctx,casesProjection,hotspotVisibility,t)
   return {cases:{x:casesProjection.x,y:casesProjection.y,visibility:hotspotVisibility}}
