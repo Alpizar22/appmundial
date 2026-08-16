@@ -85,7 +85,7 @@ export default function App() {
         <div className="cases-panel__projects">
           {caseStudies.map(project => <article key={project.number}><span>{project.number}</span><h3>{project.title}</h3><strong>{project.subtitle}</strong><p>{project.description}</p><small>{project.tags}</small></article>)}
         </div>
-        <div className="cases-panel__metrics"><span>MÉTRICAS</span><strong>— / — / —</strong></div>
+        <div className="cases-panel__metrics" aria-label="Capacidades verificables"><div><strong>3</strong><span>PROYECTOS</span></div><div><strong>5</strong><span>ÁREAS DEL MUNDO</span></div><p>IA · WEB · AUTOMATIZACIÓN · DATOS · COMUNICACIÓN</p></div>
         <p className="cases-panel__question">¿Tienes algo parecido en mente?</p>
         <a className="cases-panel__cta" href="#contacto" onClick={() => setCasesOpen(false)}>Hablar sobre un proyecto <i>→</i></a>
       </aside>
