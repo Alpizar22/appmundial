@@ -320,8 +320,12 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   if(webTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.web,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(webTravel*Math.PI);view.zoom=lerp(view.zoom,2.28,webTravel);view.yaw+=yawDelta*webTravel-orbitArc*.12;view.pitch=lerp(view.pitch,target.pitch-.4,webTravel);view.x=-orbitArc*.03;view.y=lerp(view.y,.26,webTravel)}
   if(dataTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.data,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(dataTravel*Math.PI);view.zoom=lerp(view.zoom,1.92,dataTravel);view.yaw+=yawDelta*dataTravel+orbitArc*.12;view.pitch=lerp(view.pitch,target.pitch,dataTravel);view.x=lerp(view.x,.2,dataTravel)+orbitArc*.035;view.y=lerp(view.y,-.14,dataTravel)-orbitArc*.014}
   const activity=mode==='thinking'?1:mode==='speaking'?.85:mode==='listening'?.55:mode==='activating'?.7:0
-  if(model.lastActivationImpulse===undefined)model.lastActivationImpulse=voiceSignals?.activationImpulse||0
-  else if(model.lastActivationImpulse!==voiceSignals?.activationImpulse){model.lastActivationImpulse=voiceSignals?.activationImpulse;model.voiceImpulse=1}
+  // Se normaliza a numero antes de comparar y de guardar: si voiceSignals falta, la rama de
+  // inicializacion guardaba 0 y la de comparacion undefined, alternando entre ambos y
+  // redisparando el impulso cada dos frames de forma indefinida.
+  const activationImpulse=voiceSignals?.activationImpulse||0
+  if(model.lastActivationImpulse===undefined)model.lastActivationImpulse=activationImpulse
+  else if(model.lastActivationImpulse!==activationImpulse){model.lastActivationImpulse=activationImpulse;model.voiceImpulse=1}
   model.voiceImpulse=(model.voiceImpulse||0)*Math.exp(-((model.frameDt||.016)*3.4))
   const outputSignal=mode==='speaking'?clamp01(voiceSignals?.outputLevel||0):0,signal=mode==='speaking'?Math.sin(time*7.2)*(.018+outputSignal*.045):0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+whatsappTravel*.16+cinematicTravel(weights[3])*.04)
   const cx=width*(.5+view.x),cy=height*(.5+view.y),t=reduced?.65:time*(1+activity*.55)
