@@ -258,18 +258,18 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   const localEdges=proximityEdges(nodes,profile.threshold+.025+(activity*.018),profile.neighbours+(mode==='thinking'?1:0),t)
   const edges=smoothEdges(model,[...localEdges,...hubEdges(model,t,weights[1])])
   const isolationWeights=[cinematicIsolation(iaWeight),cinematicIsolation(automationWeight),cinematicIsolation(weights[2]),cinematicIsolation(weights[3]),cinematicIsolation(weights[4])],regionalBudgetFocus=Math.max(...isolationWeights),globalOpacity=1-regionalBudgetFocus*.94,edgeBudget=1-regionalBudgetFocus*.88,nodeBudget=1-regionalBudgetFocus*.84
-  const globalEdges=edges.filter(edge=>hash(edge.a+11,edge.b+29)<=edgeBudget)
+  const edgeScale=width<700?.35:width<1100?.52:.64,globalEdges=edges.filter(edge=>{const a=nodes[edge.a],b=nodes[edge.b],important=a.hub||b.hub;if(important){edge.cadenceAlpha=1;return true}const cadence=.5+.5*Math.sin(t*.18+hash(edge.a+37,edge.b+53)*Math.PI*2);edge.cadenceAlpha=smoothstep(clamp01((cadence-.22)/.56));return hash(edge.a+11,edge.b+29)<=edgeBudget*edgeScale&&edge.cadenceAlpha>.035})
   const globalNodes=nodes.filter(node=>hash(node.index,71.3)<=nodeBudget)
 
   const halo=ctx.createRadialGradient(cx,cy,base*.12,cx,cy,base*1.08);halo.addColorStop(0,'rgba(23,26,32,.08)');halo.addColorStop(.78,'rgba(11,13,17,.025)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
   paintGlobalFlowWaves(ctx,t,view,base,cx,cy,globalOpacity)
-  globalEdges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility*globalOpacity,long?PEARL:SMOKE,long?.54:.49)})
+  globalEdges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility*globalOpacity*(edge.cadenceAlpha??1),long?PEARL:SMOKE,long?.54:.49)})
 
   const pulseWindow=.24+weights[1]*.08,pulses=[]
   globalEdges.forEach(edge=>{const cycle=frac(t/edge.pulsePeriod+edge.pulseOffset);if(cycle>=pulseWindow||edge.opacity<.08)return;const a=nodes[edge.a],b=nodes[edge.b],progress=cycle/pulseWindow,envelope=Math.sin(progress*Math.PI)**1.5,importance=Math.max(a.importance,b.importance),long=edge.distance>.6;pulses.push({a,b,progress,envelope,importance,long,score:importance+(long?.45:0)})})
   pulses.sort((a,b)=>b.score-a.score).slice(0,(width<700?6:11)+Math.round(weights[1]*3)).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha)*globalDepthVisibility(z),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24)*globalOpacity;ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD:PEARL,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
 
-  globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,hub=node.importance>.64,weight=.58+node.importance*1.55,r=Math.max(.2,.29+depth*.76)*weight*(hub?1.42:.78)*(width<700?.86:1),opacity=(.09+depth*.68)*(.54+node.importance*.42)*(hub?1.32:.62)*globalDepthVisibility(node.z);ctx.fillStyle=rgba(hub&&node.index%5===region?GOLD:PEARL,opacity*node.alpha*globalOpacity);ctx.beginPath();ctx.arc(node.x,node.y,r+(activity*(hub?.7:.08)),0,Math.PI*2);ctx.fill()})
+  globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,hub=node.importance>.64,weight=.58+node.importance*1.55,nodeScale=width<700?1.35:width<1100?1.2:1.12,r=Math.max(.2,.29+depth*.76)*weight*(hub?1.42:.78)*(width<700?.86:1)*nodeScale,opacity=(.09+depth*.68)*(.54+node.importance*.42)*(hub?1.32:.62)*globalDepthVisibility(node.z);ctx.fillStyle=rgba(hub&&node.index%5===region?GOLD:PEARL,opacity*node.alpha*globalOpacity);ctx.beginPath();ctx.arc(node.x,node.y,r+(activity*(hub?.7:.08)),0,Math.PI*2);ctx.fill()})
   const visualWeights=weights.map(cinematicReveal)
   paintRegionalLayer(ctx,nodes,model,visualWeights,t,{view,width,height,iaWeight:cinematicReveal(iaWeight),automationWeight:cinematicReveal(automationWeight),iaFocus,automationFocus,dataFocus,whatsappHub})
 }
