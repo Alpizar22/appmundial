@@ -27,3 +27,15 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Perfiles de Chrome creados al validar el orbe con DevTools/CDP.
+# Contienen cookies y estado de sesion, y pesan ~110MB: nunca deben versionarse.
+.chrome-*/
+
+# Capturas de comparacion visual (antes/despues) generadas durante el ajuste del orbe.
+*-before.png
+*-after.png
+orb-global-*.png
+whatsapp-peak-*.png
+whatsapp-transition-*.png
+region-balance-*.png
