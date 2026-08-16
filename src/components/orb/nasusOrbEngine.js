@@ -361,7 +361,7 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   // En movil las aristas se trazaban a 0.49-0.54px sobre DPR 1 (por debajo de un pixel fisico)
   // y sin el refuerzo de contraste de desktop, asi que la escena obligaba a forzar la vista.
   // Nodos, lineas y auras suben de forma explicita. Desktop y tablet quedan intactos.
-  const edgeContrast=desktopReadability?1.608:smallViewport?1.5:1
+  const edgeContrast=desktopReadability?1.608:smallViewport?2:1
   const edgeWidthScale=desktopReadability?2.016:smallViewport?1.9:1
   const nodeContrast=desktopReadability?1.56:smallViewport?1.45:1
   // El halo de cada nodo se media en px absolutos, con un piso fijo de 4/5.2px. En un orbe
@@ -377,7 +377,7 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   // del hub en 0.15-0.27px, invisibles. Se engrosan y avivan en la variante movil del sprite,
   // que se cachea aparte para no alterar la de escritorio.
   const rayScale=smallViewport?5:1
-  globalEdges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility*globalOpacity*(edge.cadenceAlpha??1)*edgeContrast,long?TEXT_IVORY:SMOKE_SECONDARY,(long?.54:.49)*edgeWidthScale)})
+  globalEdges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility*globalOpacity*(edge.cadenceAlpha??1)*edgeContrast,long||smallViewport?TEXT_IVORY:SMOKE_SECONDARY,(long?.54:.49)*edgeWidthScale)})
 
   const pulseWindow=.24+weights[1]*.08,pulses=[]
   globalEdges.forEach(edge=>{const cycle=frac(t/edge.pulsePeriod+edge.pulseOffset);if(cycle>=pulseWindow||edge.opacity<.08)return;const a=nodes[edge.a],b=nodes[edge.b],progress=cycle/pulseWindow,envelope=Math.sin(progress*Math.PI)**1.5,importance=Math.max(a.importance,b.importance),long=edge.distance>.6;pulses.push({a,b,progress,envelope,importance,long,score:importance+(long?.45:0)})})
