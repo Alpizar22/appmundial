@@ -182,7 +182,11 @@ function createWhatsappPopulationTexture(points) {
 }
 
 function paintWhatsappWorld(ctx,nodes,hub,weight,time,model) {
-  const depth=Math.max(.3,(hub.z+1)/2),strength=weight*depth,mobileWhatsapp=ctx.canvas.getBoundingClientRect().width<700
+  const viewportBox=ctx.canvas.getBoundingClientRect(),mobileWhatsapp=viewportBox.width<700
+  const depth=Math.max(.3,(hub.z+1)/2),strength=weight*depth
+  // El campo dorado del hub tenia 150px fijos: sobre el orbe movil (radio ~137px) cubria la
+  // escena completa y la velaba. Se escala igual que los halos de nodo.
+  const fieldRadius=150*Math.min(1,Math.min(viewportBox.width,viewportBox.height)/900)
   model.whatsappPopulation||=createWhatsappPopulation()
   if(mobileWhatsapp&&!model.whatsappPopulationTexture)model.whatsappPopulationTexture=createWhatsappPopulationTexture(model.whatsappPopulation)
   const population=model.whatsappPopulation.map(point=>({...point,x:hub.x+point.offsetX,y:hub.y+point.offsetY,z:.58,alpha:point.alpha*weight})),ranked=[...population].sort((a,b)=>(b.density+b.importance*.34)-(a.density+a.importance*.34)),secondary=[]
@@ -202,7 +206,7 @@ function paintWhatsappWorld(ctx,nodes,hub,weight,time,model) {
   activeClusters.flat().forEach(node=>{const density=densityByNode.get(node)||0,nodeDepth=Math.max(.08,(node.z+1)/2);ctx.fillStyle=rgba(density>.58?GOLD_ACTIVE:TEXT_IVORY,(.32+density*.64)*nodeDepth*weight);ctx.beginPath();ctx.arc(node.x,node.y,.8+node.importance*1.3+density*1.18,0,Math.PI*2);ctx.fill()})
   secondary.forEach((node,index)=>{const link=model.whatsappLinks.get(`-1:${node.index}`),linkAlpha=link?.alpha||0,nodeDepth=Math.max(.12,(node.z+1)/2);ctx.strokeStyle=rgba(index<3?GOLD_ACTIVE:TEXT_IVORY,(.48+nodeDepth*.28)*weight*linkAlpha);ctx.lineWidth=.85;ctx.beginPath();ctx.arc(node.x,node.y,5.5+node.importance*2.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle=rgba(index<3?GOLD_ACTIVE:TEXT_IVORY,.68*nodeDepth*weight*linkAlpha);ctx.beginPath();ctx.arc(node.x,node.y,1.7+node.importance,0,Math.PI*2);ctx.fill()})
 
-  const field=ctx.createRadialGradient(hub.x,hub.y,2,hub.x,hub.y,150);field.addColorStop(0,rgba(GOLD_ACTIVE,.3*strength));field.addColorStop(.24,rgba(GOLD_ACTIVE,.105*strength));field.addColorStop(.62,rgba(GOLD_MUTED,.025*strength));field.addColorStop(1,'transparent');ctx.fillStyle=field;ctx.beginPath();ctx.arc(hub.x,hub.y,150,0,Math.PI*2);ctx.fill()
+  const field=ctx.createRadialGradient(hub.x,hub.y,2,hub.x,hub.y,fieldRadius);field.addColorStop(0,rgba(GOLD_ACTIVE,.3*strength));field.addColorStop(.24,rgba(GOLD_ACTIVE,.105*strength));field.addColorStop(.62,rgba(GOLD_MUTED,.025*strength));field.addColorStop(1,'transparent');ctx.fillStyle=field;ctx.beginPath();ctx.arc(hub.x,hub.y,fieldRadius,0,Math.PI*2);ctx.fill()
   ;[27,43,62,86].forEach((radius,index)=>{const segments=72,breathe=1+Math.sin(time*.22+index*1.4)*.025,tilt=.2+index*.035,points=[];for(let step=0;step<=segments;step++){const angle=step/segments*Math.PI*2,organic=Math.sin(angle*3+time*.16+index)*radius*.04+Math.sin(angle*7-time*.09+index*1.7)*radius*.018,ringRadius=radius*breathe+organic,lx=Math.cos(angle)*ringRadius,ly=Math.sin(angle)*ringRadius*.42,x=hub.x+lx*Math.cos(tilt)-ly*Math.sin(tilt),y=hub.y+lx*Math.sin(tilt)+ly*Math.cos(tilt),z=Math.sin(angle);points.push({x,y,z})}for(let step=1;step<points.length;step++){const a=points[step-1],b=points[step],front=.18+.82*(a.z+1)/2;ctx.strokeStyle=rgba(index<2?GOLD_ACTIVE:TEXT_IVORY,(.24-index*.032)*front*strength);ctx.lineWidth=(index===0?1.2:.68)*(.7+front*.3);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}})
 
   secondary.slice(0,5).forEach((node,index)=>{const link=model.whatsappLinks.get(`-1:${node.index}`);paintSignalWave(ctx,hub,node,strength*(link?.alpha||0),time,index)})
@@ -335,13 +339,18 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   const halo=ctx.createRadialGradient(cx,cy,base*.12,cx,cy,base*1.08);halo.addColorStop(0,'rgba(23,26,32,.08)');halo.addColorStop(.78,'rgba(11,13,17,.025)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
   paintGlobalFlowWaves(ctx,t,view,base,cx,cy,globalOpacity)
   const desktopReadability=width>=1100,edgeContrast=desktopReadability?1.608:1,edgeWidthScale=desktopReadability?2.016:1
+  // El halo de cada nodo se media en px absolutos, con un piso fijo de 4/5.2px. En un orbe
+  // movil (base ~2.3x menor que en desktop) ese piso domina, los halos se solapan y el orbe
+  // se lee como neblina en vez de nodos. Se escala con la dimension menor del viewport para
+  // conservar la proporcion halo/orbe. Desktop y tablet (>=900px) quedan intactos.
+  const glowScale=Math.min(1,Math.min(width,height)/900)
   globalEdges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility*globalOpacity*(edge.cadenceAlpha??1)*edgeContrast,long?TEXT_IVORY:SMOKE_SECONDARY,(long?.54:.49)*edgeWidthScale)})
 
   const pulseWindow=.24+weights[1]*.08,pulses=[]
   if(width>=700)globalEdges.forEach(edge=>{const cycle=frac(t/edge.pulsePeriod+edge.pulseOffset);if(cycle>=pulseWindow||edge.opacity<.08)return;const a=nodes[edge.a],b=nodes[edge.b],progress=cycle/pulseWindow,envelope=Math.sin(progress*Math.PI)**1.5,importance=Math.max(a.importance,b.importance),long=edge.distance>.6;pulses.push({a,b,progress,envelope,importance,long,score:importance+(long?.45:0)})})
   pulses.sort((a,b)=>b.score-a.score).slice(0,(width<700?6:11)+Math.round(weights[1]*3)).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha)*globalDepthVisibility(z),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24)*globalOpacity;ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD_ACTIVE:TEXT_IVORY,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
 
-  globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,hub=node.importance>.64,weight=.58+node.importance*1.55,nodeScale=width<700?1.35:width<1100?1.2:1.8,nodeContrast=desktopReadability?1.56:1,r=Math.max(.2,.29+depth*.76)*weight*(hub?1.42:.78)*(width<700?.86:1)*nodeScale,opacity=(.09+depth*.68)*(.54+node.importance*.42)*(hub?1.32:.62)*globalDepthVisibility(node.z)*nodeContrast,color=hub&&node.index%5===region?GOLD_ACTIVE:TEXT_IVORY,coreRadius=Math.max(hub?.72:.48,r*(hub?1:1.18))+(activity*(hub?.7:.08)),haloRadius=Math.max(hub?5.2:4,coreRadius*(hub?4.8:5)),sprite=nodeGlowSprite(color,hub),alpha=Math.min(1,opacity*node.alpha*globalOpacity);if(sprite&&alpha>.004){ctx.globalAlpha=alpha;ctx.drawImage(sprite,node.x-haloRadius,node.y-haloRadius,haloRadius*2,haloRadius*2);ctx.globalAlpha=1}ctx.fillStyle=rgba(color,Math.min(1,alpha*(hub?1.18:1.3)));ctx.beginPath();ctx.arc(node.x,node.y,coreRadius,0,Math.PI*2);ctx.fill()})
+  globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,hub=node.importance>.64,weight=.58+node.importance*1.55,nodeScale=width<700?1.35:width<1100?1.2:1.8,nodeContrast=desktopReadability?1.56:1,r=Math.max(.2,.29+depth*.76)*weight*(hub?1.42:.78)*(width<700?.86:1)*nodeScale,opacity=(.09+depth*.68)*(.54+node.importance*.42)*(hub?1.32:.62)*globalDepthVisibility(node.z)*nodeContrast,color=hub&&node.index%5===region?GOLD_ACTIVE:TEXT_IVORY,coreRadius=Math.max(hub?.72:.48,r*(hub?1:1.18))+(activity*(hub?.7:.08)),haloRadius=Math.max(hub?5.2:4,coreRadius*(hub?4.8:5))*glowScale,sprite=nodeGlowSprite(color,hub),alpha=Math.min(1,opacity*node.alpha*globalOpacity);if(sprite&&alpha>.004){ctx.globalAlpha=alpha;ctx.drawImage(sprite,node.x-haloRadius,node.y-haloRadius,haloRadius*2,haloRadius*2);ctx.globalAlpha=1}ctx.fillStyle=rgba(color,Math.min(1,alpha*(hub?1.18:1.3)));ctx.beginPath();ctx.arc(node.x,node.y,coreRadius,0,Math.PI*2);ctx.fill()})
   paintTravelReticle(ctx,automationFocus,iaAutomationTransit*.72,t)
   paintTravelReticle(ctx,whatsappProjection,automationWhatsappTransit*.72,t)
   paintTravelReticle(ctx,webFocus,whatsappWebTransit*.72,t)
