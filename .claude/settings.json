@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx vite *)",
+      "Bash(node scripts/benchmark-voice-regions.mjs *)",
+      "Bash(curl -s http://127.0.0.1:*)",
+      "Bash(curl -s -o /dev/null -w * http://127.0.0.1:*)",
+      "Bash(netstat -ano)",
+      "Bash(tasklist //FI \"IMAGENAME eq chrome.exe\")"
+    ]
+  }
+}
