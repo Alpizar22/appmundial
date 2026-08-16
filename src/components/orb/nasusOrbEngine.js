@@ -242,7 +242,7 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
     view.yaw+=yawDelta*whatsappTravel
     view.pitch=lerp(view.pitch,target.pitch,whatsappTravel)
   }
-  if(webTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.web,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(webTravel*Math.PI);view.zoom=lerp(view.zoom,2.28,webTravel);view.yaw+=yawDelta*webTravel-orbitArc*.12;view.pitch=lerp(view.pitch,target.pitch-.59,webTravel);view.x=lerp(view.x,-.02,webTravel)-orbitArc*.03;view.y=lerp(view.y,.27,webTravel)}
+  if(webTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.web,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(webTravel*Math.PI);view.zoom=lerp(view.zoom,2.28,webTravel);view.yaw+=yawDelta*webTravel-orbitArc*.12;view.pitch=lerp(view.pitch,target.pitch-.34,webTravel);view.x=lerp(view.x,-.02,webTravel)-orbitArc*.03;view.y=lerp(view.y,.27,webTravel)}
   if(dataTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.data,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(dataTravel*Math.PI);view.zoom=lerp(view.zoom,1.92,dataTravel);view.yaw+=yawDelta*dataTravel+orbitArc*.12;view.pitch=lerp(view.pitch,target.pitch,dataTravel);view.x=lerp(view.x,.2,dataTravel)+orbitArc*.035;view.y=lerp(view.y,-.14,dataTravel)-orbitArc*.014}
   const activity=mode==='thinking'?1:mode==='speaking'?.85:mode==='listening'?.55:0
   const signal=mode==='speaking'?Math.sin(time*7.2)*.08:0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+whatsappTravel*.16+cinematicTravel(weights[3])*.04)
