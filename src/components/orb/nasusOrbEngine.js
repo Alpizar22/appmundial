@@ -33,6 +33,20 @@ const noise=(x,y)=>{const xi=Math.floor(x),yi=Math.floor(y);let fx=x-xi,fy=y-yi;
 const fib=(i,n)=>{const y=1-(2*(i+.5))/n,r=Math.sqrt(1-y*y),a=i*Math.PI*(3-Math.sqrt(5));return[r*Math.cos(a),y,r*Math.sin(a)]}
 const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return`rgba(${n>>16},${n>>8&255},${n&255},${Math.max(0,Math.min(1,a))})`}
 const smoothstep=t=>t*t*(3-2*t)
+const nodeGlowSprites=new Map()
+
+function nodeGlowSprite(color,hub) {
+  const key=`${color}:${hub?'hub':'node'}`
+  if(nodeGlowSprites.has(key))return nodeGlowSprites.get(key)
+  if(typeof document==='undefined')return null
+  const size=96,center=size/2,canvas=document.createElement('canvas'),sprite=canvas.getContext('2d')
+  canvas.width=size;canvas.height=size
+  if(hub){const rayAngles=[-.08,.96,2.18,3.08,4.26,5.38],rayLengths=[.94,.68,.82,1,.72,.88];sprite.save();sprite.translate(center,center);rayAngles.forEach((angle,index)=>{const length=center*rayLengths[index],inner=5+index%2*1.5,x=Math.cos(angle),y=Math.sin(angle),ray=sprite.createLinearGradient(x*inner,y*inner,x*length,y*length);ray.addColorStop(0,rgba(color,.5));ray.addColorStop(.32,rgba(color,.24));ray.addColorStop(1,rgba(color,0));sprite.strokeStyle=ray;sprite.lineWidth=index%3===0?1.7:.9;sprite.beginPath();sprite.moveTo(x*inner,y*inner);sprite.lineTo(x*length,y*length);sprite.stroke()});sprite.restore()}
+  const gradient=sprite.createRadialGradient(center,center,0,center,center,center)
+  gradient.addColorStop(0,rgba(color,hub?.72:.6));gradient.addColorStop(.14,rgba(color,hub?.48:.38));gradient.addColorStop(.42,rgba(color,hub?.17:.15));gradient.addColorStop(1,rgba(color,0))
+  sprite.fillStyle=gradient;sprite.fillRect(0,0,size,size);nodeGlowSprites.set(key,canvas)
+  return canvas
+}
 const cinematicTravel=weight=>1-Math.pow(1-clamp01(weight),2.25)
 const cinematicReveal=weight=>smoothstep(clamp01((weight-.3)/.7))
 const cinematicIsolation=weight=>smoothstep(clamp01((weight-.7)/.3))
@@ -255,10 +269,10 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   const dataFocus=projectAnchor(REGION_ANCHORS.data,{yaw:view.yaw,pitch:view.pitch,worldRotation:t*WORLD_SPIN,base,cx,cy})
   const whatsappProjection=projectAnchor(REGION_ANCHORS.whatsapp,{yaw:view.yaw,pitch:view.pitch,worldRotation:t*WORLD_SPIN,base,cx,cy})
   const whatsappHub={...whatsappProjection,x3:REGION_ANCHORS.whatsapp.position.x,y3:REGION_ANCHORS.whatsapp.position.y,z3:REGION_ANCHORS.whatsapp.position.z,alpha:1,importance:1,index:-1}
-  const localEdges=proximityEdges(nodes,profile.threshold+.025+(activity*.018),profile.neighbours+(mode==='thinking'?1:0),t)
+  const localEdges=proximityEdges(nodes,profile.threshold+.025+(activity*.018),profile.neighbours+(mode==='thinking'?1:0)+(width>=1100?1:0),t)
   const edges=smoothEdges(model,[...localEdges,...hubEdges(model,t,weights[1])])
   const isolationWeights=[cinematicIsolation(iaWeight),cinematicIsolation(automationWeight),cinematicIsolation(weights[2]),cinematicIsolation(weights[3]),cinematicIsolation(weights[4])],regionalBudgetFocus=Math.max(...isolationWeights),globalOpacity=1-regionalBudgetFocus*.94,edgeBudget=1-regionalBudgetFocus*.88,nodeBudget=1-regionalBudgetFocus*.84
-  const edgeScale=width<700?.35:width<1100?.52:.9,globalEdges=edges.filter(edge=>{const a=nodes[edge.a],b=nodes[edge.b],important=a.hub||b.hub;if(important){edge.cadenceAlpha=1;return true}const cadence=.5+.5*Math.sin(t*.18+hash(edge.a+37,edge.b+53)*Math.PI*2);edge.cadenceAlpha=smoothstep(clamp01((cadence-.22)/.56));return hash(edge.a+11,edge.b+29)<=edgeBudget*edgeScale&&edge.cadenceAlpha>.035})
+  const edgeScale=width<700?.35:width<1100?.52:.9,desktopTopology=width>=1100,globalEdges=edges.filter(edge=>{const a=nodes[edge.a],b=nodes[edge.b],important=a.hub||b.hub,long=edge.distance>.6;if(important){edge.cadenceAlpha=1;return !desktopTopology||!long||hash(edge.a+19,edge.b+47)<=.42}const cadence=.5+.5*Math.sin(t*.18+hash(edge.a+37,edge.b+53)*Math.PI*2);edge.cadenceAlpha=smoothstep(clamp01((cadence-.22)/.56));const topologyScale=desktopTopology?(long?.45:1):edgeScale;return hash(edge.a+11,edge.b+29)<=edgeBudget*topologyScale&&edge.cadenceAlpha>.035})
   const globalNodes=nodes.filter(node=>hash(node.index,71.3)<=nodeBudget)
 
   const halo=ctx.createRadialGradient(cx,cy,base*.12,cx,cy,base*1.08);halo.addColorStop(0,'rgba(23,26,32,.08)');halo.addColorStop(.78,'rgba(11,13,17,.025)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
@@ -270,7 +284,7 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   globalEdges.forEach(edge=>{const cycle=frac(t/edge.pulsePeriod+edge.pulseOffset);if(cycle>=pulseWindow||edge.opacity<.08)return;const a=nodes[edge.a],b=nodes[edge.b],progress=cycle/pulseWindow,envelope=Math.sin(progress*Math.PI)**1.5,importance=Math.max(a.importance,b.importance),long=edge.distance>.6;pulses.push({a,b,progress,envelope,importance,long,score:importance+(long?.45:0)})})
   pulses.sort((a,b)=>b.score-a.score).slice(0,(width<700?6:11)+Math.round(weights[1]*3)).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha)*globalDepthVisibility(z),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24)*globalOpacity;ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD:PEARL,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
 
-  globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,hub=node.importance>.64,weight=.58+node.importance*1.55,nodeScale=width<700?1.35:width<1100?1.2:1.8,nodeContrast=desktopReadability?1.56:1,r=Math.max(.2,.29+depth*.76)*weight*(hub?1.42:.78)*(width<700?.86:1)*nodeScale,opacity=(.09+depth*.68)*(.54+node.importance*.42)*(hub?1.32:.62)*globalDepthVisibility(node.z)*nodeContrast;ctx.fillStyle=rgba(hub&&node.index%5===region?GOLD:PEARL,opacity*node.alpha*globalOpacity);ctx.beginPath();ctx.arc(node.x,node.y,r+(activity*(hub?.7:.08)),0,Math.PI*2);ctx.fill()})
+  globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,hub=node.importance>.64,weight=.58+node.importance*1.55,nodeScale=width<700?1.35:width<1100?1.2:1.8,nodeContrast=desktopReadability?1.56:1,r=Math.max(.2,.29+depth*.76)*weight*(hub?1.42:.78)*(width<700?.86:1)*nodeScale,opacity=(.09+depth*.68)*(.54+node.importance*.42)*(hub?1.32:.62)*globalDepthVisibility(node.z)*nodeContrast,color=hub&&node.index%5===region?GOLD:PEARL,coreRadius=Math.max(hub?.72:.48,r*(hub?1:1.18))+(activity*(hub?.7:.08)),haloRadius=Math.max(hub?5.2:4,coreRadius*(hub?4.8:5)),sprite=nodeGlowSprite(color,hub),alpha=Math.min(1,opacity*node.alpha*globalOpacity);if(sprite&&alpha>.004){ctx.globalAlpha=alpha;ctx.drawImage(sprite,node.x-haloRadius,node.y-haloRadius,haloRadius*2,haloRadius*2);ctx.globalAlpha=1}ctx.fillStyle=rgba(color,Math.min(1,alpha*(hub?1.18:1.3)));ctx.beginPath();ctx.arc(node.x,node.y,coreRadius,0,Math.PI*2);ctx.fill()})
   const visualWeights=weights.map(cinematicReveal)
   paintRegionalLayer(ctx,nodes,model,visualWeights,t,{view,width,height,iaWeight:cinematicReveal(iaWeight),automationWeight:cinematicReveal(automationWeight),iaFocus,automationFocus,dataFocus,whatsappHub})
 }
