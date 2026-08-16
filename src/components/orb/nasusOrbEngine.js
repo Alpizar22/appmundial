@@ -338,7 +338,11 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   // Se amortigua para que el disco quepa a lo ancho. Interpolado por whatsappTravel para que
   // entre y salga con la transicion, y acotado a viewports < 700px: desktop queda intacto.
   const whatsappFit=width<700?lerp(1,.643,whatsappTravel):1
-  const outputSignal=mode==='speaking'?clamp01(voiceSignals?.outputLevel||0):0,signal=mode==='speaking'?Math.sin(time*7.2)*(.018+outputSignal*.045):0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+whatsappTravel*.16+cinematicTravel(weights[3])*.04)*whatsappFit
+  // Web llevaba el mismo desborde, mas acusado: 906px de diametro contra 390 de ancho (232%).
+  // Ademas de recortar el limbo, ese aumento mostraba una porcion muy ampliada de la geometria
+  // de las torres, lo que restaba nitidez percibida. Mismo criterio y mismo acotamiento.
+  const webFit=width<700?lerp(1,.422,webTravel):1
+  const outputSignal=mode==='speaking'?clamp01(voiceSignals?.outputLevel||0):0,signal=mode==='speaking'?Math.sin(time*7.2)*(.018+outputSignal*.045):0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+whatsappTravel*.16+cinematicTravel(weights[3])*.04)*whatsappFit*webFit
   const cx=width*(.5+view.x),cy=height*(.5+view.y),t=reduced?.65:time*(1+activity*.55)
   stepSimulation(model,t,GLOBAL_PROFILE,-1,0,activity,reduced,pointer,view,base,cx,cy)
   const nodes=projectNodes(model,t,view,base,cx,cy,mode,voiceSignals)
