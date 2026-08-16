@@ -330,7 +330,15 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   if(model.lastActivationImpulse===undefined)model.lastActivationImpulse=activationImpulse
   else if(model.lastActivationImpulse!==activationImpulse){model.lastActivationImpulse=activationImpulse;model.voiceImpulse=1}
   model.voiceImpulse=(model.voiceImpulse||0)*Math.exp(-((model.frameDt||.016)*3.4))
-  const outputSignal=mode==='speaking'?clamp01(voiceSignals?.outputLevel||0):0,signal=mode==='speaking'?Math.sin(time*7.2)*(.018+outputSignal*.045):0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+whatsappTravel*.16+cinematicTravel(weights[3])*.04)
+  // base se referencia a min(width,height): en desktop eso es la altura (900) y en movil el
+  // ancho (390). Con el zoom de WhatsApp el diametro llegaba al 152% del ancho movil contra el
+  // 95% de desktop, de modo que el encuadre recortaba el limbo -- la banda donde la superficie
+  // se escorza y la densidad proyectada de nodos es maxima -- y dejaba a la vista solo el
+  // centro ralo del disco, con los nodos traseros atenuados transparentandose a traves.
+  // Se amortigua para que el disco quepa a lo ancho. Interpolado por whatsappTravel para que
+  // entre y salga con la transicion, y acotado a viewports < 700px: desktop queda intacto.
+  const whatsappFit=width<700?lerp(1,.643,whatsappTravel):1
+  const outputSignal=mode==='speaking'?clamp01(voiceSignals?.outputLevel||0):0,signal=mode==='speaking'?Math.sin(time*7.2)*(.018+outputSignal*.045):0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+whatsappTravel*.16+cinematicTravel(weights[3])*.04)*whatsappFit
   const cx=width*(.5+view.x),cy=height*(.5+view.y),t=reduced?.65:time*(1+activity*.55)
   stepSimulation(model,t,GLOBAL_PROFILE,-1,0,activity,reduced,pointer,view,base,cx,cy)
   const nodes=projectNodes(model,t,view,base,cx,cy,mode,voiceSignals)
