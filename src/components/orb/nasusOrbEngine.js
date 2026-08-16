@@ -10,7 +10,7 @@ import { REGION_ANCHORS, cameraTargetForAnchor, projectAnchor, selectNodesAround
 const GOLD = '#d6a64b'
 const PEARL = '#e8e6e3'
 const SMOKE = '#8d9199'
-const WORLD_SPIN = .014
+const WORLD_SPIN = .018
 const camera = [
   { zoom:.72, yaw:0, pitch:-.08, x:0, y:0 }, { zoom:1.08, yaw:.75, pitch:.18, x:-.13, y:.05 },
   { zoom:1.34, yaw:1.6, pitch:-.3, x:.18, y:-.05 }, { zoom:1.58, yaw:2.45, pitch:.22, x:-.22, y:.12 },
@@ -23,7 +23,7 @@ const regionProfiles = [
   { threshold:.33, neighbours:3, wander:.08, structure:.3 },
   { threshold:.35, neighbours:3, wander:.09, structure:.18 },
 ]
-const GLOBAL_PROFILE = { threshold:.35, neighbours:3, wander:.13, structure:0, communication:0 }
+const GLOBAL_PROFILE = { threshold:.35, neighbours:3, wander:.15, structure:0, communication:0 }
 
 const lerp=(a,b,t)=>a+(b-a)*t
 const frac=x=>x-Math.floor(x)
@@ -113,7 +113,12 @@ function smoothEdges(model,targets) {
 
 const globalDepthVisibility=z=>smoothstep(Math.max(0,Math.min(1,(z+.78)/.8)))
 
-function paintLine(ctx,a,b,alpha,color=PEARL,width=.55){const visibilityA=globalDepthVisibility(a.z),visibilityB=globalDepthVisibility(b.z);if(visibilityA<.002&&visibilityB<.002)return;const raw=Math.max(0,Math.min(1,((a.z+b.z)*.5+1)/2)),depth=.025+.975*raw**1.7,gradient=ctx.createLinearGradient(a.x,a.y,b.x,b.y);gradient.addColorStop(0,rgba(color,alpha*depth*visibilityA));gradient.addColorStop(1,rgba(color,alpha*depth*visibilityB));ctx.strokeStyle=gradient;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+function paintLine(ctx,a,b,alpha,color=PEARL,width=.55){const visibilityA=globalDepthVisibility(a.z),visibilityB=globalDepthVisibility(b.z);if(visibilityA<.002&&visibilityB<.002)return;const raw=Math.max(0,Math.min(1,((a.z+b.z)*.5+1)/2)),depth=.025+.975*raw**1.7;if(Math.abs(visibilityA-visibilityB)<.12)ctx.strokeStyle=rgba(color,alpha*depth*(visibilityA+visibilityB)*.5);else{const gradient=ctx.createLinearGradient(a.x,a.y,b.x,b.y);gradient.addColorStop(0,rgba(color,alpha*depth*visibilityA));gradient.addColorStop(1,rgba(color,alpha*depth*visibilityB));ctx.strokeStyle=gradient}ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+
+function paintGlobalFlowWaves(ctx,time,view,base,cx,cy,opacity) {
+  const sy=Math.sin(view.yaw+time*WORLD_SPIN),cyw=Math.cos(view.yaw+time*WORLD_SPIN),st=Math.sin(view.pitch),ct=Math.cos(view.pitch)
+  for(let band=0;band<2;band++){let previous=null;for(let step=0;step<=72;step++){const longitude=-Math.PI+step/72*Math.PI*2,latitude=(band?-.2:.18)+Math.sin(longitude*(band?2.4:2.9)+time*(band?.12:.15)+band*1.7)*.06,ring=Math.cos(latitude),wx=Math.cos(longitude)*ring,wy=Math.sin(latitude),wz=Math.sin(longitude)*ring,x1=wx*cyw+wz*sy,z1=-wx*sy+wz*cyw,y1=wy*ct-z1*st,z2=wy*st+z1*ct,perspective=1+z2*.055,current={x:cx+x1*base*perspective,y:cy-y1*base*perspective,z:z2};if(previous)paintLine(ctx,previous,current,(band?.095:.12)*opacity,band?SMOKE:PEARL,band?.4:.46);previous=current}}
+}
 
 function paintWhatsappRoute(ctx,hub,node,weight,width=.8) {
   const depth=Math.max(.08,Math.min(1,((hub.z+node.z)*.5+1)/2))
@@ -236,12 +241,13 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   const globalNodes=nodes.filter(node=>hash(node.index,71.3)<=nodeBudget)
 
   const halo=ctx.createRadialGradient(cx,cy,base*.12,cx,cy,base*1.08);halo.addColorStop(0,'rgba(23,26,32,.08)');halo.addColorStop(.78,'rgba(11,13,17,.025)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
+  paintGlobalFlowWaves(ctx,t,view,base,cx,cy,globalOpacity)
   globalEdges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility*globalOpacity,long?PEARL:SMOKE,long?.54:.49)})
 
-  const pulseWindow=.18+weights[1]*.08,pulses=[]
+  const pulseWindow=.24+weights[1]*.08,pulses=[]
   globalEdges.forEach(edge=>{const cycle=frac(t/edge.pulsePeriod+edge.pulseOffset);if(cycle>=pulseWindow||edge.opacity<.08)return;const a=nodes[edge.a],b=nodes[edge.b],progress=cycle/pulseWindow,envelope=Math.sin(progress*Math.PI)**1.5,importance=Math.max(a.importance,b.importance),long=edge.distance>.6;pulses.push({a,b,progress,envelope,importance,long,score:importance+(long?.45:0)})})
-  pulses.sort((a,b)=>b.score-a.score).slice(0,(width<700?4:7)+Math.round(weights[1]*3)).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha)*globalDepthVisibility(z),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24)*globalOpacity;ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD:PEARL,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
+  pulses.sort((a,b)=>b.score-a.score).slice(0,(width<700?6:11)+Math.round(weights[1]*3)).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha)*globalDepthVisibility(z),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24)*globalOpacity;ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD:PEARL,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
 
-  globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,important=node.importance>.58,weight=.68+node.importance*1.65,r=Math.max(.22,.31+depth*.86)*weight*(width<700?.86:1),opacity=(.08+depth*.72)*(.62+node.importance*.5)*globalDepthVisibility(node.z);ctx.fillStyle=rgba(important&&node.index%6===region?GOLD:PEARL,opacity*node.alpha*globalOpacity);ctx.beginPath();ctx.arc(node.x,node.y,r+(activity*(important?.65:.1)),0,Math.PI*2);ctx.fill()})
+  globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,hub=node.importance>.64,weight=.58+node.importance*1.55,r=Math.max(.2,.29+depth*.76)*weight*(hub?1.42:.78)*(width<700?.86:1),opacity=(.09+depth*.68)*(.54+node.importance*.42)*(hub?1.32:.62)*globalDepthVisibility(node.z);ctx.fillStyle=rgba(hub&&node.index%5===region?GOLD:PEARL,opacity*node.alpha*globalOpacity);ctx.beginPath();ctx.arc(node.x,node.y,r+(activity*(hub?.7:.08)),0,Math.PI*2);ctx.fill()})
   paintRegionalLayer(ctx,nodes,model,weights,t,{view,width,height,iaWeight,automationWeight,iaFocus,automationFocus,dataFocus,whatsappHub})
 }
