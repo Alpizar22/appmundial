@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import Orb from './components/Orb'
+import { initialVoiceSession, voiceSessionReducer, voiceStateLabel } from './voice/voiceMachine'
 
 const regions = [
   { id: 'ia', number: '01', label: 'IA', coordinate: 'N 19.22° · RED NEURAL' },
@@ -8,7 +9,6 @@ const regions = [
   { id: 'web', number: '04', label: 'Web', coordinate: 'W 73.01° · ESTRUCTURAS' },
   { id: 'datos', number: '05', label: 'Datos', coordinate: 'N 31.90° · CARTOGRAFÍA' },
 ]
-const labels = { idle: '', listening: 'Escuchando…', thinking: 'Pensando…', speaking: 'Hablando…' }
 const caseStudies = [
   { number: '01', title: 'THEIA', subtitle: 'E-commerce + fulfillment conectado.', description: 'Tienda funcional con catálogo, variantes, pagos y operación de fulfillment integrados.', tags: 'Next.js · Supabase · Printful · Mercado Pago' },
   { number: '02', title: 'NASUS ASSISTANT', subtitle: 'IA conversacional + voz.', description: 'Asistente capaz de responder por texto y voz e integrarse con servicios mediante APIs.', tags: 'AI · Voice · APIs · ElevenLabs' },
@@ -17,7 +17,8 @@ const caseStudies = [
 
 export default function App() {
   const [activeRegion, setActiveRegion] = useState(0)
-  const [voiceState, setVoiceState] = useState('idle')
+  const [voiceSession, dispatchVoice] = useReducer(voiceSessionReducer, initialVoiceSession)
+  const voiceState = voiceSession.status
   const voiceTimer = useRef(null)
   const panelRef = useRef(null)
   const [casesOpen, setCasesOpen] = useState(false)
@@ -58,15 +59,24 @@ export default function App() {
 
   const beginConversation = () => {
     window.clearTimeout(voiceTimer.current)
-    if (voiceState !== 'idle') return setVoiceState('idle')
-    setVoiceState('listening')
+    if (voiceState !== 'idle') {
+      dispatchVoice({ type: 'STOP' })
+      return voiceTimer.current = window.setTimeout(() => dispatchVoice({ type: 'SETTLED' }), 500)
+    }
+    dispatchVoice({ type: 'ACTIVATE' })
     voiceTimer.current = window.setTimeout(() => {
-      setVoiceState('thinking')
+      dispatchVoice({ type: 'PERMISSION_GRANTED' })
       voiceTimer.current = window.setTimeout(() => {
-        setVoiceState('speaking')
-        voiceTimer.current = window.setTimeout(() => setVoiceState('idle'), 4200)
-      }, 1800)
-    }, 3200)
+        dispatchVoice({ type: 'TRANSCRIPT_READY', transcript: 'Demostración temporal' })
+        voiceTimer.current = window.setTimeout(() => {
+          dispatchVoice({ type: 'RESPONSE_READY', text: 'Demostración temporal' })
+          voiceTimer.current = window.setTimeout(() => {
+            dispatchVoice({ type: 'PLAYBACK_ENDED' })
+            voiceTimer.current = window.setTimeout(() => dispatchVoice({ type: 'SETTLED' }), 700)
+          }, 4200)
+        }, 1800)
+      }, 3200)
+    }, 160)
   }
   const goTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
 
@@ -79,7 +89,7 @@ export default function App() {
 
     <div className="world" aria-live="polite">
       <Orb region={activeRegion} mode={voiceState} onActivate={beginConversation} onOpenCases={() => setCasesOpen(true)} />
-      <p className={`voice-state voice-state--${voiceState}`}>{labels[voiceState]}</p>
+      <p className={`voice-state voice-state--${voiceState}`} role="status">{voiceStateLabel(voiceSession)}</p>
       <div className="world__crosshair world__crosshair--a" /><div className="world__crosshair world__crosshair--b" />
     </div>
 
