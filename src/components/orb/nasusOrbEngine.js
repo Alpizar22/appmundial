@@ -153,15 +153,19 @@ function paintSignalWave(ctx,hub,node,weight,time,index) {
 function paintWhatsappWorld(ctx,nodes,hub,weight,time) {
   const depth=Math.max(.3,(hub.z+1)/2),strength=weight*depth
   const participants=selectNodesAroundAnchor(nodes,REGION_ANCHORS.whatsapp,{innerAngle:.34,outerAngle:1.08,minAlpha:.2,limit:30})
-  const secondary=participants.filter(node=>node.anchorAngle>.34&&node.anchorAngle<.92&&node.z>-.5).filter((_,index)=>index%4===0).slice(0,6)
+  const populated=participants.map(node=>{let density=0;participants.forEach(other=>{if(other===node)return;const distance=Math.hypot(node.x-other.x,node.y-other.y);if(distance<118)density+=(1-distance/118)*(.6+other.importance*.4)});return{node,density}}).sort((a,b)=>b.density-a.density)
+  const secondary=[]
+  populated.forEach(candidate=>{if(secondary.length>=6||candidate.node.anchorAngle<=.3||candidate.node.z<-.5)return;if(secondary.every(node=>Math.hypot(node.x-candidate.node.x,node.y-candidate.node.y)>48))secondary.push(candidate.node)})
+  const densityByNode=new Map(populated.map(({node,density})=>[node,Math.min(1,density/4.2)]))
 
   // Raise the regional density floor while retaining the model's clustered distribution.
   nodes.forEach(node=>{const nodeDepth=Math.max(.02,(node.z+1)/2),hubDistance=Math.hypot(node.x-hub.x,node.y-hub.y),warmth=Math.max(0,1-hubDistance/235),nodeColor=warmth>.42?GOLD:PEARL;ctx.fillStyle=rgba(nodeColor,(.075+nodeDepth**1.85*(.48+warmth*.22))*weight*node.alpha);ctx.beginPath();ctx.arc(node.x,node.y,(.34+node.importance*1.22)*(.3+nodeDepth*1.05),0,Math.PI*2);ctx.fill()})
-  participants.forEach((node,index)=>{paintWhatsappNetworkLine(ctx,node,participants[(index*7+5)%participants.length],hub,weight,.42);if(index%3===0)paintWhatsappNetworkLine(ctx,node,participants[(index+1)%participants.length],hub,weight,.46)})
+  participants.forEach((node,index)=>{const density=densityByNode.get(node)||0,target=populated[(index*5+3)%Math.min(populated.length,18)]?.node||participants[(index+1)%participants.length];paintWhatsappNetworkLine(ctx,node,target,hub,weight,.4+density*.22);if(density>.3||index%4===0)paintWhatsappNetworkLine(ctx,node,participants[(index+1)%participants.length],hub,weight,.43+density*.16);if(density>.62)paintWhatsappNetworkLine(ctx,node,participants[(index+3)%participants.length],hub,weight,.38)})
+  participants.forEach(node=>{const density=densityByNode.get(node)||0,nodeDepth=Math.max(.08,(node.z+1)/2);ctx.fillStyle=rgba(density>.58?GOLD:PEARL,(.2+density*.56)*nodeDepth*weight);ctx.beginPath();ctx.arc(node.x,node.y,.65+node.importance*1.2+density*1.05,0,Math.PI*2);ctx.fill()})
   secondary.forEach((node,index)=>{paintWhatsappRoute(ctx,hub,node,weight,index<3?1.25:1);const nodeDepth=Math.max(.12,(node.z+1)/2);ctx.strokeStyle=rgba(index<3?GOLD:PEARL,(.48+nodeDepth*.28)*weight);ctx.lineWidth=.85;ctx.beginPath();ctx.arc(node.x,node.y,5.5+node.importance*2.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle=rgba(index<3?GOLD:PEARL,.68*nodeDepth*weight);ctx.beginPath();ctx.arc(node.x,node.y,1.7+node.importance,0,Math.PI*2);ctx.fill()})
 
   const field=ctx.createRadialGradient(hub.x,hub.y,2,hub.x,hub.y,150);field.addColorStop(0,rgba(GOLD,.3*strength));field.addColorStop(.24,rgba(GOLD,.105*strength));field.addColorStop(.62,rgba('#c4a882',.025*strength));field.addColorStop(1,'transparent');ctx.fillStyle=field;ctx.beginPath();ctx.arc(hub.x,hub.y,150,0,Math.PI*2);ctx.fill()
-  ;[25,39,57,79].forEach((radius,index)=>{const breathe=1+Math.sin(time*.22+index*1.4)*.025;ctx.strokeStyle=rgba(index<2?GOLD:PEARL,(.36-index*.055)*strength);ctx.lineWidth=index===0?1.15:.62;ctx.beginPath();ctx.arc(hub.x,hub.y,radius*breathe,0,Math.PI*2);ctx.stroke()})
+  ;[25,39,57,79].forEach((radius,index)=>{const segments=72,breathe=1+Math.sin(time*.22+index*1.4)*.025;ctx.strokeStyle=rgba(index<2?GOLD:PEARL,(.36-index*.055)*strength);ctx.lineWidth=index===0?1.15:.62;ctx.beginPath();for(let step=0;step<=segments;step++){const angle=step/segments*Math.PI*2,organic=Math.sin(angle*3+time*.16+index)*radius*.035+Math.sin(angle*7-time*.09+index*1.7)*radius*.016,driftX=Math.sin(angle*2-time*.07+index)*radius*.018,ringRadius=radius*breathe+organic,x=hub.x+Math.cos(angle)*ringRadius+driftX,y=hub.y+Math.sin(angle)*ringRadius*.92;if(step)ctx.lineTo(x,y);else ctx.moveTo(x,y)}ctx.closePath();ctx.stroke()})
 
   secondary.slice(0,5).forEach((node,index)=>paintSignalWave(ctx,hub,node,strength,time,index))
 
