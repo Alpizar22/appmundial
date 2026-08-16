@@ -102,7 +102,7 @@ export default function App() {
     <section className="hero" id="top">
       <div className="hero__copy">
         <p className="eyebrow">NASUS</p>
-        <h1>Habla con Nasus</h1>
+        <h1>Habla con<br />Nasus</h1>
         <p>Interactúa con inteligencia viva.</p>
         <button className="talk-button" onClick={beginConversation}>{voiceState === 'idle' ? 'Hablar con Nasus' : 'Terminar'}<i /></button>
       </div>
