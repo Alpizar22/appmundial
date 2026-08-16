@@ -17,9 +17,9 @@ export function renderAutomationSubworld({ctx,time,viewport,focus,intensity,pale
   const horizonY=height*.48,bottomY=height*1.035,rows=18,columns=27,grid=[]
 
   for(let row=0;row<rows;row++){
-    const depth=row/(rows-1),perspective=depth**1.58,halfWidth=lerp(width*.58,width*.76,perspective),baseY=lerp(horizonY,bottomY,perspective),rowPoints=[]
+    const depth=row/(rows-1),perspective=depth**1.58,halfWidth=lerp(width*.58,width*.76,perspective),baseY=lerp(horizonY,bottomY,perspective),rowPoints=[],rowAmplitude=.18+hash2(row,31.7)*1.62,rowSpeed=.55+hash2(row,47.3)*1.35,rowWarp=(hash2(row,63.1)-.5)*.24
     for(let column=0;column<columns;column++){
-      const across=column/(columns-1),nx=across*2-1,heightField=duneHeight(nx,depth,time),ridgeLift=heightField*lerp(height*.1,height*.42,perspective),sandDrift=(Math.sin(time*.72+depth*3.1+nx*1.4)+Math.sin(time*.43-depth*2.4+nx*3.7)*.42)*lerp(5,18,perspective)
+      const across=column/(columns-1),nx=across*2-1,localDepth=depth+rowWarp+valueNoise(nx*(1.1+row%4*.37)+row*2.7,depth*2.4)*.18,heightField=duneHeight(nx*(.72+hash2(row,8.4)*.72),localDepth,time*rowSpeed)*rowAmplitude,ridgeLift=heightField*lerp(height*.1,height*.42,perspective),localBurst=.45+valueNoise(nx*2.8+row,depth*4.1+time*.16)*1.25,sandDrift=(Math.sin(time*.72*rowSpeed+depth*3.1+nx*(1.1+row%5*.48))+Math.sin(time*.43-depth*2.4+nx*(2.3+row%3*.8))*.42)*lerp(5,18,perspective)*localBurst
       rowPoints.push({x:focus.x+nx*halfWidth+sandDrift,y:baseY-ridgeLift,depth,height:heightField,visibility:lerp(.24,1,perspective)})
     }
     grid.push(rowPoints)
