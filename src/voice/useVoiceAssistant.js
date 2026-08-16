@@ -10,11 +10,18 @@ const permissionError = error => {
 export function useVoiceAssistant() {
   const [session, dispatch] = useReducer(voiceSessionReducer, initialVoiceSession)
   const [inputLevel, setInputLevel] = useState(0)
+  const [outputLevel, setOutputLevel] = useState(0)
   const streamRef = useRef(null)
-  const audioContextRef = useRef(null)
+  const inputContextRef = useRef(null)
   const analyserRef = useRef(null)
+  const outputContextRef = useRef(null)
+  const outputAnalyserRef = useRef(null)
+  const outputSourceRef = useRef(null)
+  const audioRef = useRef(null)
+  const audioUrlRef = useRef('')
   const recognitionRef = useRef(null)
   const levelFrameRef = useRef(0)
+  const outputFrameRef = useRef(0)
   const settlingTimerRef = useRef(0)
   const statusRef = useRef(session.status)
   statusRef.current = session.status
@@ -27,20 +34,115 @@ export function useVoiceAssistant() {
     streamRef.current = null
     analyserRef.current?.disconnect?.()
     analyserRef.current = null
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') audioContextRef.current.close().catch(() => {})
-    audioContextRef.current = null
+    if (inputContextRef.current && inputContextRef.current.state !== 'closed') inputContextRef.current.close().catch(() => {})
+    inputContextRef.current = null
     setInputLevel(0)
+  }, [])
+
+  const stopOutput = useCallback(() => {
+    cancelAnimationFrame(outputFrameRef.current)
+    const audio = audioRef.current
+    if (audio) { audio.pause(); audio.removeAttribute('src'); audio.load() }
+    if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current)
+    audioUrlRef.current = ''
+    setOutputLevel(0)
   }, [])
 
   const settle = useCallback(() => {
     stopInput()
+    stopOutput()
     dispatch({ type: 'STOP' })
     window.clearTimeout(settlingTimerRef.current)
     settlingTimerRef.current = window.setTimeout(() => dispatch({ type: 'SETTLED' }), 650)
-  }, [stopInput])
+  }, [stopInput, stopOutput])
+
+  const unlockOutput = useCallback(() => {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext
+    if (!AudioContextClass) return
+    const audio = audioRef.current || new Audio()
+    audio.preload = 'auto'
+    audio.playsInline = true
+    audioRef.current = audio
+    const context = outputContextRef.current || new AudioContextClass()
+    outputContextRef.current = context
+    context.resume().catch(() => {})
+    if (!outputSourceRef.current) {
+      const analyser = context.createAnalyser()
+      analyser.fftSize = 256
+      analyser.smoothingTimeConstant = 0.72
+      const source = context.createMediaElementSource(audio)
+      source.connect(analyser)
+      analyser.connect(context.destination)
+      outputSourceRef.current = source
+      outputAnalyserRef.current = analyser
+    }
+  }, [])
+
+  const playResponse = useCallback(async (audioBase64, mimeType) => {
+    if (!audioBase64 || !audioRef.current) return false
+    const bytes = Uint8Array.from(atob(audioBase64), character => character.charCodeAt(0))
+    const url = URL.createObjectURL(new Blob([bytes], { type: mimeType || 'audio/mpeg' }))
+    audioUrlRef.current = url
+    const audio = audioRef.current
+    audio.src = url
+    audio.load()
+    await outputContextRef.current?.resume?.()
+    const analyser = outputAnalyserRef.current
+    const samples = analyser ? new Uint8Array(analyser.frequencyBinCount) : null
+    const measure = () => {
+      if (!samples || audio.paused || audio.ended) return
+      analyser.getByteFrequencyData(samples)
+      let sum = 0
+      for (const value of samples) sum += value
+      setOutputLevel(Math.min(1, (sum / samples.length) / 96))
+      outputFrameRef.current = requestAnimationFrame(measure)
+    }
+    await audio.play()
+    measure()
+    await new Promise((resolve, reject) => {
+      audio.onended = resolve
+      audio.onerror = () => reject(new Error('audio_playback_failed'))
+    })
+    cancelAnimationFrame(outputFrameRef.current)
+    setOutputLevel(0)
+    URL.revokeObjectURL(url)
+    audioUrlRef.current = ''
+    return true
+  }, [])
+
+  const requestAssistant = useCallback(async transcript => {
+    try {
+      const response = await fetch('/api/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: transcript }),
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        const error = new Error(payload?.error?.message || 'No fue posible conectar con Nasus.')
+        error.code = payload?.error?.code || 'request_failed'
+        throw error
+      }
+      dispatch({ type: 'RESPONSE_READY', text: payload.text })
+      if (payload.audio) await playResponse(payload.audio, payload.mimeType)
+      else await new Promise(resolve => window.setTimeout(resolve, 1600))
+      dispatch({ type: 'PLAYBACK_ENDED' })
+      window.clearTimeout(settlingTimerRef.current)
+      settlingTimerRef.current = window.setTimeout(() => dispatch({ type: 'SETTLED' }), 700)
+    } catch (error) {
+      stopOutput()
+      const autoplay = error?.name === 'NotAllowedError' || error?.message === 'audio_playback_failed'
+      dispatch({
+        type: 'FAIL',
+        code: autoplay ? 'audio_blocked' : (error?.code || 'connection_failed'),
+        message: autoplay ? 'Safari bloqueó el audio. Toca de nuevo para reproducir.' : (error?.message || 'No fue posible conectar con Nasus.'),
+      })
+    }
+  }, [playResponse, stopOutput])
 
   const start = useCallback(async () => {
     if (statusRef.current !== VOICE_STATUS.IDLE && statusRef.current !== VOICE_STATUS.ERROR) return settle()
+    unlockOutput()
     dispatch({ type: 'ACTIVATE' })
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -50,7 +152,7 @@ export function useVoiceAssistant() {
       streamRef.current = stream
       const AudioContextClass = window.AudioContext || window.webkitAudioContext
       const context = new AudioContextClass()
-      audioContextRef.current = context
+      inputContextRef.current = context
       const analyser = context.createAnalyser()
       analyser.fftSize = 512
       analyser.smoothingTimeConstant = 0.78
@@ -86,6 +188,7 @@ export function useVoiceAssistant() {
         if (finalTranscript.trim()) {
           stopInput()
           dispatch({ type: 'TRANSCRIPT_READY', transcript: finalTranscript.trim() })
+          requestAssistant(finalTranscript.trim())
         }
       }
       recognition.onerror = event => {
@@ -102,13 +205,14 @@ export function useVoiceAssistant() {
         : permissionError(error)
       dispatch({ type: 'FAIL', code, message })
     }
-  }, [settle, stopInput])
+  }, [requestAssistant, settle, stopInput, unlockOutput])
 
   useEffect(() => () => {
     window.clearTimeout(settlingTimerRef.current)
     stopInput()
-  }, [stopInput])
+    stopOutput()
+    if (outputContextRef.current && outputContextRef.current.state !== 'closed') outputContextRef.current.close().catch(() => {})
+  }, [stopInput, stopOutput])
 
-  return { session, inputLevel, microphoneActive: Boolean(streamRef.current), start, stop: settle }
+  return { session, inputLevel, outputLevel, microphoneActive: Boolean(streamRef.current), start, stop: settle }
 }
-
