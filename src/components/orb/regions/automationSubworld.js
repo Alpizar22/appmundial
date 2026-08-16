@@ -4,7 +4,7 @@ const hash2=(x,y)=>frac(Math.sin(x*127.1+y*311.7)*43758.5453)
 const valueNoise=(x,y)=>{const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy,sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy),a=lerp(hash2(ix,iy),hash2(ix+1,iy),sx),b=lerp(hash2(ix,iy+1),hash2(ix+1,iy+1),sx);return lerp(a,b,sy)}
 const dune=(x,z,cx,cz,width,depth)=>Math.exp(-(Math.pow((x-cx)/width,2)+Math.pow((z-cz)/depth,2)))
 const duneHeight=(x,z,time)=>{
-  const drift=Math.sin(time*.11)*.09
+  const drift=Math.sin(time*.18)*.15
   const broad=(valueNoise(x*.72+4.2,z*.8+7.1)-.5)*.25
   const ridges=dune(x,z,-.67+drift,.28,.5,.12)*.72+dune(x,z,.16-drift*.7,.38,.72,.17)*.86+dune(x,z,.72+drift*.45,.59,.42,.14)*.64+dune(x,z,-.25-drift*.4,.73,.58,.19)*.55+dune(x,z,.48+drift*.8,.84,.68,.13)*.43
   const asymmetric=(valueNoise(x*1.45+17,z*1.18+3.4)-.46)*.22
@@ -19,7 +19,7 @@ export function renderAutomationSubworld({ctx,time,viewport,focus,intensity,pale
   for(let row=0;row<rows;row++){
     const depth=row/(rows-1),perspective=depth**1.58,halfWidth=lerp(width*.58,width*.76,perspective),baseY=lerp(horizonY,bottomY,perspective),rowPoints=[]
     for(let column=0;column<columns;column++){
-      const across=column/(columns-1),nx=across*2-1,heightField=duneHeight(nx,depth,time),ridgeLift=heightField*lerp(height*.045,height*.18,perspective),sandDrift=(Math.sin(time*.38+depth*3.1+nx*1.4)+Math.sin(time*.21-depth*2.4+nx*3.7)*.35)*lerp(1.5,7,perspective)
+      const across=column/(columns-1),nx=across*2-1,heightField=duneHeight(nx,depth,time),ridgeLift=heightField*lerp(height*.1,height*.42,perspective),sandDrift=(Math.sin(time*.72+depth*3.1+nx*1.4)+Math.sin(time*.43-depth*2.4+nx*3.7)*.42)*lerp(5,18,perspective)
       rowPoints.push({x:focus.x+nx*halfWidth+sandDrift,y:baseY-ridgeLift,depth,height:heightField,visibility:lerp(.24,1,perspective)})
     }
     grid.push(rowPoints)
@@ -28,7 +28,7 @@ export function renderAutomationSubworld({ctx,time,viewport,focus,intensity,pale
   ctx.save()
   const haze=ctx.createLinearGradient(0,horizonY-height*.04,0,bottomY)
   haze.addColorStop(0,rgba('#0b0d11',.035*intensity));haze.addColorStop(.45,rgba('#171a20',.075*intensity));haze.addColorStop(1,rgba('#171a20',.14*intensity));ctx.fillStyle=haze;ctx.fillRect(0,horizonY-height*.04,width,height-horizonY+height*.08)
-  grid.forEach((points,row)=>{const depth=row/(rows-1);ctx.strokeStyle=rgba(pearl,lerp(.13,.52,depth)*intensity);ctx.lineWidth=lerp(.4,1.08,depth);let drawing=false;points.forEach((point,index)=>{const connected=point.height>.035||index%7!==0;if(!connected){drawing=false;return}if(drawing)ctx.lineTo(point.x,point.y);else{ctx.beginPath();ctx.moveTo(point.x,point.y);drawing=true}if(index===points.length-1||points[index+1]?.height<=.035){ctx.stroke();drawing=false}})})
+  grid.forEach((points,row)=>{const depth=row/(rows-1),averageHeight=points.reduce((sum,point)=>sum+Math.max(0,point.height),0)/points.length,elevation=Math.min(1,averageHeight/.48);ctx.strokeStyle=rgba(elevation>.38?gold:pearl,lerp(.16,.58,depth)*lerp(.55,1,elevation)*intensity);ctx.lineWidth=lerp(.45,1.22,depth)+elevation*.42;ctx.shadowColor=rgba(gold,elevation*.5*intensity);ctx.shadowBlur=elevation*7;let drawing=false;points.forEach((point,index)=>{const connected=point.height>.035||index%7!==0;if(!connected){drawing=false;return}if(drawing)ctx.lineTo(point.x,point.y);else{ctx.beginPath();ctx.moveTo(point.x,point.y);drawing=true}if(index===points.length-1||points[index+1]?.height<=.035){ctx.stroke();drawing=false}});ctx.shadowBlur=0})
   for(let column=0;column<columns;column+=2){ctx.strokeStyle=rgba(smoke,.16*intensity);ctx.lineWidth=.44;let drawing=false;grid.forEach((row,index)=>{const point=row[column],connected=point.height>.055||index%5!==0;if(!connected){if(drawing)ctx.stroke();drawing=false;return}if(drawing)ctx.lineTo(point.x,point.y);else{ctx.beginPath();ctx.moveTo(point.x,point.y);drawing=true}});if(drawing)ctx.stroke()}
   for(let pulse=0;pulse<24;pulse++){const row=2+(pulse*7)%(rows-3),direction=pulse%3===0?-1:1,phase=frac(time*(.072+(pulse%5)*.006)+pulse*.137),travel=direction>0?phase:1-phase,position=travel*(columns-1),index=Math.min(columns-2,Math.floor(position)),local=position-index,a=grid[row][index],b=grid[row][index+1],envelope=Math.sin(phase*Math.PI)**.72,x=lerp(a.x,b.x,local),y=lerp(a.y,b.y,local),warm=pulse%4===0||a.height>.48;ctx.fillStyle=rgba(warm?gold:pearl,envelope*lerp(.28,.82,a.depth)*intensity);ctx.beginPath();ctx.arc(x,y,lerp(.75,1.8,a.depth),0,Math.PI*2);ctx.fill()}
   grid.forEach((row,rowIndex)=>row.forEach((point,column)=>{if(rowIndex%2||column%2)return;const active=(rowIndex*13+column*7)%29===0;ctx.fillStyle=rgba(active?gold:pearl,(active?.78:.34)*point.visibility*intensity);ctx.beginPath();ctx.arc(point.x,point.y,active?1.65:lerp(.55,1.12,point.depth),0,Math.PI*2);ctx.fill()}))
