@@ -276,8 +276,19 @@ function paintCasesHotspot(ctx,point,visibility,time) {
   ctx.fillStyle=rgba(GOLD_ACTIVE,.92*visibility);ctx.beginPath();ctx.arc(0,0,1.7,0,Math.PI*2);ctx.fill();ctx.restore()
 }
 
+function paintTravelReticle(ctx,point,visibility,time) {
+  if(visibility<.01)return
+  const breathe=1+Math.sin(time*.9)*.04
+  ctx.save();ctx.translate(point.x,point.y);ctx.strokeStyle=rgba(GOLD_MUTED,.38*visibility);ctx.lineWidth=.62
+  ctx.beginPath();ctx.arc(0,0,14*breathe,-Math.PI*.38,Math.PI*.22);ctx.stroke();ctx.beginPath();ctx.arc(0,0,20/breathe,Math.PI*.62,Math.PI*1.15);ctx.stroke()
+  ctx.strokeStyle=rgba(SMOKE_SECONDARY,.3*visibility);ctx.setLineDash([2,5]);ctx.beginPath();ctx.moveTo(-28,0);ctx.lineTo(28,0);ctx.moveTo(0,-28);ctx.lineTo(0,28);ctx.stroke();ctx.setLineDash([])
+  ctx.fillStyle=rgba(GOLD_ACTIVE,.72*visibility);ctx.beginPath();ctx.arc(0,0,1.25,0,Math.PI*2);ctx.fill();ctx.restore()
+}
+
 export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFocus,mode,reduced,pointer}) {
   const regional=regionalStateAt(progress),region=regional.index,weights=regional.weights,profile=profileAt(regional),view=cameraAt(progress,regional),iaWeight=weights[0]*(regionalFocus||0),automationWeight=weights[1]
+  const iaAutomationProgress=clamp01((progress-.12)/.76),iaAutomationTransit=progress>.12&&progress<.88?Math.sin(iaAutomationProgress*Math.PI):0
+  if(iaAutomationTransit>0){const easedArc=smoothstep(iaAutomationTransit);view.yaw+=easedArc*.2;view.x+=Math.sin(iaAutomationProgress*Math.PI)*.045;view.y-=Math.sin(iaAutomationProgress*Math.PI*2)*.012;view.zoom-=easedArc*.1}
   const iaTravel=cinematicTravel(iaWeight),automationTravel=cinematicTravel(automationWeight),whatsappTravel=cinematicTravel(weights[2]),webTravel=cinematicTravel(weights[3]),dataTravel=cinematicTravel(weights[4])
   if(iaTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.ia,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(iaTravel*Math.PI);view.zoom=lerp(view.zoom,1.62,iaTravel);view.yaw+=yawDelta*iaTravel+orbitArc*.18;view.pitch=lerp(view.pitch,target.pitch,iaTravel);view.x=lerp(view.x,.06,iaTravel)+orbitArc*.045;view.y=lerp(view.y,-.01,iaTravel)-orbitArc*.018}
   if(automationTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.automation,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(automationTravel*Math.PI);view.zoom=lerp(view.zoom,1.58,automationTravel);view.yaw+=yawDelta*automationTravel-orbitArc*.16;view.pitch=lerp(view.pitch,target.pitch,automationTravel);view.x=lerp(view.x,.08,automationTravel)-orbitArc*.042;view.y=lerp(view.y,0,automationTravel)+orbitArc*.016}
@@ -316,6 +327,7 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   pulses.sort((a,b)=>b.score-a.score).slice(0,(width<700?6:11)+Math.round(weights[1]*3)).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha)*globalDepthVisibility(z),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24)*globalOpacity;ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD_ACTIVE:TEXT_IVORY,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
 
   globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,hub=node.importance>.64,weight=.58+node.importance*1.55,nodeScale=width<700?1.35:width<1100?1.2:1.8,nodeContrast=desktopReadability?1.56:1,r=Math.max(.2,.29+depth*.76)*weight*(hub?1.42:.78)*(width<700?.86:1)*nodeScale,opacity=(.09+depth*.68)*(.54+node.importance*.42)*(hub?1.32:.62)*globalDepthVisibility(node.z)*nodeContrast,color=hub&&node.index%5===region?GOLD_ACTIVE:TEXT_IVORY,coreRadius=Math.max(hub?.72:.48,r*(hub?1:1.18))+(activity*(hub?.7:.08)),haloRadius=Math.max(hub?5.2:4,coreRadius*(hub?4.8:5)),sprite=nodeGlowSprite(color,hub),alpha=Math.min(1,opacity*node.alpha*globalOpacity);if(sprite&&alpha>.004){ctx.globalAlpha=alpha;ctx.drawImage(sprite,node.x-haloRadius,node.y-haloRadius,haloRadius*2,haloRadius*2);ctx.globalAlpha=1}ctx.fillStyle=rgba(color,Math.min(1,alpha*(hub?1.18:1.3)));ctx.beginPath();ctx.arc(node.x,node.y,coreRadius,0,Math.PI*2);ctx.fill()})
+  paintTravelReticle(ctx,automationFocus,iaAutomationTransit*.72,t)
   const visualWeights=weights.map(cinematicReveal)
   paintRegionalLayer(ctx,nodes,model,visualWeights,t,{view,width,height,iaWeight:cinematicReveal(iaWeight),automationWeight:cinematicReveal(automationWeight),iaFocus,automationFocus,dataFocus,whatsappHub})
   const hotspotVisibility=clamp01(1-Math.max(cinematicIsolation(iaWeight),cinematicIsolation(automationWeight),cinematicIsolation(weights[2]),cinematicIsolation(weights[3]),cinematicIsolation(weights[4]))*1.25)*clamp01((casesProjection.z+.18)/.42)
