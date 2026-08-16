@@ -150,19 +150,24 @@ function paintSignalWave(ctx,hub,node,weight,time,index) {
   ctx.stroke()
 }
 
-function paintWhatsappWorld(ctx,nodes,hub,weight,time) {
+function paintWhatsappWorld(ctx,nodes,hub,weight,time,model) {
   const depth=Math.max(.3,(hub.z+1)/2),strength=weight*depth
-  const participants=selectNodesAroundAnchor(nodes,REGION_ANCHORS.whatsapp,{innerAngle:.34,outerAngle:1.08,minAlpha:.2,limit:30})
-  const populated=participants.map(node=>{let density=0;participants.forEach(other=>{if(other===node)return;const distance=Math.hypot(node.x-other.x,node.y-other.y);if(distance<118)density+=(1-distance/118)*(.6+other.importance*.4)});return{node,density}}).sort((a,b)=>b.density-a.density)
-  const secondary=[]
-  populated.forEach(candidate=>{if(secondary.length>=6||candidate.node.anchorAngle<=.3||candidate.node.z<-.5)return;if(secondary.every(node=>Math.hypot(node.x-candidate.node.x,node.y-candidate.node.y)>48))secondary.push(candidate.node)})
-  const densityByNode=new Map(populated.map(({node,density})=>[node,Math.min(1,density/4.2)]))
+  const participants=selectNodesAroundAnchor(nodes,REGION_ANCHORS.whatsapp,{innerAngle:.34,outerAngle:1.08,minAlpha:.2,limit:38}),unassigned=new Set(participants),clusters=[]
+  while(unassigned.size){const seed=unassigned.values().next().value,cluster=[],queue=[seed];unassigned.delete(seed);while(queue.length){const node=queue.shift();cluster.push(node);[...unassigned].forEach(other=>{if(Math.hypot(node.x-other.x,node.y-other.y)<104){unassigned.delete(other);queue.push(other)}})}if(cluster.length>=3)clusters.push(cluster)}
+  clusters.sort((a,b)=>b.length-a.length||Math.max(...b.map(node=>node.importance))-Math.max(...a.map(node=>node.importance)))
+  const activeClusters=clusters.slice(0,5),secondary=activeClusters.map(cluster=>[...cluster].sort((a,b)=>b.importance-a.importance)[0]),densityByNode=new Map()
+  activeClusters.forEach(cluster=>cluster.forEach(node=>densityByNode.set(node,Math.min(1,(cluster.length-1)/7))))
+  model.whatsappLinks||=new Map();const desired=new Map(),addDesired=(a,b,hubLink=false)=>{const aId=hubLink?-1:Math.min(a.index,b.index),bId=hubLink?b.index:Math.max(a.index,b.index),key=`${aId}:${bId}`;desired.set(key,{a:aId,b:bId,hubLink})}
+  activeClusters.forEach(cluster=>{cluster.forEach(node=>{[...cluster].filter(other=>other!==node).sort((a,b)=>Math.hypot(node.x-a.x,node.y-a.y)-Math.hypot(node.x-b.x,node.y-b.y)).slice(0,node.importance>.62?3:2).forEach(peer=>addDesired(node,peer))});addDesired(hub,[...cluster].sort((a,b)=>b.importance-a.importance)[0],true)})
+  const delta=Math.min(.05,Math.max(.001,time-(model.whatsappLinkTime??time-.016)));model.whatsappLinkTime=time
+  desired.forEach((edge,key)=>{if(!model.whatsappLinks.has(key))model.whatsappLinks.set(key,{...edge,alpha:0});else Object.assign(model.whatsappLinks.get(key),edge)})
+  const byIndex=new Map(participants.map(node=>[node.index,node]))
 
   // Raise the regional density floor while retaining the model's clustered distribution.
   nodes.forEach(node=>{const nodeDepth=Math.max(.02,(node.z+1)/2),hubDistance=Math.hypot(node.x-hub.x,node.y-hub.y),warmth=Math.max(0,1-hubDistance/235),nodeColor=warmth>.42?GOLD:PEARL;ctx.fillStyle=rgba(nodeColor,(.075+nodeDepth**1.85*(.48+warmth*.22))*weight*node.alpha);ctx.beginPath();ctx.arc(node.x,node.y,(.34+node.importance*1.22)*(.3+nodeDepth*1.05),0,Math.PI*2);ctx.fill()})
-  participants.forEach((node,index)=>{const density=densityByNode.get(node)||0,target=populated[(index*5+3)%Math.min(populated.length,18)]?.node||participants[(index+1)%participants.length];paintWhatsappNetworkLine(ctx,node,target,hub,weight,.4+density*.22);if(density>.3||index%4===0)paintWhatsappNetworkLine(ctx,node,participants[(index+1)%participants.length],hub,weight,.43+density*.16);if(density>.62)paintWhatsappNetworkLine(ctx,node,participants[(index+3)%participants.length],hub,weight,.38)})
+  model.whatsappLinks.forEach((edge,key)=>{const target=desired.has(key)?1:0;edge.alpha+=(target-edge.alpha)*Math.min(1,delta*(target?1.25:.52));const a=edge.hubLink?hub:byIndex.get(edge.a),b=byIndex.get(edge.b);if(a&&b&&edge.alpha>.005){if(edge.hubLink)paintWhatsappRoute(ctx,hub,b,weight*edge.alpha,1.05);else paintWhatsappNetworkLine(ctx,a,b,hub,weight*edge.alpha,.44+(densityByNode.get(a)||0)*.2)}if(!target&&edge.alpha<.006)model.whatsappLinks.delete(key)})
   participants.forEach(node=>{const density=densityByNode.get(node)||0,nodeDepth=Math.max(.08,(node.z+1)/2);ctx.fillStyle=rgba(density>.58?GOLD:PEARL,(.2+density*.56)*nodeDepth*weight);ctx.beginPath();ctx.arc(node.x,node.y,.65+node.importance*1.2+density*1.05,0,Math.PI*2);ctx.fill()})
-  secondary.forEach((node,index)=>{paintWhatsappRoute(ctx,hub,node,weight,index<3?1.25:1);const nodeDepth=Math.max(.12,(node.z+1)/2);ctx.strokeStyle=rgba(index<3?GOLD:PEARL,(.48+nodeDepth*.28)*weight);ctx.lineWidth=.85;ctx.beginPath();ctx.arc(node.x,node.y,5.5+node.importance*2.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle=rgba(index<3?GOLD:PEARL,.68*nodeDepth*weight);ctx.beginPath();ctx.arc(node.x,node.y,1.7+node.importance,0,Math.PI*2);ctx.fill()})
+  secondary.forEach((node,index)=>{const link=model.whatsappLinks.get(`-1:${node.index}`),linkAlpha=link?.alpha||0,nodeDepth=Math.max(.12,(node.z+1)/2);ctx.strokeStyle=rgba(index<3?GOLD:PEARL,(.48+nodeDepth*.28)*weight*linkAlpha);ctx.lineWidth=.85;ctx.beginPath();ctx.arc(node.x,node.y,5.5+node.importance*2.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle=rgba(index<3?GOLD:PEARL,.68*nodeDepth*weight*linkAlpha);ctx.beginPath();ctx.arc(node.x,node.y,1.7+node.importance,0,Math.PI*2);ctx.fill()})
 
   const field=ctx.createRadialGradient(hub.x,hub.y,2,hub.x,hub.y,150);field.addColorStop(0,rgba(GOLD,.3*strength));field.addColorStop(.24,rgba(GOLD,.105*strength));field.addColorStop(.62,rgba('#c4a882',.025*strength));field.addColorStop(1,'transparent');ctx.fillStyle=field;ctx.beginPath();ctx.arc(hub.x,hub.y,150,0,Math.PI*2);ctx.fill()
   ;[25,39,57,79].forEach((radius,index)=>{const segments=72,breathe=1+Math.sin(time*.22+index*1.4)*.025;ctx.strokeStyle=rgba(index<2?GOLD:PEARL,(.36-index*.055)*strength);ctx.lineWidth=index===0?1.15:.62;ctx.beginPath();for(let step=0;step<=segments;step++){const angle=step/segments*Math.PI*2,organic=Math.sin(angle*3+time*.16+index)*radius*.035+Math.sin(angle*7-time*.09+index*1.7)*radius*.016,driftX=Math.sin(angle*2-time*.07+index)*radius*.018,ringRadius=radius*breathe+organic,x=hub.x+Math.cos(angle)*ringRadius+driftX,y=hub.y+Math.sin(angle)*ringRadius*.92;if(step)ctx.lineTo(x,y);else ctx.moveTo(x,y)}ctx.closePath();ctx.stroke()})
@@ -219,7 +224,7 @@ function paintRegionalLayer(ctx,nodes,model,weights,time,regionalContext) {
   if(automation>.01){const {view,width,height,automationFocus}=regionalContext,automationNodes=selectNodesAroundAnchor(nodes,REGION_ANCHORS.automation,{innerAngle:.34,outerAngle:1.04,minAlpha:.2,limit:42});renderAutomationSubworld({ctx,camera:view,time,viewport:{width,height},nodes:automationNodes,focus:automationFocus,intensity:automation,palette:{gold:GOLD,pearl:PEARL,smoke:SMOKE,rgba}})}
   if(web>.01)paintWebWorld(ctx,nodes,model,web,time)
   if(data>.01){const {view,width,height,dataFocus}=regionalContext;renderDataSubworld({ctx,camera:view,time,viewport:{width,height},focus:dataFocus,intensity:data,palette:{gold:GOLD,pearl:PEARL,smoke:SMOKE,rgba}})}
-  if(whatsapp>.01)paintWhatsappWorld(ctx,nodes,regionalContext.whatsappHub,whatsapp,time)
+  if(whatsapp>.01)paintWhatsappWorld(ctx,nodes,regionalContext.whatsappHub,whatsapp,time,model)
 }
 
 export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFocus,mode,reduced,pointer}) {
