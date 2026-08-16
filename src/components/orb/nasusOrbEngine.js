@@ -53,7 +53,7 @@ const cinematicReveal=weight=>smoothstep(clamp01((weight-.3)/.7))
 const cinematicIsolation=weight=>smoothstep(clamp01((weight-.7)/.3))
 const regionalWeightAt=(progress,index)=>1-smoothstep(Math.max(0,Math.min(1,(Math.abs(progress-index)-.12)/.32)))
 const regionalStateAt=p=>{const index=Math.max(0,Math.min(4,Math.round(p))),weights=Array.from({length:5},(_,regionIndex)=>regionalWeightAt(p,regionIndex)),focus=weights[index];return{index,focus,weights}}
-const cameraAt=(p,state)=>{const lo=Math.floor(p),hi=Math.min(4,lo+1),t=p-lo,a=camera[lo],b=camera[hi],regional=camera[state.index],travel=cinematicTravel(state.focus);return{zoom:lerp(.86,regional.zoom,travel),yaw:lerp(a.yaw,b.yaw,t),pitch:lerp(0,regional.pitch,travel),x:regional.x*travel,y:regional.y*travel}}
+const cameraAt=(p,state)=>{const closing=p>=4,lo=Math.min(4,Math.floor(p)),hi=Math.min(4,lo+1),t=closing?clamp01(p-4):p-lo,a=camera[lo],b=closing?{...camera[4],yaw:camera[4].yaw+.68}:camera[hi],regional=camera[state.index],travel=cinematicTravel(state.focus);return{zoom:lerp(.86,regional.zoom,travel),yaw:lerp(a.yaw,b.yaw,t),pitch:lerp(0,regional.pitch,travel),x:regional.x*travel,y:regional.y*travel}}
 const profileAt=state=>{const regional=regionProfiles[state.index],focus=state.focus;return{threshold:lerp(GLOBAL_PROFILE.threshold,regional.threshold,focus),neighbours:Math.round(lerp(GLOBAL_PROFILE.neighbours,regional.neighbours,focus)),wander:lerp(GLOBAL_PROFILE.wander,regional.wander,focus),structure:lerp(GLOBAL_PROFILE.structure,regional.structure,focus),communication:state.index===2?focus:0}}
 
 export function createOrbModel(count) {
@@ -295,6 +295,8 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   if(whatsappWebTransit>0){const easedArc=smoothstep(whatsappWebTransit);view.yaw+=easedArc*.17;view.x+=Math.sin(whatsappWebProgress*Math.PI)*.04;view.y-=Math.sin(whatsappWebProgress*Math.PI*2)*.01;view.zoom-=easedArc*.11}
   const webDataProgress=clamp01((progress-3.12)/.76),webDataTransit=progress>3.12&&progress<3.88?Math.sin(webDataProgress*Math.PI):0
   if(webDataTransit>0){const easedArc=smoothstep(webDataTransit);view.yaw-=easedArc*.15;view.x-=Math.sin(webDataProgress*Math.PI)*.038;view.y+=Math.sin(webDataProgress*Math.PI*2)*.01;view.zoom-=easedArc*.115}
+  const dataClosingProgress=clamp01((progress-4.12)/.76),dataClosingTransit=progress>4.12&&progress<4.88?Math.sin(dataClosingProgress*Math.PI):0
+  if(dataClosingTransit>0){const easedArc=smoothstep(dataClosingTransit);view.yaw+=easedArc*.14;view.x+=Math.sin(dataClosingProgress*Math.PI)*.034;view.y-=Math.sin(dataClosingProgress*Math.PI*2)*.009;view.zoom-=easedArc*.12}
   const iaTravel=cinematicTravel(iaWeight),automationTravel=cinematicTravel(automationWeight),whatsappTravel=cinematicTravel(weights[2]),webTravel=cinematicTravel(weights[3]),dataTravel=cinematicTravel(weights[4])
   if(iaTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.ia,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(iaTravel*Math.PI);view.zoom=lerp(view.zoom,1.62,iaTravel);view.yaw+=yawDelta*iaTravel+orbitArc*.18;view.pitch=lerp(view.pitch,target.pitch,iaTravel);view.x=lerp(view.x,.06,iaTravel)+orbitArc*.045;view.y=lerp(view.y,-.01,iaTravel)-orbitArc*.018}
   if(automationTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.automation,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(automationTravel*Math.PI);view.zoom=lerp(view.zoom,1.58,automationTravel);view.yaw+=yawDelta*automationTravel-orbitArc*.16;view.pitch=lerp(view.pitch,target.pitch,automationTravel);view.x=lerp(view.x,.08,automationTravel)-orbitArc*.042;view.y=lerp(view.y,0,automationTravel)+orbitArc*.016}
@@ -338,6 +340,7 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   paintTravelReticle(ctx,whatsappProjection,automationWhatsappTransit*.72,t)
   paintTravelReticle(ctx,webFocus,whatsappWebTransit*.72,t)
   paintTravelReticle(ctx,dataFocus,webDataTransit*.72,t)
+  paintTravelReticle(ctx,{x:cx,y:cy},dataClosingTransit*.62,t)
   const visualWeights=weights.map(cinematicReveal)
   paintRegionalLayer(ctx,nodes,model,visualWeights,t,{view,width,height,iaWeight:cinematicReveal(iaWeight),automationWeight:cinematicReveal(automationWeight),iaFocus,automationFocus,dataFocus,whatsappHub})
   const hotspotVisibility=clamp01(1-Math.max(cinematicIsolation(iaWeight),cinematicIsolation(automationWeight),cinematicIsolation(weights[2]),cinematicIsolation(weights[3]),cinematicIsolation(weights[4]))*1.25)*clamp01((casesProjection.z+.18)/.42)
