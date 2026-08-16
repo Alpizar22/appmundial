@@ -9,6 +9,11 @@ const regions = [
   { id: 'datos', number: '05', label: 'Datos', coordinate: 'N 31.90° · CARTOGRAFÍA' },
 ]
 const labels = { idle: '', listening: 'Escuchando…', thinking: 'Pensando…', speaking: 'Hablando…' }
+const caseStudies = [
+  { number: '01', title: 'THEIA', subtitle: 'E-commerce + fulfillment conectado.', description: 'Tienda funcional con catálogo, variantes, pagos y operación de fulfillment integrados.', tags: 'Next.js · Supabase · Printful · Mercado Pago' },
+  { number: '02', title: 'NASUS ASSISTANT', subtitle: 'IA conversacional + voz.', description: 'Asistente capaz de responder por texto y voz e integrarse con servicios mediante APIs.', tags: 'AI · Voice · APIs · ElevenLabs' },
+  { number: '03', title: 'CEEMISPA', subtitle: 'Experiencia web a medida.', description: 'Sitio desarrollado con enfoque en presencia digital, claridad y conversión.', tags: 'Web · UX · Desarrollo a medida' },
+]
 
 export default function App() {
   const [activeRegion, setActiveRegion] = useState(0)
@@ -78,9 +83,10 @@ export default function App() {
         <p className="eyebrow">CASOS REALES</p>
         <h2 id="cases-title">Trabajo aplicado en sistemas reales.</h2>
         <div className="cases-panel__projects">
-          {[1, 2, 3].map(number => <article key={number}><span>0{number}</span><h3>Proyecto por definir</h3><p>Contexto, solución y resultado del caso.</p></article>)}
+          {caseStudies.map(project => <article key={project.number}><span>{project.number}</span><h3>{project.title}</h3><strong>{project.subtitle}</strong><p>{project.description}</p><small>{project.tags}</small></article>)}
         </div>
         <div className="cases-panel__metrics"><span>MÉTRICAS</span><strong>— / — / —</strong></div>
+        <p className="cases-panel__question">¿Tienes algo parecido en mente?</p>
         <a className="cases-panel__cta" href="#contacto" onClick={() => setCasesOpen(false)}>Hablar sobre un proyecto <i>→</i></a>
       </aside>
     </div>}
