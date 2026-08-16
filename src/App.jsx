@@ -1,6 +1,7 @@
-import { useEffect, useReducer, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Orb from './components/Orb'
-import { initialVoiceSession, voiceSessionReducer, voiceStateLabel } from './voice/voiceMachine'
+import { useVoiceAssistant } from './voice/useVoiceAssistant'
+import { voiceStateLabel } from './voice/voiceMachine'
 
 const regions = [
   { id: 'ia', number: '01', label: 'IA', coordinate: 'N 19.22° · RED NEURAL' },
@@ -17,9 +18,8 @@ const caseStudies = [
 
 export default function App() {
   const [activeRegion, setActiveRegion] = useState(0)
-  const [voiceSession, dispatchVoice] = useReducer(voiceSessionReducer, initialVoiceSession)
+  const { session: voiceSession, start: beginConversation } = useVoiceAssistant()
   const voiceState = voiceSession.status
-  const voiceTimer = useRef(null)
   const panelRef = useRef(null)
   const [casesOpen, setCasesOpen] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
@@ -39,7 +39,6 @@ export default function App() {
     sections.forEach((section) => observer.observe(section))
     return () => observer.disconnect()
   }, [])
-  useEffect(() => () => window.clearTimeout(voiceTimer.current), [])
   useEffect(() => {
     if (!casesOpen && !contactOpen) return undefined
     const previous = document.activeElement
@@ -57,27 +56,6 @@ export default function App() {
     return () => { document.removeEventListener('keydown', onKeyDown); previous?.focus?.() }
   }, [casesOpen, contactOpen])
 
-  const beginConversation = () => {
-    window.clearTimeout(voiceTimer.current)
-    if (voiceState !== 'idle') {
-      dispatchVoice({ type: 'STOP' })
-      return voiceTimer.current = window.setTimeout(() => dispatchVoice({ type: 'SETTLED' }), 500)
-    }
-    dispatchVoice({ type: 'ACTIVATE' })
-    voiceTimer.current = window.setTimeout(() => {
-      dispatchVoice({ type: 'PERMISSION_GRANTED' })
-      voiceTimer.current = window.setTimeout(() => {
-        dispatchVoice({ type: 'TRANSCRIPT_READY', transcript: 'Demostración temporal' })
-        voiceTimer.current = window.setTimeout(() => {
-          dispatchVoice({ type: 'RESPONSE_READY', text: 'Demostración temporal' })
-          voiceTimer.current = window.setTimeout(() => {
-            dispatchVoice({ type: 'PLAYBACK_ENDED' })
-            voiceTimer.current = window.setTimeout(() => dispatchVoice({ type: 'SETTLED' }), 700)
-          }, 4200)
-        }, 1800)
-      }, 3200)
-    }, 160)
-  }
   const goTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
 
   return <main className={voiceState === 'idle' ? 'experience' : 'experience is-speaking'}>
