@@ -26,17 +26,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-api',
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 5 },
-              networkTimeoutSeconds: 10,
-            },
-          },
-        ],
+        // Sin runtimeCaching: la unica llamada de red es POST /api/assistant, que devuelve una
+        // respuesta distinta cada vez y no debe cachearse.
       },
     }),
   ],
