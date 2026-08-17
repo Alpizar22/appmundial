@@ -330,7 +330,15 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   // Actividad por estado de voz. Los estados de servidor (transcribing/processing) y la
   // preparacion del audio mantienen el orbe vivo mientras el turno esta en vuelo; un modo
   // desconocido cae a 0 y lo dejaria inmovil.
-  const activity=mode==='processing'?1:mode==='generating_voice'?.9:mode==='speaking'?.85:mode==='transcribing'?.75:mode==='activating'?.7:mode==='listening'?.55:0
+  const renderDt=model.lastRenderTime?Math.min(.05,Math.max(.004,time-model.lastRenderTime)):1/60
+  model.lastRenderTime=time
+  const chase=(rate,dt)=>1-Math.pow(1-rate,dt*60)
+  // La actividad se interpolaba de golpe al cambiar de estado, y con ella la fuerza de deriva,
+  // el amortiguamiento, la velocidad maxima y el umbral de aristas. Suavizarla convierte cada
+  // cambio de fase en una transicion en vez de un escalon.
+  const activityTarget=mode==='processing'?1:mode==='generating_voice'?.9:mode==='speaking'?.85:mode==='transcribing'?.75:mode==='activating'?.7:mode==='listening'?.55:mode==='settling'?.3:0
+  model.voiceActivity=(model.voiceActivity??0)+(activityTarget-(model.voiceActivity??0))*chase(.07,renderDt)
+  const activity=model.voiceActivity
   // Se normaliza a numero antes de comparar y de guardar: si voiceSignals falta, la rama de
   // inicializacion guardaba 0 y la de comparacion undefined, alternando entre ambos y
   // redisparando el impulso cada dos frames de forma indefinida.
@@ -358,7 +366,13 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   const heroDistance=width<700?1-clamp01(regionalFocus||0):0
   const heroFit=lerp(1,.78,heroDistance),heroLift=lerp(0,-.12,heroDistance)
   const outputSignal=mode==='speaking'?clamp01(voiceSignals?.outputLevel||0):0,signal=mode==='speaking'?Math.sin(time*7.2)*(.018+outputSignal*.045):0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+whatsappTravel*.16+cinematicTravel(weights[3])*.04)*whatsappFit*webFit*heroFit
-  const cx=width*(.5+view.x),cy=height*(.5+view.y+heroLift),t=reduced?.65:time*(1+activity*.55)
+  // El tiempo de animacion se INTEGRA en vez de multiplicarse. Con t=time*(1+activity*.55) un
+  // cambio de actividad desplazaba la fase de golpe en proporcion al tiempo transcurrido: a los
+  // 60s de sesion, pasar de idle a processing saltaba 33 segundos de animacion de una vez, y el
+  // salto crecia cuanto mas llevaba abierta la pagina. Integrando, la actividad gobierna el
+  // RITMO y nunca la fase, asi que acelerar y frenar es continuo por construccion.
+  model.animationTime=(model.animationTime??time)+renderDt*(1+activity*.55)
+  const cx=width*(.5+view.x),cy=height*(.5+view.y+heroLift),t=reduced?.65:model.animationTime
   stepSimulation(model,t,GLOBAL_PROFILE,-1,0,activity,reduced,pointer,view,base,cx,cy)
   const nodes=projectNodes(model,t,view,base,cx,cy,mode,voiceSignals)
   const iaFocus=projectAnchor(REGION_ANCHORS.ia,{yaw:view.yaw,pitch:view.pitch,worldRotation:t*WORLD_SPIN,base,cx,cy})
