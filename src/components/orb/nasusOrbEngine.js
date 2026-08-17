@@ -50,7 +50,12 @@ function nodeGlowSprite(color,hub,rayScale=1) {
 }
 const cinematicTravel=weight=>1-Math.pow(1-clamp01(weight),2.25)
 const cinematicReveal=weight=>smoothstep(clamp01((weight-.3)/.7))
-const cinematicIsolation=weight=>smoothstep(clamp01((weight-.7)/.3))
+// El aislamiento arrancaba en .7, lo que comprimia el relevo del orbe global al sub-mundo en
+// ~0.07 de progress (unos 98px de scroll en movil): opacidad 1->0.06, 122 nodos -> 20 y las
+// aristas al 12%, todo dentro de dos o tres frames de un scroll con inercia. Arrancando en .3
+// la ventana casi se duplica y, al coincidir con cinematicReveal, el global se apaga al mismo
+// ritmo exacto al que el sub-mundo aparece: un fundido cruzado en vez de un corte.
+const cinematicIsolation=weight=>smoothstep(clamp01((weight-.3)/.7))
 const regionalWeightAt=(progress,index)=>1-smoothstep(Math.max(0,Math.min(1,(Math.abs(progress-index)-.12)/.32)))
 const regionalStateAt=p=>{const index=Math.max(0,Math.min(4,Math.round(p))),weights=Array.from({length:5},(_,regionIndex)=>regionalWeightAt(p,regionIndex)),focus=weights[index];return{index,focus,weights}}
 const cameraAt=(p,state)=>{const closing=p>=4,lo=Math.min(4,Math.floor(p)),hi=Math.min(4,lo+1),t=closing?clamp01(p-4):p-lo,a=camera[lo],b=closing?{...camera[4],yaw:camera[4].yaw+.68}:camera[hi],regional=camera[state.index],travel=cinematicTravel(state.focus);return{zoom:lerp(.86,regional.zoom,travel),yaw:lerp(a.yaw,b.yaw,t),pitch:lerp(0,regional.pitch,travel),x:regional.x*travel,y:regional.y*travel}}
