@@ -322,7 +322,10 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   }
   if(webTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.web,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(webTravel*Math.PI);view.zoom=lerp(view.zoom,2.28,webTravel);view.yaw+=yawDelta*webTravel-orbitArc*.12;view.pitch=lerp(view.pitch,target.pitch-.4,webTravel);view.x=-orbitArc*.03;view.y=lerp(view.y,.26,webTravel)}
   if(dataTravel>.001){const target=cameraTargetForAnchor(REGION_ANCHORS.data,time*WORLD_SPIN),yawDelta=Math.atan2(Math.sin(target.yaw-view.yaw),Math.cos(target.yaw-view.yaw)),orbitArc=Math.sin(dataTravel*Math.PI);view.zoom=lerp(view.zoom,1.92,dataTravel);view.yaw+=yawDelta*dataTravel+orbitArc*.12;view.pitch=lerp(view.pitch,target.pitch,dataTravel);view.x=lerp(view.x,.2,dataTravel)+orbitArc*.035;view.y=lerp(view.y,-.14,dataTravel)-orbitArc*.014}
-  const activity=mode==='thinking'?1:mode==='speaking'?.85:mode==='listening'?.55:mode==='activating'?.7:0
+  // Actividad por estado de voz. Los estados de servidor (transcribing/processing) y la
+  // preparacion del audio mantienen el orbe vivo mientras el turno esta en vuelo; un modo
+  // desconocido cae a 0 y lo dejaria inmovil.
+  const activity=mode==='processing'?1:mode==='generating_voice'?.9:mode==='speaking'?.85:mode==='transcribing'?.75:mode==='activating'?.7:mode==='listening'?.55:0
   // Se normaliza a numero antes de comparar y de guardar: si voiceSignals falta, la rama de
   // inicializacion guardaba 0 y la de comparacion undefined, alternando entre ambos y
   // redisparando el impulso cada dos frames de forma indefinida.
@@ -365,7 +368,7 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   // conexiones candidatas por nodo contra 4 en desktop. Movil recibe +2: ocultar la cara trasera
   // elimina toda arista que la cruce, asi que la unica via de recuperar malla sin deshacer ese
   // corte es densificar la cara frontal, con mas vecinos y un radio de vecindad algo mayor.
-  const localEdges=proximityEdges(nodes,profile.threshold+.025+(activity*.018)+(smallViewport?.055:0),profile.neighbours+(mode==='thinking'?1:0)+(desktopReadability?1:0)+(smallViewport?2:0),t)
+  const localEdges=proximityEdges(nodes,profile.threshold+.025+(activity*.018)+(smallViewport?.055:0),profile.neighbours+(mode==='processing'?1:0)+(desktopReadability?1:0)+(smallViewport?2:0),t)
   const edges=smoothEdges(model,[...localEdges,...hubEdges(model,t,weights[1])])
   const isolationWeights=[cinematicIsolation(iaWeight),cinematicIsolation(automationWeight),0,cinematicIsolation(weights[3]),cinematicIsolation(weights[4])],regionalBudgetFocus=Math.max(...isolationWeights),globalOpacity=1-regionalBudgetFocus*.94,edgeBudget=1-regionalBudgetFocus*.88,nodeBudget=1-regionalBudgetFocus*.84
   // Desktop no usa edgeScale: su rama de topologia deja pasar las aristas cortas con
