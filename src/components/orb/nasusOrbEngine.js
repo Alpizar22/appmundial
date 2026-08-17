@@ -342,8 +342,15 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   // Ademas de recortar el limbo, ese aumento mostraba una porcion muy ampliada de la geometria
   // de las torres, lo que restaba nitidez percibida. Mismo criterio y mismo acotamiento.
   const webFit=width<700?lerp(1,.422,webTravel):1
-  const outputSignal=mode==='speaking'?clamp01(voiceSignals?.outputLevel||0):0,signal=mode==='speaking'?Math.sin(time*7.2)*(.018+outputSignal*.045):0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+whatsappTravel*.16+cinematicTravel(weights[3])*.04)*whatsappFit*webFit
-  const cx=width*(.5+view.x),cy=height*(.5+view.y),t=reduced?.65:time*(1+activity*.55)
+  // El hero movil se ve mas de lejos: reduce la escala del orbe y lo sube un poco. Cabe mas
+  // composicion en la misma pantalla -- sube la densidad percibida sin coste de render, a
+  // diferencia de anadir nodos -- y libera margen vertical para que el titulo no quede tapado.
+  // Ponderado por regionalFocus, que vale 0 en el hero y 1 al llegar a IA, asi que se disuelve
+  // al entrar en las regiones y no altera ningun encuadre regional.
+  const heroDistance=width<700?1-clamp01(regionalFocus||0):0
+  const heroFit=lerp(1,.78,heroDistance),heroLift=lerp(0,-.07,heroDistance)
+  const outputSignal=mode==='speaking'?clamp01(voiceSignals?.outputLevel||0):0,signal=mode==='speaking'?Math.sin(time*7.2)*(.018+outputSignal*.045):0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+whatsappTravel*.16+cinematicTravel(weights[3])*.04)*whatsappFit*webFit*heroFit
+  const cx=width*(.5+view.x),cy=height*(.5+view.y+heroLift),t=reduced?.65:time*(1+activity*.55)
   stepSimulation(model,t,GLOBAL_PROFILE,-1,0,activity,reduced,pointer,view,base,cx,cy)
   const nodes=projectNodes(model,t,view,base,cx,cy,mode,voiceSignals)
   const iaFocus=projectAnchor(REGION_ANCHORS.ia,{yaw:view.yaw,pitch:view.pitch,worldRotation:t*WORLD_SPIN,base,cx,cy})
