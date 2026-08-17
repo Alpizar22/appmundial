@@ -19,7 +19,8 @@
       "Bash(rm -rf supabase/migrations)",
       "Bash(rmdir *)",
       "Bash(rm -rf dist)",
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Bash(git fetch *)"
     ]
   }
 }
