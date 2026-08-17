@@ -348,7 +348,7 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   // Ponderado por regionalFocus, que vale 0 en el hero y 1 al llegar a IA, asi que se disuelve
   // al entrar en las regiones y no altera ningun encuadre regional.
   const heroDistance=width<700?1-clamp01(regionalFocus||0):0
-  const heroFit=lerp(1,.78,heroDistance),heroLift=lerp(0,-.07,heroDistance)
+  const heroFit=lerp(1,.78,heroDistance),heroLift=lerp(0,-.12,heroDistance)
   const outputSignal=mode==='speaking'?clamp01(voiceSignals?.outputLevel||0):0,signal=mode==='speaking'?Math.sin(time*7.2)*(.018+outputSignal*.045):0,base=Math.min(width,height)*.49*view.zoom*(1+signal)*(1+whatsappTravel*.16+cinematicTravel(weights[3])*.04)*whatsappFit*webFit*heroFit
   const cx=width*(.5+view.x),cy=height*(.5+view.y+heroLift),t=reduced?.65:time*(1+activity*.55)
   stepSimulation(model,t,GLOBAL_PROFILE,-1,0,activity,reduced,pointer,view,base,cx,cy)
