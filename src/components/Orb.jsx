@@ -16,7 +16,7 @@ export default function Orb({ region, mode, voiceSignals, onActivate, onOpenCase
     let frame=0,startFrame=0,revealTimer=0,width=0,height=0,scrollTarget=0,scrollProgress=0,journeyTarget=0,journeyFocus=0,running=true,reduced=reducedQuery.matches,model=[],hasPainted=false,regionAnchorScrolls=[]
     const pointer={x:0,y:0,active:false,touching:false,startX:0,startY:0,dragged:false}
     const markOnce=name=>{if(performance.getEntriesByName(name,'mark').length)return;performance.mark(name);performance.measure(`${name}_DURATION`,{start:0,end:name})}
-    const resize=()=>{const box=canvas.getBoundingClientRect();width=box.width;height=box.height;const dpr=Math.min(devicePixelRatio||1,width<700?1.5:width<1100?1.6:2);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';const count=width<700?122:width<1100?180:360;if(model.length!==count)model=createOrbModel(count)}
+    const resize=()=>{const box=canvas.getBoundingClientRect();width=box.width;height=box.height;const dpr=Math.min(devicePixelRatio||1,width<700?1.75:width<1100?1.6:2);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';const count=width<700?122:width<1100?180:360;if(model.length!==count)model=createOrbModel(count)}
     // Ancla cada region al scroll en el que su centro coincide con el centro del viewport,
     // leyendo el layout real. Los multiplos fijos de innerHeight asumian que el alto CSS de
     // hero (svh) y region (vh) eran iguales, lo que solo se cumple en desktop: en movil la
