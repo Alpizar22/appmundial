@@ -33,6 +33,15 @@ const hash=(a,b)=>frac(Math.sin(a*12.9898+b*78.233)*43758.5453)
 const noise=(x,y)=>{const xi=Math.floor(x),yi=Math.floor(y);let fx=x-xi,fy=y-yi;fx=fx*fx*(3-2*fx);fy=fy*fy*(3-2*fy);const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy}
 const fib=(i,n)=>{const y=1-(2*(i+.5))/n,r=Math.sqrt(1-y*y),a=i*Math.PI*(3-Math.sqrt(5));return[r*Math.cos(a),y,r*Math.sin(a)]}
 const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return`rgba(${n>>16},${n>>8&255},${n&255},${Math.max(0,Math.min(1,a))})`}
+const mixHex=(from,to,t)=>{
+  if(t<=0)return from
+  if(t>=1)return to
+  const a=parseInt(from.slice(1),16),b=parseInt(to.slice(1),16)
+  const r=Math.round(((a>>16)&255)+((((b>>16)&255)-((a>>16)&255))*t))
+  const g=Math.round(((a>>8)&255)+((((b>>8)&255)-((a>>8)&255))*t))
+  const l=Math.round((a&255)+(((b&255)-(a&255))*t))
+  return`#${((r<<16)|(g<<8)|l).toString(16).padStart(6,'0')}`
+}
 const smoothstep=t=>t*t*(3-2*t)
 const nodeGlowSprites=new Map()
 
@@ -339,6 +348,15 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   const activityTarget=mode==='processing'?1:mode==='generating_voice'?.9:mode==='speaking'?.85:mode==='transcribing'?.75:mode==='activating'?.7:mode==='listening'?.55:mode==='settling'?.3:0
   model.voiceActivity=(model.voiceActivity??0)+(activityTarget-(model.voiceActivity??0))*chase(.07,renderDt)
   const activity=model.voiceActivity
+  // Identidad de color por fase: el dorado escala a lo largo de la conversacion, con su maximo
+  // al hablar. Se interpola en el tiempo, asi que entrar y salir de cada fase es un fundido.
+  const tintTarget=mode==='speaking'?1:mode==='generating_voice'?.88:mode==='processing'?.7:mode==='transcribing'?.34:mode==='settling'?.3:mode==='activating'?.18:mode==='listening'?.12:0
+  model.voiceTint=(model.voiceTint??0)+(tintTarget-(model.voiceTint??0))*chase(.04,renderDt)
+  // Cuantizado a decimas: el color de los nodos alimenta la cache de sprites de glow, y un tono
+  // continuo la haria crecer sin limite. Diez pasos sobre un fundido de ~0.4s no se distinguen.
+  const voiceTint=Math.round(model.voiceTint*10)/10
+  const orbIvory=mixHex(TEXT_IVORY,GOLD_ACTIVE,voiceTint)
+  const orbSmoke=mixHex(SMOKE_SECONDARY,GOLD_ACTIVE,voiceTint)
   // Se normaliza a numero antes de comparar y de guardar: si voiceSignals falta, la rama de
   // inicializacion guardaba 0 y la de comparacion undefined, alternando entre ambos y
   // redisparando el impulso cada dos frames de forma indefinida.
@@ -427,13 +445,13 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   // del hub en 0.15-0.27px, invisibles. Se engrosan y avivan en la variante movil del sprite,
   // que se cachea aparte para no alterar la de escritorio.
   const rayScale=smallViewport?5:1
-  globalEdges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility*globalOpacity*(edge.cadenceAlpha??1)*edgeContrast*frontFace((nodes[edge.a].z+nodes[edge.b].z)*.5),long||smallViewport?TEXT_IVORY:SMOKE_SECONDARY,(long?.54:.49)*edgeWidthScale)})
+  globalEdges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility*globalOpacity*(edge.cadenceAlpha??1)*edgeContrast*frontFace((nodes[edge.a].z+nodes[edge.b].z)*.5),long||smallViewport?orbIvory:orbSmoke,(long?.54:.49)*edgeWidthScale)})
 
   const pulseWindow=.24+weights[1]*.08,pulses=[]
   globalEdges.forEach(edge=>{const cycle=frac(t/edge.pulsePeriod+edge.pulseOffset);if(cycle>=pulseWindow||edge.opacity<.08)return;const a=nodes[edge.a],b=nodes[edge.b],progress=cycle/pulseWindow,envelope=Math.sin(progress*Math.PI)**1.5,importance=Math.max(a.importance,b.importance),long=edge.distance>.6;pulses.push({a,b,progress,envelope,importance,long,score:importance+(long?.45:0)})})
-  pulses.sort((a,b)=>b.score-a.score).slice(0,(width<700?6:11)+Math.round(weights[1]*3)).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha)*globalDepthVisibility(z),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24)*globalOpacity;ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD_ACTIVE:TEXT_IVORY,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
+  pulses.sort((a,b)=>b.score-a.score).slice(0,(width<700?6:11)+Math.round(weights[1]*3)).forEach(pulse=>{const x=lerp(pulse.a.x,pulse.b.x,pulse.progress),y=lerp(pulse.a.y,pulse.b.y,pulse.progress),z=lerp(pulse.a.z,pulse.b.z,pulse.progress),raw=Math.max(0,Math.min(1,(z+1)/2)),depth=.04+.96*raw**1.7,visibility=Math.min(pulse.a.alpha,pulse.b.alpha)*globalDepthVisibility(z),alpha=pulse.envelope*depth*visibility*(.48+pulse.importance*.24)*globalOpacity;ctx.fillStyle=rgba(pulse.long||pulse.importance>.64?GOLD_ACTIVE:orbIvory,alpha);ctx.beginPath();ctx.arc(x,y,.65+pulse.importance*.75+raw*.35,0,Math.PI*2);ctx.fill()})
 
-  globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,hub=node.importance>.64,weight=.58+node.importance*1.55,r=Math.max(.2,.29+depth*.76)*weight*(hub?1.42:.78)*(width<700?.86:1)*nodeScale,opacity=(.09+depth*.68)*(.54+node.importance*.42)*(hub?1.32:.62)*globalDepthVisibility(node.z)*nodeContrast,color=hub&&node.index%5===region?GOLD_ACTIVE:TEXT_IVORY,coreRadius=Math.max(hub?.72:.48,r*(hub?1:1.18))+(activity*(hub?.7:.08)),haloRadius=Math.max(hub?5.2:4,coreRadius*(hub?4.8:5))*glowScale,sprite=nodeGlowSprite(color,hub,rayScale),alpha=Math.min(1,opacity*node.alpha*globalOpacity*frontFace(node.z));if(sprite&&alpha>.004){ctx.globalAlpha=alpha;ctx.drawImage(sprite,node.x-haloRadius,node.y-haloRadius,haloRadius*2,haloRadius*2);ctx.globalAlpha=1}ctx.fillStyle=rgba(color,Math.min(1,alpha*(hub?1.18:1.3)));ctx.beginPath();ctx.arc(node.x,node.y,coreRadius,0,Math.PI*2);ctx.fill()})
+  globalNodes.sort((a,b)=>a.z-b.z).forEach(node=>{const depth=(node.z+1)/2,hub=node.importance>.64,weight=.58+node.importance*1.55,r=Math.max(.2,.29+depth*.76)*weight*(hub?1.42:.78)*(width<700?.86:1)*nodeScale,opacity=(.09+depth*.68)*(.54+node.importance*.42)*(hub?1.32:.62)*globalDepthVisibility(node.z)*nodeContrast,color=hub&&node.index%5===region?GOLD_ACTIVE:orbIvory,coreRadius=Math.max(hub?.72:.48,r*(hub?1:1.18))+(activity*(hub?.7:.08)),haloRadius=Math.max(hub?5.2:4,coreRadius*(hub?4.8:5))*glowScale,sprite=nodeGlowSprite(color,hub,rayScale),alpha=Math.min(1,opacity*node.alpha*globalOpacity*frontFace(node.z));if(sprite&&alpha>.004){ctx.globalAlpha=alpha;ctx.drawImage(sprite,node.x-haloRadius,node.y-haloRadius,haloRadius*2,haloRadius*2);ctx.globalAlpha=1}ctx.fillStyle=rgba(color,Math.min(1,alpha*(hub?1.18:1.3)));ctx.beginPath();ctx.arc(node.x,node.y,coreRadius,0,Math.PI*2);ctx.fill()})
   paintTravelReticle(ctx,automationFocus,iaAutomationTransit*.72,t)
   paintTravelReticle(ctx,whatsappProjection,automationWhatsappTransit*.72,t)
   paintTravelReticle(ctx,webFocus,whatsappWebTransit*.72,t)
