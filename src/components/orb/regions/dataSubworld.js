@@ -1,4 +1,4 @@
-import dataIllustrationUrl from '../../../assets/data-subworld.png'
+import dataIllustrationUrl from '../../../assets/data-subworld.webp'
 
 const clamp01=value=>Math.max(0,Math.min(1,value))
 const smoothstep=value=>{const t=clamp01(value);return t*t*(3-2*t)}
