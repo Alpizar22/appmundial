@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { initialVoiceSession, VOICE_STATUS, voiceSessionReducer } from './voiceMachine'
 
+// Redes de seguridad para LISTENING. Sin ellas la unica salida del estado es un onresult
+// con isFinal: si el reconocedor muere en silencio, la app se cuelga para siempre.
+// Son dos temporizadores distintos a proposito:
+//   IDLE  — no llega ningun resultado (ni parcial): el reconocedor esta muerto.
+//   CAP   — llegan parciales pero nunca un final (comportamiento conocido en Android):
+//           se cierra el turno con lo mejor que se haya transcrito.
+const LISTENING_IDLE_MS = 15_000
+const LISTENING_CAP_MS = 30_000
+
 const permissionError = error => {
   if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') return ['microphone_denied', 'Permiso de micrófono rechazado.']
   if (error?.name === 'NotFoundError') return ['microphone_missing', 'No se encontró un micrófono disponible.']
@@ -23,11 +32,21 @@ export function useVoiceAssistant() {
   const levelFrameRef = useRef(0)
   const outputFrameRef = useRef(0)
   const settlingTimerRef = useRef(0)
+  const idleTimerRef = useRef(0)
+  const capTimerRef = useRef(0)
+  // Distingue un cierre deliberado (finalizar turno, detener, error ya manejado) de una
+  // muerte espontanea del reconocedor. abort() dispara onend y onerror('aborted'), asi que
+  // sin esta bandera no se puede saber si el evento lo provocamos nosotros o el navegador.
+  const closingRef = useRef(false)
+  const interimRef = useRef('')
   const statusRef = useRef(session.status)
   statusRef.current = session.status
 
   const stopInput = useCallback(() => {
     cancelAnimationFrame(levelFrameRef.current)
+    window.clearTimeout(idleTimerRef.current)
+    window.clearTimeout(capTimerRef.current)
+    closingRef.current = true
     recognitionRef.current?.abort?.()
     recognitionRef.current = null
     streamRef.current?.getTracks().forEach(track => track.stop())
@@ -180,26 +199,66 @@ export function useVoiceAssistant() {
       recognition.interimResults = true
       recognition.maxAlternatives = 1
       recognitionRef.current = recognition
+      closingRef.current = false
+      interimRef.current = ''
+
+      const abandonListening = (code, message) => {
+        stopInput()
+        dispatch({ type: 'FAIL', code, message })
+      }
+      const finalizeTurn = transcript => {
+        stopInput()
+        dispatch({ type: 'TRANSCRIPT_READY', transcript })
+        requestAssistant(transcript)
+      }
+      const armIdleTimer = () => {
+        window.clearTimeout(idleTimerRef.current)
+        idleTimerRef.current = window.setTimeout(
+          () => abandonListening('recognition_idle', 'El reconocimiento de voz dejó de responder. Intenta de nuevo.'),
+          LISTENING_IDLE_MS,
+        )
+      }
+
       recognition.onresult = event => {
+        armIdleTimer()
         let transcript = ''
         let finalTranscript = ''
         for (let index = event.resultIndex; index < event.results.length; index += 1) {
           transcript += event.results[index][0]?.transcript || ''
           if (event.results[index].isFinal) finalTranscript += event.results[index][0]?.transcript || ''
         }
-        dispatch({ type: 'TRANSCRIPT_UPDATE', transcript: transcript.trim() })
-        if (finalTranscript.trim()) {
-          stopInput()
-          dispatch({ type: 'TRANSCRIPT_READY', transcript: finalTranscript.trim() })
-          requestAssistant(finalTranscript.trim())
-        }
+        const partial = transcript.trim()
+        if (partial) interimRef.current = partial
+        dispatch({ type: 'TRANSCRIPT_UPDATE', transcript: partial })
+        if (finalTranscript.trim()) finalizeTurn(finalTranscript.trim())
       }
+
+      // El reconocedor termina la sesion en TODA ruta de salida, incluidas las que no
+      // entregan un resultado final. Sin este handler el estado se quedaba en listening
+      // indefinidamente y el microfono seguia abierto.
+      recognition.onend = () => {
+        if (closingRef.current) { closingRef.current = false; return }
+        const partial = interimRef.current.trim()
+        if (partial) return finalizeTurn(partial)
+        abandonListening('recognition_no_result', 'No se captó tu voz. Revisa que ninguna otra app esté usando el micrófono.')
+      }
+
       recognition.onerror = event => {
-        if (event.error === 'aborted') return
-        stopInput()
-        dispatch({ type: 'FAIL', code: `recognition_${event.error}`, message: event.error === 'no-speech' ? 'No escuché ninguna voz. Intenta de nuevo.' : 'No fue posible reconocer tu voz.' })
+        // 'aborted' es esperado cuando el cierre lo provocamos nosotros; espontaneo es un fallo real.
+        if (event.error === 'aborted' && closingRef.current) return
+        abandonListening(
+          `recognition_${event.error}`,
+          event.error === 'no-speech' ? 'No escuché ninguna voz. Intenta de nuevo.' : 'No fue posible reconocer tu voz.',
+        )
       }
+
       recognition.start()
+      armIdleTimer()
+      capTimerRef.current = window.setTimeout(() => {
+        const partial = interimRef.current.trim()
+        if (partial) finalizeTurn(partial)
+        else abandonListening('recognition_timeout', 'No se recibió tu voz a tiempo. Intenta de nuevo.')
+      }, LISTENING_CAP_MS)
       dispatch({ type: 'PERMISSION_GRANTED' })
     } catch (error) {
       stopInput()
