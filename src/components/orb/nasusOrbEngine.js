@@ -353,15 +353,22 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   const whatsappProjection=projectAnchor(REGION_ANCHORS.whatsapp,{yaw:view.yaw,pitch:view.pitch,worldRotation:t*WORLD_SPIN,base,cx,cy})
   const whatsappHub={...whatsappProjection,x3:REGION_ANCHORS.whatsapp.position.x,y3:REGION_ANCHORS.whatsapp.position.y,z3:REGION_ANCHORS.whatsapp.position.z,alpha:1,importance:1,index:-1}
   const casesProjection=projectAnchor(WORLD_HOTSPOTS.cases,{yaw:view.yaw,pitch:view.pitch,worldRotation:t*WORLD_SPIN,base,cx,cy})
-  const localEdges=proximityEdges(nodes,profile.threshold+.025+(activity*.018),profile.neighbours+(mode==='thinking'?1:0)+(width>=1100?1:0),t)
+  const desktopReadability=width>=1100,smallViewport=width<700
+  // El bono de un vecino extra por nodo estaba reservado a >=1100px, asi que movil generaba 3
+  // conexiones candidatas por nodo contra 4 en desktop. Movil recibe +2: ocultar la cara trasera
+  // elimina toda arista que la cruce, asi que la unica via de recuperar malla sin deshacer ese
+  // corte es densificar la cara frontal, con mas vecinos y un radio de vecindad algo mayor.
+  const localEdges=proximityEdges(nodes,profile.threshold+.025+(activity*.018)+(smallViewport?.055:0),profile.neighbours+(mode==='thinking'?1:0)+(desktopReadability?1:0)+(smallViewport?2:0),t)
   const edges=smoothEdges(model,[...localEdges,...hubEdges(model,t,weights[1])])
   const isolationWeights=[cinematicIsolation(iaWeight),cinematicIsolation(automationWeight),0,cinematicIsolation(weights[3]),cinematicIsolation(weights[4])],regionalBudgetFocus=Math.max(...isolationWeights),globalOpacity=1-regionalBudgetFocus*.94,edgeBudget=1-regionalBudgetFocus*.88,nodeBudget=1-regionalBudgetFocus*.84
-  const edgeScale=width<700?.78:width<1100?.84:.9,desktopTopology=width>=1100,globalEdges=edges.filter(edge=>{const a=nodes[edge.a],b=nodes[edge.b],important=a.hub||b.hub,long=edge.distance>.6;if(important){edge.cadenceAlpha=1;return !desktopTopology||!long||hash(edge.a+19,edge.b+47)<=.42}const cadence=.5+.5*Math.sin(t*.18+hash(edge.a+37,edge.b+53)*Math.PI*2);edge.cadenceAlpha=smoothstep(clamp01((cadence-.22)/.56));const topologyScale=desktopTopology?(long?.45:1):edgeScale;return hash(edge.a+11,edge.b+29)<=edgeBudget*topologyScale&&edge.cadenceAlpha>.035})
+  // Desktop no usa edgeScale: su rama de topologia deja pasar las aristas cortas con
+  // probabilidad 1 y solo diezma las largas. Movil pasaba todo por 0.78, asi que la malla
+  // corta -- que es el grueso de la red -- perdia un 22% frente a desktop. Se iguala a 1.
+  const edgeScale=width<700?1:width<1100?.84:.9,desktopTopology=width>=1100,globalEdges=edges.filter(edge=>{const a=nodes[edge.a],b=nodes[edge.b],important=a.hub||b.hub,long=edge.distance>.6;if(important){edge.cadenceAlpha=1;return !desktopTopology||!long||hash(edge.a+19,edge.b+47)<=.42}const cadence=.5+.5*Math.sin(t*.18+hash(edge.a+37,edge.b+53)*Math.PI*2);edge.cadenceAlpha=smoothstep(clamp01((cadence-.22)/.56));const topologyScale=desktopTopology?(long?.45:1):edgeScale;return hash(edge.a+11,edge.b+29)<=edgeBudget*topologyScale&&edge.cadenceAlpha>.035})
   const globalNodes=nodes.filter(node=>hash(node.index,71.3)<=nodeBudget)
 
   const halo=ctx.createRadialGradient(cx,cy,base*.12,cx,cy,base*1.08);halo.addColorStop(0,'rgba(23,26,32,.08)');halo.addColorStop(.78,'rgba(11,13,17,.025)');halo.addColorStop(1,'transparent');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height)
   paintGlobalFlowWaves(ctx,t,view,base,cx,cy,globalOpacity)
-  const desktopReadability=width>=1100,smallViewport=width<700
   // En movil las aristas se trazaban a 0.49-0.54px sobre DPR 1 (por debajo de un pixel fisico)
   // y sin el refuerzo de contraste de desktop, asi que la escena obligaba a forzar la vista.
   // Nodos, lineas y auras suben de forma explicita. Desktop y tablet quedan intactos.
@@ -374,7 +381,10 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   // a esa densidad. Aqui se endurece hasta ocultar la cara trasera, dejando solo la frontal
   // densa. Acotado a movil y ponderado por whatsappTravel: entra y sale con la transicion.
   const rearCull=smallViewport?whatsappTravel:0
-  const frontFace=z=>rearCull>0?lerp(1,smoothstep(clamp01((z+.05)/.45)),rearCull):1
+  // El umbral inicial (cero por debajo de z=-0.05) ocultaba la trasera pero se llevaba tambien
+  // la banda media, donde vive la malla cercana al limbo: la red de fondo caia a ~64 lineas
+  // visibles contra 164 en hero. Se corre para vaciar solo la trasera profunda.
+  const frontFace=z=>rearCull>0?lerp(1,smoothstep(clamp01((z+.32)/.62)),rearCull):1
   // El halo de cada nodo se media en px absolutos, con un piso fijo de 4/5.2px. En un orbe
   // movil (base ~2.3x menor que en desktop) ese piso domina, los halos se solapan y el orbe
   // se lee como neblina en vez de nodos. Se escala con la dimension menor del viewport para
@@ -388,7 +398,7 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   // del hub en 0.15-0.27px, invisibles. Se engrosan y avivan en la variante movil del sprite,
   // que se cachea aparte para no alterar la de escritorio.
   const rayScale=smallViewport?5:1
-  globalEdges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility*globalOpacity*(edge.cadenceAlpha??1)*edgeContrast*Math.min(frontFace(nodes[edge.a].z),frontFace(nodes[edge.b].z)),long||smallViewport?TEXT_IVORY:SMOKE_SECONDARY,(long?.54:.49)*edgeWidthScale)})
+  globalEdges.forEach(edge=>{const visibility=Math.min(nodes[edge.a].alpha,nodes[edge.b].alpha),long=edge.distance>.6;paintLine(ctx,nodes[edge.a],nodes[edge.b],edge.opacity*(long?.84:.78+activity*.18)*visibility*globalOpacity*(edge.cadenceAlpha??1)*edgeContrast*frontFace((nodes[edge.a].z+nodes[edge.b].z)*.5),long||smallViewport?TEXT_IVORY:SMOKE_SECONDARY,(long?.54:.49)*edgeWidthScale)})
 
   const pulseWindow=.24+weights[1]*.08,pulses=[]
   globalEdges.forEach(edge=>{const cycle=frac(t/edge.pulsePeriod+edge.pulseOffset);if(cycle>=pulseWindow||edge.opacity<.08)return;const a=nodes[edge.a],b=nodes[edge.b],progress=cycle/pulseWindow,envelope=Math.sin(progress*Math.PI)**1.5,importance=Math.max(a.importance,b.importance),long=edge.distance>.6;pulses.push({a,b,progress,envelope,importance,long,score:importance+(long?.45:0)})})
