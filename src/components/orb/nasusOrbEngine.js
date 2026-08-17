@@ -122,7 +122,9 @@ function projectNodes(model,time,view,base,cx,cy,mode,voiceSignals) {
   const dt=model.frameDt||.016,input=clamp01(voiceSignals?.inputLevel||0),output=clamp01(voiceSignals?.outputLevel||0),impulse=model.voiceImpulse||0
   return model.map((node,index)=>{
     const x1=node.x*cyw+node.z*sy,z1=-node.x*sy+node.z*cyw,y1=node.y*ct-z1*st,z2=node.y*st+z1*ct
-    const front=smoothstep(clamp01((z2-.08)/.84)),breath=mode==='listening'?.008*(.5+.5*Math.sin(time*1.7)):mode==='speaking'?.006*(.5+.5*Math.sin(time*2.4)):0,target=front*(impulse*.155+(mode==='listening'?input*.065+breath:0)+(mode==='speaking'?output*.095+breath:0)),spring=mode==='settling'?24:38,damping=mode==='settling'?8.8:7.2
+    const front=smoothstep(clamp01((z2-.08)/.84)),hold=model.voiceRetraction||0
+    const breath=mode==='listening'?.008*(.5+.5*Math.sin(time*1.7)):mode==='speaking'?.006*(.5+.5*Math.sin(time*2.4)):(mode==='transcribing'||mode==='processing'||mode==='generating_voice')?.007*(.5+.5*Math.sin(time*2.05)):0
+    const target=front*(impulse*.155+hold+breath+(mode==='listening'?input*.065:0)+(mode==='speaking'?output*.095:0)),spring=mode==='settling'?24:38,damping=mode==='settling'?8.8:7.2
     node.voiceIndent??=0;node.voiceIndentVelocity??=0;node.voiceIndentVelocity+=(target-node.voiceIndent)*spring*dt;node.voiceIndentVelocity*=Math.exp(-damping*dt);node.voiceIndent+=node.voiceIndentVelocity*dt
     const perspective=1+z2*.055,radialScale=1-clamp01(node.voiceIndent)*.78
     return{...node,index,x3:node.x,y3:node.y,z3:node.z,x:cx+x1*base*perspective*radialScale,y:cy-y1*base*perspective*radialScale,z:z2}
@@ -357,6 +359,12 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   const voiceTint=Math.round(model.voiceTint*10)/10
   const orbIvory=mixHex(TEXT_IVORY,GOLD_ACTIVE,voiceTint)
   const orbSmoke=mixHex(SMOKE_SECONDARY,GOLD_ACTIVE,voiceTint)
+  // Retraccion sostenida entre fases. Sin esto el orbe se hundia con la voz y rebotaba hacia
+  // fuera en cuanto el turno pasaba a transcribirse, porque solo listening y speaking tenian
+  // termino de hundido. El arco es: hundir al hablar -> mantener al transcribir -> relajar
+  // mientras piensa -> volver a hundir al responder.
+  const retractionTarget=mode==='transcribing'?.042:mode==='generating_voice'?.03:mode==='processing'?.022:mode==='settling'?.012:0
+  model.voiceRetraction=(model.voiceRetraction??0)+(retractionTarget-(model.voiceRetraction??0))*chase(.05,renderDt)
   // Se normaliza a numero antes de comparar y de guardar: si voiceSignals falta, la rama de
   // inicializacion guardaba 0 y la de comparacion undefined, alternando entre ambos y
   // redisparando el impulso cada dos frames de forma indefinida.
