@@ -26,10 +26,12 @@ function clientAddress(req) {
     || 'unknown'
 }
 
-export async function consumeVoiceTurn(req, now = Date.now()) {
+// `scope` separa los cubos por endpoint: un turno de conversacion gasta una transcripcion y
+// una respuesta, y con un solo cubo compartido cada turno consumiria dos de los cinco.
+export async function consumeVoiceTurn(req, now = Date.now(), scope = 'voice') {
   const hour = Math.floor(now / 3_600_000)
   const fingerprint = createHash('sha256').update(clientAddress(req)).digest('hex').slice(0, 32)
-  const key = `world-regions:voice:${fingerprint}:${hour}`
+  const key = `world-regions:${scope}:${fingerprint}:${hour}`
   const secondsUntilNextHour = Math.max(60, Math.ceil(((hour + 1) * 3_600_000 - now) / 1000))
   const [count, ttl] = await getRedis().eval(SCRIPT, [key], [String(Math.min(WINDOW_SECONDS, secondsUntilNextHour))])
   return {
