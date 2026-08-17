@@ -13,7 +13,7 @@ export default function Orb({ region, mode, voiceSignals, onActivate, onOpenCase
 
   useEffect(()=>{
     const canvas=canvasRef.current,ctx=canvas.getContext('2d'),reducedQuery=matchMedia('(prefers-reduced-motion: reduce)')
-    let frame=0,startFrame=0,revealTimer=0,width=0,height=0,scrollTarget=0,scrollProgress=0,journeyTarget=0,journeyFocus=0,running=true,reduced=reducedQuery.matches,model=[],hasPainted=false,regionAnchorScrolls=[]
+    let frame=0,startFrame=0,revealTimer=0,width=0,height=0,scrollTarget=0,scrollProgress=0,journeyTarget=0,journeyFocus=0,running=true,reduced=reducedQuery.matches,model=[],hasPainted=false,regionAnchorScrolls=[],lastPaintTime=0
     const pointer={x:0,y:0,active:false,touching:false,startX:0,startY:0,dragged:false}
     const markOnce=name=>{if(performance.getEntriesByName(name,'mark').length)return;performance.mark(name);performance.measure(`${name}_DURATION`,{start:0,end:name})}
     const resize=()=>{const box=canvas.getBoundingClientRect();width=box.width;height=box.height;const dpr=Math.min(devicePixelRatio||1,width<700?1.75:width<1100?1.6:2);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';const count=width<700?122:width<1100?180:360;if(model.length!==count)model=createOrbModel(count)}
@@ -30,8 +30,15 @@ export default function Orb({ region, mode, voiceSignals, onActivate, onOpenCase
       else{let index=0;while(index<last-1&&scrollY>anchors[index+1])index++;progress=index+(scrollY-anchors[index])/Math.max(1,anchors[index+1]-anchors[index])}
       scrollTarget=Math.max(0,Math.min(5,progress))
       journeyTarget=Math.max(0,Math.min(1,(scrollY-(anchors[0]-vh*.78))/(vh*.5)))}
-    const paint=time=>{scrollProgress+=((reduced?regionRef.current:scrollTarget)-scrollProgress)*(reduced?1:.04);journeyFocus+=(journeyTarget-journeyFocus)*(reduced?1:.055);ctx.clearRect(0,0,width,height);const result=renderNasusOrb(ctx,model,{width,height,time:time/1000,progress:scrollProgress,regionalFocus:journeyFocus,mode:modeRef.current,voiceSignals:voiceSignalsRef.current,reduced,pointer}),hotspot=hotspotRef.current;if(!hasPainted){hasPainted=true;setReady(true);revealTimer=window.setTimeout(()=>markOnce('ORB_VISIBLE'),1550)}if(hotspot&&result?.cases){hotspot.style.setProperty('--hotspot-x',`${result.cases.x}px`);hotspot.style.setProperty('--hotspot-y',`${result.cases.y}px`);hotspot.style.opacity=result.cases.visibility;hotspot.style.pointerEvents=result.cases.visibility>.32?'auto':'none';hotspot.classList.toggle('is-frontal',result.cases.visibility>.72);hotspot.tabIndex=result.cases.visibility>.32?0:-1}if(running&&!reduced)frame=requestAnimationFrame(paint)}
-    const restart=()=>{cancelAnimationFrame(frame);ctx.clearRect(0,0,width,height);if(!running)return;if(reduced)paint(650);else frame=requestAnimationFrame(paint)}
+    // El seguimiento de camara se escalaba por frame, no por tiempo: a 60fps la constante de
+    // tiempo es ~0.4s, pero si el navegador cae a 30fps durante el scroll con inercia pasa a
+    // ~0.8s. La camara se retrasa el doble y luego recupera de golpe, barriendo a toda
+    // velocidad la ventana donde el orbe global cede el relevo al sub-mundo. chase() convierte
+    // la tasa por frame en una equivalente por tiempo: a 60fps devuelve exactamente el valor
+    // original, asi que el comportamiento previo se conserva y solo cambia fuera de 60fps.
+    const chase=(rate,dt)=>1-Math.pow(1-rate,dt*60)
+    const paint=time=>{const dt=lastPaintTime?Math.min(.05,Math.max(.004,(time-lastPaintTime)/1000)):1/60;lastPaintTime=time;scrollProgress+=((reduced?regionRef.current:scrollTarget)-scrollProgress)*(reduced?1:chase(.04,dt));journeyFocus+=(journeyTarget-journeyFocus)*(reduced?1:chase(.055,dt));ctx.clearRect(0,0,width,height);const result=renderNasusOrb(ctx,model,{width,height,time:time/1000,progress:scrollProgress,regionalFocus:journeyFocus,mode:modeRef.current,voiceSignals:voiceSignalsRef.current,reduced,pointer}),hotspot=hotspotRef.current;if(!hasPainted){hasPainted=true;setReady(true);revealTimer=window.setTimeout(()=>markOnce('ORB_VISIBLE'),1550)}if(hotspot&&result?.cases){hotspot.style.setProperty('--hotspot-x',`${result.cases.x}px`);hotspot.style.setProperty('--hotspot-y',`${result.cases.y}px`);hotspot.style.opacity=result.cases.visibility;hotspot.style.pointerEvents=result.cases.visibility>.32?'auto':'none';hotspot.classList.toggle('is-frontal',result.cases.visibility>.72);hotspot.tabIndex=result.cases.visibility>.32?0:-1}if(running&&!reduced)frame=requestAnimationFrame(paint)}
+    const restart=()=>{cancelAnimationFrame(frame);lastPaintTime=0;ctx.clearRect(0,0,width,height);if(!running)return;if(reduced)paint(650);else frame=requestAnimationFrame(paint)}
     const onMotion=event=>{reduced=event.matches;restart()}
     const onVisibility=()=>{running=document.visibilityState!=='hidden';restart()}
     const locatePointer=event=>{const box=canvas.getBoundingClientRect();pointer.x=event.clientX-box.left;pointer.y=event.clientY-box.top}
