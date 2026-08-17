@@ -10,6 +10,9 @@ const regions = [
   { id: 'web', number: '04', label: 'Web', coordinate: 'W 73.01° · ESTRUCTURAS' },
   { id: 'datos', number: '05', label: 'Datos', coordinate: 'N 31.90° · CARTOGRAFÍA' },
 ]
+// 52 + 1 + 3329142391. El 1 tras el codigo de pais es la forma heredada para moviles
+// mexicanos y sigue siendo la que resuelve de forma mas fiable en wa.me.
+const WHATSAPP_URL = 'https://wa.me/5213329142391?text=' + encodeURIComponent('Hola Nasus, vengo del sitio y quiero platicar sobre un proyecto.')
 const caseStudies = [
   { number: '01', title: 'THEIA', subtitle: 'E-commerce + fulfillment conectado.', description: 'Tienda funcional con catálogo, variantes, pagos y operación de fulfillment integrados.', tags: 'Next.js · Supabase · Printful · Mercado Pago' },
   { number: '02', title: 'NASUS ASSISTANT', subtitle: 'IA conversacional + voz.', description: 'Asistente capaz de responder por texto y voz e integrarse con servicios mediante APIs.', tags: 'AI · Voice · APIs · ElevenLabs' },
@@ -22,7 +25,6 @@ export default function App() {
   const voiceState = voiceSession.status
   const panelRef = useRef(null)
   const [casesOpen, setCasesOpen] = useState(false)
-  const [contactOpen, setContactOpen] = useState(false)
   const [voiceConsentOpen, setVoiceConsentOpen] = useState(false)
   const [voiceConsentGiven, setVoiceConsentGiven] = useState(() => localStorage.getItem('nasus-voice-consent') === 'accepted')
 
@@ -42,13 +44,13 @@ export default function App() {
     return () => observer.disconnect()
   }, [])
   useEffect(() => {
-    if (!casesOpen && !contactOpen && !voiceConsentOpen) return undefined
+    if (!casesOpen && !voiceConsentOpen) return undefined
     const previous = document.activeElement
     const panel = panelRef.current
     const focusable = () => [...panel.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])')]
     panel.querySelector('button')?.focus()
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') { setCasesOpen(false); setContactOpen(false); setVoiceConsentOpen(false) }
+      if (event.key === 'Escape') { setCasesOpen(false); setVoiceConsentOpen(false) }
       if (event.key !== 'Tab') return
       const items = focusable(), first = items[0], last = items.at(-1)
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
@@ -56,7 +58,7 @@ export default function App() {
     }
     document.addEventListener('keydown', onKeyDown)
     return () => { document.removeEventListener('keydown', onKeyDown); previous?.focus?.() }
-  }, [casesOpen, contactOpen, voiceConsentOpen])
+  }, [casesOpen, voiceConsentOpen])
 
   const requestConversation = () => {
     if (!voiceConsentGiven && voiceState === 'idle') return setVoiceConsentOpen(true)
@@ -75,7 +77,7 @@ export default function App() {
     <div className="noise" />
     <header className="topbar">
       <a className="brand" href="#top" aria-label="Nasus, inicio"><span className="brand__mark"><i /><i /><i /></span>NASUS</a>
-      <div className="topbar__actions"><span className="topbar__coordinate">WORLD / NL-001</span><button type="button" className="contact-trigger" onClick={() => setContactOpen(true)}>CONTACTO <i>↗</i></button></div>
+      <div className="topbar__actions"><span className="topbar__coordinate">WORLD / NL-001</span><a className="contact-trigger" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">CONTACTO <i>↗</i></a></div>
     </header>
 
     <div className="world" aria-live="polite">
@@ -95,21 +97,7 @@ export default function App() {
         </div>
         <div className="cases-panel__metrics" aria-label="Capacidades verificables"><div><strong>3</strong><span>PROYECTOS</span></div><div><strong>5</strong><span>ÁREAS DEL MUNDO</span></div><p>IA · WEB · AUTOMATIZACIÓN · DATOS · COMUNICACIÓN</p></div>
         <p className="cases-panel__question">¿Tienes algo parecido en mente?</p>
-        <a className="cases-panel__cta" href="#contacto" onClick={() => setCasesOpen(false)}>Hablar sobre un proyecto <i>→</i></a>
-      </aside>
-    </div>}
-
-    {contactOpen && <div className="cases-overlay contact-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setContactOpen(false) }}>
-      <aside ref={panelRef} className="cases-panel contact-panel" role="dialog" aria-modal="true" aria-labelledby="contact-title">
-        <button type="button" className="cases-panel__close" onClick={() => setContactOpen(false)} aria-label="Cerrar contacto">×</button>
-        <p className="eyebrow">CONTACTO</p>
-        <h2 id="contact-title">¿Tienes algo en mente?</h2>
-        <p className="contact-panel__intro">Cuéntanos qué quieres construir.</p>
-        <div className="contact-panel__actions">
-          <button type="button" className="contact-panel__primary" onClick={() => { setContactOpen(false); requestConversation() }}>Hablar con Nasus <i>→</i></button>
-          <button type="button" className="contact-panel__secondary" aria-disabled="true">Enviar mensaje <span>PRÓXIMAMENTE</span></button>
-        </div>
-        <div className="contact-panel__channels"><span>CANAL / 01</span><p>Arquitectura preparada para WhatsApp, correo, formulario y agenda.</p></div>
+        <a className="cases-panel__cta" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" onClick={() => setCasesOpen(false)}>Hablar sobre un proyecto <i>→</i></a>
       </aside>
     </div>}
 
