@@ -16,7 +16,14 @@ export default function Orb({ region, mode, voiceSignals, onActivate, onOpenCase
     let frame=0,startFrame=0,revealTimer=0,width=0,height=0,scrollTarget=0,scrollProgress=0,journeyTarget=0,journeyFocus=0,running=true,reduced=reducedQuery.matches,model=[],hasPainted=false,regionAnchorScrolls=[],lastPaintTime=0
     const pointer={x:0,y:0,active:false,touching:false,startX:0,startY:0,dragged:false}
     const markOnce=name=>{if(performance.getEntriesByName(name,'mark').length)return;performance.mark(name);performance.measure(`${name}_DURATION`,{start:0,end:name})}
-    const resize=()=>{const box=canvas.getBoundingClientRect();width=box.width;height=box.height;const dpr=Math.min(devicePixelRatio||1,width<700?1.75:width<1100?1.6:2);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';const count=width<700?122:width<1100?180:360;if(model.length!==count)model=createOrbModel(count)}
+    // Asignar canvas.width vacia el bitmap aunque el valor asignado sea identico al que ya
+    // tenia: lo pide la especificacion. Como el observer sigue la caja real de .world (inset:0)
+    // y en iOS la barra de URL colapsa y se expande al cambiar la direccion del scroll, cada
+    // gesto disparaba varias asignaciones y el canvas entero quedaba en blanco hasta el
+    // siguiente frame de animacion. Se veia en las cinco regiones a la vez, porque todo el
+    // dibujo vive en este unico canvas. Solo se reasigna cuando el tamano cambia de verdad, y
+    // quien llama repinta en el acto para que ese frame vacio no llegue a presentarse.
+    const resize=()=>{const box=canvas.getBoundingClientRect();width=box.width;height=box.height;const dpr=Math.min(devicePixelRatio||1,width<700?1.75:width<1100?1.6:2),backingWidth=Math.round(width*dpr),backingHeight=Math.round(height*dpr),cleared=canvas.width!==backingWidth||canvas.height!==backingHeight;if(cleared){canvas.width=backingWidth;canvas.height=backingHeight}ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';const count=width<700?122:width<1100?180:360;if(model.length!==count)model=createOrbModel(count);return cleared}
     // Ancla cada region al scroll en el que su centro coincide con el centro del viewport,
     // leyendo el layout real. Los multiplos fijos de innerHeight asumian que el alto CSS de
     // hero (svh) y region (vh) eran iguales, lo que solo se cumple en desktop: en movil la
@@ -37,7 +44,8 @@ export default function Orb({ region, mode, voiceSignals, onActivate, onOpenCase
     // la tasa por frame en una equivalente por tiempo: a 60fps devuelve exactamente el valor
     // original, asi que el comportamiento previo se conserva y solo cambia fuera de 60fps.
     const chase=(rate,dt)=>1-Math.pow(1-rate,dt*60)
-    const paint=time=>{const dt=lastPaintTime?Math.min(.05,Math.max(.004,(time-lastPaintTime)/1000)):1/60;lastPaintTime=time;scrollProgress+=((reduced?regionRef.current:scrollTarget)-scrollProgress)*(reduced?1:chase(.04,dt));journeyFocus+=(journeyTarget-journeyFocus)*(reduced?1:chase(.055,dt));ctx.clearRect(0,0,width,height);const result=renderNasusOrb(ctx,model,{width,height,time:time/1000,progress:scrollProgress,regionalFocus:journeyFocus,mode:modeRef.current,voiceSignals:voiceSignalsRef.current,reduced,pointer}),hotspot=hotspotRef.current;if(!hasPainted){hasPainted=true;setReady(true);revealTimer=window.setTimeout(()=>markOnce('ORB_VISIBLE'),1550)}if(hotspot&&result?.cases){hotspot.style.setProperty('--hotspot-x',`${result.cases.x}px`);hotspot.style.setProperty('--hotspot-y',`${result.cases.y}px`);hotspot.style.opacity=result.cases.visibility;hotspot.style.pointerEvents=result.cases.visibility>.32?'auto':'none';hotspot.classList.toggle('is-frontal',result.cases.visibility>.72);hotspot.tabIndex=result.cases.visibility>.32?0:-1}if(running&&!reduced)frame=requestAnimationFrame(paint)}
+    const drawFrame=time=>{ctx.clearRect(0,0,width,height);const result=renderNasusOrb(ctx,model,{width,height,time:time/1000,progress:scrollProgress,regionalFocus:journeyFocus,mode:modeRef.current,voiceSignals:voiceSignalsRef.current,reduced,pointer}),hotspot=hotspotRef.current;if(!hasPainted){hasPainted=true;setReady(true);revealTimer=window.setTimeout(()=>markOnce('ORB_VISIBLE'),1550)}if(hotspot&&result?.cases){hotspot.style.setProperty('--hotspot-x',`${result.cases.x}px`);hotspot.style.setProperty('--hotspot-y',`${result.cases.y}px`);hotspot.style.opacity=result.cases.visibility;hotspot.style.pointerEvents=result.cases.visibility>.32?'auto':'none';hotspot.classList.toggle('is-frontal',result.cases.visibility>.72);hotspot.tabIndex=result.cases.visibility>.32?0:-1}}
+    const paint=time=>{const dt=lastPaintTime?Math.min(.05,Math.max(.004,(time-lastPaintTime)/1000)):1/60;lastPaintTime=time;scrollProgress+=((reduced?regionRef.current:scrollTarget)-scrollProgress)*(reduced?1:chase(.04,dt));journeyFocus+=(journeyTarget-journeyFocus)*(reduced?1:chase(.055,dt));drawFrame(time);if(running&&!reduced)frame=requestAnimationFrame(paint)}
     const restart=()=>{cancelAnimationFrame(frame);lastPaintTime=0;ctx.clearRect(0,0,width,height);if(!running)return;if(reduced)paint(650);else frame=requestAnimationFrame(paint)}
     const onMotion=event=>{reduced=event.matches;restart()}
     const onVisibility=()=>{running=document.visibilityState!=='hidden';restart()}
@@ -48,7 +56,7 @@ export default function Orb({ region, mode, voiceSignals, onActivate, onOpenCase
     const onPointerLeave=()=>{if(!pointer.touching)pointer.active=false}
     const invalidate=()=>{if(reduced)restart()}
     const onRevealEnd=event=>{if(event.propertyName!=='opacity')return;window.clearTimeout(revealTimer);markOnce('ORB_VISIBLE')}
-    const onResize=()=>{resize();measureRegions();trackScroll()}
+    const onResize=()=>{const cleared=resize();measureRegions();trackScroll();if(cleared&&hasPainted)drawFrame(lastPaintTime||performance.now())}
     // window.resize no cubre todos los cambios de caja del canvas: en movil, al colapsar la
     // barra de URL cambia el alto del elemento sin que el evento dispare de forma garantizada.
     // Cuando el backing store queda desfasado de la caja CSS el navegador estira el bitmap,
