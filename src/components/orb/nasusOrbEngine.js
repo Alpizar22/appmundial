@@ -124,19 +124,43 @@ function stepSimulation(model,time,profile,region,regionFocus,activity,reduced,p
 // casquete localizado. La profundidad en el centro no cambia —ambas expresiones valen 1 ahi—,
 // solo deja de arrastrar consigo la superficie de alrededor.
 const VOICE_CONTACT_COS=.62
+// El contacto del cursor es mas cerrado que el de voz —un dedo, no la palma— y se apaga a los
+// ~39 grados. HOVER_REACH es hasta donde fuera del disco del orbe sigue habiendo contacto,
+// medido en radios: pasado eso el hundimiento es cero.
+const HOVER_CONTACT_COS=.78,HOVER_DEPTH=.16,HOVER_REACH=.3
 
-function projectNodes(model,time,view,base,cx,cy,mode,voiceSignals) {
+// Punto de la esfera mas cercano al cursor, en el espacio de la camara. Se resuelve una vez por
+// frame invirtiendo la proyeccion: dentro del disco es el punto frontal bajo el cursor, fuera es
+// el punto del limbo mas cercano. Se ignora el factor de perspectiva (1+z2*.055, un 5.5% como
+// mucho) para no resolver una cuadratica por frame; con un falloff suave ese error no se ve.
+function hoverContactPoint(pointer,base,cx,cy) {
+  if(!pointer?.active||!(base>0))return null
+  const u=(pointer.x-cx)/base,v=(cy-pointer.y)/base,radius=Math.hypot(u,v)
+  const amount=1-smoothstep(clamp01((radius-1)/HOVER_REACH))
+  if(amount<=0)return null
+  return radius<=1?{x:u,y:v,z:Math.sqrt(Math.max(0,1-radius*radius)),amount}:{x:u/radius,y:v/radius,z:0,amount}
+}
+
+function projectNodes(model,time,view,base,cx,cy,mode,voiceSignals,pointer) {
   const sy=Math.sin(view.yaw+time*WORLD_SPIN),cyw=Math.cos(view.yaw+time*WORLD_SPIN),st=Math.sin(view.pitch),ct=Math.cos(view.pitch)
   const dt=model.frameDt||.016,input=clamp01(voiceSignals?.inputLevel||0),output=clamp01(voiceSignals?.outputLevel||0),impulse=model.voiceImpulse||0
+  // El hover solo actua en reposo: durante una sesion de voz el ancla debe quedarse fija en el
+  // centro de camara, sin un segundo hundimiento compitiendo. Al soltarse, el muelle por nodo
+  // que ya integra el indent devuelve la superficie con rebote, como al levantar el dedo.
+  const hover=mode==='idle'?hoverContactPoint(pointer,base,cx,cy):null
   return model.map((node,index)=>{
     const x1=node.x*cyw+node.z*sy,z1=-node.x*sy+node.z*cyw,y1=node.y*ct-z1*st,z2=node.y*st+z1*ct
     const front=smoothstep(clamp01((z2-.08)/.84)),hold=model.voiceRetraction||0
     const contact=smoothstep(clamp01((z2-VOICE_CONTACT_COS)/(1-VOICE_CONTACT_COS)))
+    // (x1,y1,z2) es el nodo en el espacio de la camara y sigue siendo unitario, porque la
+    // rotacion es ortonormal: el producto punto contra la direccion de contacto da el coseno del
+    // angulo entre ambos sin normalizar ni pasar por acos. Tres multiplicaciones por nodo.
+    const hoverIndent=hover?smoothstep(clamp01((x1*hover.x+y1*hover.y+z2*hover.z-HOVER_CONTACT_COS)/(1-HOVER_CONTACT_COS)))*hover.amount*HOVER_DEPTH:0
     const breath=mode==='listening'?.008*(.5+.5*Math.sin(time*1.7)):mode==='speaking'?.006*(.5+.5*Math.sin(time*2.4)):(mode==='transcribing'||mode==='processing'||mode==='generating_voice')?.007*(.5+.5*Math.sin(time*2.05)):0
     // Solo las tres senales de voz se localizan. La retraccion sostenida entre fases y la
     // respiracion se quedan en el falloff ancho: son un estado del orbe entero, no un contacto,
     // y localizarlas romperia el arco de retraccion que ya estaba afinado.
-    const target=contact*(impulse*.155+(mode==='listening'?input*.065:0)+(mode==='speaking'?output*.095:0))+front*(hold+breath),spring=mode==='settling'?24:38,damping=mode==='settling'?8.8:7.2
+    const target=contact*(impulse*.155+(mode==='listening'?input*.065:0)+(mode==='speaking'?output*.095:0))+front*(hold+breath)+hoverIndent,spring=mode==='settling'?24:38,damping=mode==='settling'?8.8:7.2
     node.voiceIndent??=0;node.voiceIndentVelocity??=0;node.voiceIndentVelocity+=(target-node.voiceIndent)*spring*dt;node.voiceIndentVelocity*=Math.exp(-damping*dt);node.voiceIndent+=node.voiceIndentVelocity*dt
     const perspective=1+z2*.055,radialScale=1-clamp01(node.voiceIndent)*.78
     return{...node,index,x3:node.x,y3:node.y,z3:node.z,x:cx+x1*base*perspective*radialScale,y:cy-y1*base*perspective*radialScale,z:z2}
@@ -412,7 +436,7 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   model.animationTime=(model.animationTime??time)+renderDt*(1+activity*.55)
   const cx=width*(.5+view.x),cy=height*(.5+view.y+heroLift),t=reduced?.65:model.animationTime
   stepSimulation(model,t,GLOBAL_PROFILE,-1,0,activity,reduced,pointer,view,base,cx,cy)
-  const nodes=projectNodes(model,t,view,base,cx,cy,mode,voiceSignals)
+  const nodes=projectNodes(model,t,view,base,cx,cy,mode,voiceSignals,pointer)
   const iaFocus=projectAnchor(REGION_ANCHORS.ia,{yaw:view.yaw,pitch:view.pitch,worldRotation:t*WORLD_SPIN,base,cx,cy})
   const automationFocus=projectAnchor(REGION_ANCHORS.automation,{yaw:view.yaw,pitch:view.pitch,worldRotation:t*WORLD_SPIN,base,cx,cy})
   const dataFocus=projectAnchor(REGION_ANCHORS.data,{yaw:view.yaw,pitch:view.pitch,worldRotation:t*WORLD_SPIN,base,cx,cy})
