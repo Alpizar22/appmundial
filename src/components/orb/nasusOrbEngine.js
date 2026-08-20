@@ -127,7 +127,7 @@ const VOICE_CONTACT_COS=.62
 // El contacto del cursor es mas cerrado que el de voz —un dedo, no la palma— y se apaga a los
 // ~39 grados. HOVER_REACH es hasta donde fuera del disco del orbe sigue habiendo contacto,
 // medido en radios: pasado eso el hundimiento es cero.
-const HOVER_CONTACT_COS=.78,HOVER_DEPTH=.16,HOVER_REACH=.3
+const HOVER_CONTACT_COS=.78,HOVER_DEPTH=.34,HOVER_REACH=.3
 
 // Punto de la esfera mas cercano al cursor, en el espacio de la camara. Se resuelve una vez por
 // frame invirtiendo la proyeccion: dentro del disco es el punto frontal bajo el cursor, fuera es
