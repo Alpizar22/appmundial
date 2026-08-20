@@ -27,15 +27,7 @@ const ensureIllustration=()=>{
   return illustration
 }
 
-// DIAGNOSTICO TEMPORAL (revertir tras la prueba): con ?nodata=1 en la URL la ilustracion de
-// Datos no se construye, no se decodifica y no se rasteriza a canvas offscreen. Sirve para
-// aislar si su peso en memoria de GPU tiene que ver con el parpadeo del orbe en Safari, que
-// se reporta en el hero pero podria competir con el resto de capas de la pagina. Sin el
-// parametro el comportamiento es identico al de siempre.
-const illustrationDisabled=typeof location!=='undefined'&&/[?&]nodata=1/.test(location.search)
-
 export function preloadDataIllustration(onReady) {
-  if(illustrationDisabled)return Promise.resolve(null)
   const image=ensureIllustration()
   if(image.complete&&image.naturalWidth){onReady?.();return Promise.resolve(image)}
   return illustrationReady.then(()=>{onReady?.();return image})
@@ -58,7 +50,7 @@ function pointOnRoute(route,progress) {
 }
 
 export function renderDataSubworld({ctx,camera,time,viewport,focus,intensity,motion=0,palette}) {
-  if(intensity<=.01||illustrationDisabled)return
+  if(intensity<=.01)return
   const image=getIllustration(ctx)
   if(!image.complete||!image.naturalWidth)return
   const {width,height}=viewport,{gold,pearl,rgba}=palette,aspect=image.naturalWidth/image.naturalHeight,cameraScale=Math.max(.94,Math.min(1.06,camera.zoom/1.92)),baseWidth=Math.max(width*.96,height*aspect),baseHeight=baseWidth/aspect,drawWidth=baseWidth*cameraScale,drawHeight=baseHeight*cameraScale,drawX=focus.x-drawWidth*.61,drawY=focus.y-drawHeight*.51,reveal=smoothstep(intensity),detail=.2+.8*smoothstep(clamp01(1-motion)),cached=cachedIllustration(image,baseWidth,baseHeight,ctx.getTransform().a||1)
