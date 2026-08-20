@@ -129,6 +129,10 @@ const VOICE_CONTACT_COS=.62
 // con voz normal (~.35) daba un 2.4% de compresion: invisible. Al compartir techo con el hover
 // no puede pasarse de lo ya validado a ojo, y la dinamica de la voz aporta la variacion.
 const VOICE_INPUT_DEPTH=.34
+// La respuesta hablada se queda por debajo de la voz propia: hablarle al orbe es un contacto
+// directo y su respuesta es una resonancia. Estaba en .095, que junto al input recien subido
+// dejaba responder tres veces mas plano que escuchar, al reves de lo que pide la jerarquia.
+const VOICE_OUTPUT_DEPTH=.22
 // El contacto del cursor es mas cerrado que el de voz —un dedo, no la palma— y se apaga a los
 // ~39 grados. HOVER_REACH es hasta donde fuera del disco del orbe sigue habiendo contacto,
 // medido en radios: pasado eso el hundimiento es cero.
@@ -165,7 +169,7 @@ function projectNodes(model,time,view,base,cx,cy,mode,voiceSignals,pointer) {
     // Solo las tres senales de voz se localizan. La retraccion sostenida entre fases y la
     // respiracion se quedan en el falloff ancho: son un estado del orbe entero, no un contacto,
     // y localizarlas romperia el arco de retraccion que ya estaba afinado.
-    const target=contact*(impulse*.155+(mode==='listening'?input*VOICE_INPUT_DEPTH:0)+(mode==='speaking'?output*.095:0))+front*(hold+breath)+hoverIndent,spring=mode==='settling'?24:38,damping=mode==='settling'?8.8:7.2
+    const target=contact*(impulse*.155+(mode==='listening'?input*VOICE_INPUT_DEPTH:0)+(mode==='speaking'?output*VOICE_OUTPUT_DEPTH:0))+front*(hold+breath)+hoverIndent,spring=mode==='settling'?24:38,damping=mode==='settling'?8.8:7.2
     node.voiceIndent??=0;node.voiceIndentVelocity??=0;node.voiceIndentVelocity+=(target-node.voiceIndent)*spring*dt;node.voiceIndentVelocity*=Math.exp(-damping*dt);node.voiceIndent+=node.voiceIndentVelocity*dt
     const perspective=1+z2*.055,radialScale=1-clamp01(node.voiceIndent)*.78
     return{...node,index,x3:node.x,y3:node.y,z3:node.z,x:cx+x1*base*perspective*radialScale,y:cy-y1*base*perspective*radialScale,z:z2}
