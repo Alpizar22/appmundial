@@ -3,10 +3,15 @@ import Orb from './components/Orb'
 import { useVoiceAssistant } from './voice/useVoiceAssistant'
 import { voiceStateLabel } from './voice/voiceMachine'
 
+// El label/coordinate de cada region es copy libre; el `id` y la posicion en
+// este array NO lo son: nasusOrbEngine.js ata comportamiento (region===1,
+// region===3, region===4) y REGION_ANCHORS.{ia,automation,whatsapp,web,data}
+// al indice numerico de esta lista. Reordenar desincroniza el label mostrado
+// del terreno/camara 3D que realmente se renderiza para ese indice.
 const regions = [
-  { id: 'ia', number: '01', label: 'IA', coordinate: 'N 19.22° · RED NEURAL' },
+  { id: 'ia', number: '01', label: 'CRM Agentic', coordinate: 'N 19.22° · ESTADO VIVO' },
   { id: 'automatizacion', number: '02', label: 'Automatización', coordinate: 'E 42.08° · FLUJOS' },
-  { id: 'whatsapp', number: '03', label: 'WhatsApp', coordinate: 'S 08.14° · SEÑALES' },
+  { id: 'whatsapp', number: '03', label: 'WhatsApp', coordinate: 'S 08.14° · AGENTE VIVO' },
   { id: 'web', number: '04', label: 'Web', coordinate: 'W 73.01° · ESTRUCTURAS' },
   { id: 'datos', number: '05', label: 'Datos', coordinate: 'N 31.90° · CARTOGRAFÍA' },
 ]
@@ -95,7 +100,7 @@ export default function App() {
         <div className="cases-panel__projects">
           {caseStudies.map(project => <article key={project.number}><span>{project.number}</span><h3>{project.title}</h3><strong>{project.subtitle}</strong><p>{project.description}</p><small>{project.tags}</small></article>)}
         </div>
-        <div className="cases-panel__metrics" aria-label="Capacidades verificables"><div><strong>3</strong><span>PROYECTOS</span></div><div><strong>5</strong><span>ÁREAS DEL MUNDO</span></div><p>IA · WEB · AUTOMATIZACIÓN · DATOS · COMUNICACIÓN</p></div>
+        <div className="cases-panel__metrics" aria-label="Capacidades verificables"><div><strong>3</strong><span>PROYECTOS</span></div><div><strong>5</strong><span>ÁREAS DEL MUNDO</span></div><p>CRM · WEB · AUTOMATIZACIÓN · DATOS · COMUNICACIÓN</p></div>
         <p className="cases-panel__question">¿Tienes algo parecido en mente?</p>
         <a className="cases-panel__cta" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" onClick={() => setCasesOpen(false)}>Hablar sobre un proyecto <i>→</i></a>
       </aside>
@@ -131,7 +136,7 @@ export default function App() {
       </section>)}
     </div>
 
-    <footer id="contacto"><span>NASUS / INTELLIGENCE WORLD</span></footer>
+    <footer id="contacto"><span>NASUS / INTELLIGENCE WORLD</span><a className="contact-trigger" style={{ marginLeft: 16 }} href="https://nasus.lat" target="_blank" rel="noopener noreferrer">IR A NASUS.LAT <i>↗</i></a></footer>
     <nav className="route-nav" aria-label="Mapa de regiones">
       <span className="route-nav__origin">NL</span>
       {regions.map((region, index) => <button className={activeRegion === index ? 'is-active' : ''} onClick={() => goTo(region.id)} key={region.id} aria-label={`Ir a ${region.label}`}><i />{region.label}</button>)}
