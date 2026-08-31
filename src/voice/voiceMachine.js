@@ -25,11 +25,15 @@ export function voiceSessionReducer(state, action) {
   switch (action.type) {
     case 'ACTIVATE': return { ...initialVoiceSession, status: VOICE_STATUS.ACTIVATING }
     case 'PERMISSION_GRANTED': return { ...state, status: VOICE_STATUS.LISTENING, error: null }
-    // El turno se cerro (silencio sostenido o tope): el audio sale hacia la transcripcion.
-    case 'CAPTURE_ENDED': return { ...state, status: VOICE_STATUS.TRANSCRIBING }
-    case 'TRANSCRIPT_READY': return { ...state, status: VOICE_STATUS.PROCESSING, transcript: action.transcript || '' }
-    // Claude ya respondio; queda preparar el audio en el cliente antes de que suene.
-    case 'RESPONSE_READY': return { ...state, status: VOICE_STATUS.GENERATING_VOICE, responseText: action.text || '' }
+    // La sesion Realtime dispara response.created en cuanto el VAD del servidor decide que el
+    // turno termino: no hay un paso de transcripcion/espera separado que nosotros controlemos,
+    // asi que se salta TRANSCRIBING y se va directo a PROCESSING.
+    case 'RESPONSE_STARTED': return { ...state, status: VOICE_STATUS.PROCESSING }
+    // input_audio_buffer.speech_started del servidor. Si ya estabamos hablando (el usuario
+    // interrumpio a mitad de respuesta), esto es la señal de barge-in: OpenAI corta el audio en
+    // curso del lado del servidor (interrupt_response:true) y aqui solo reflejamos el estado.
+    // Si ya estabamos escuchando, es un no-op.
+    case 'SPEECH_STARTED': return { ...state, status: VOICE_STATUS.LISTENING }
     case 'PLAYBACK_STARTED': return { ...state, status: VOICE_STATUS.SPEAKING }
     case 'PLAYBACK_ENDED':
     case 'STOP': return { ...state, status: VOICE_STATUS.SETTLING }

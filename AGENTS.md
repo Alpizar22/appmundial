@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-Guía para Claude Code en este repositorio.
+Guía para Codex en este repositorio.
 
 ## Comandos
 
