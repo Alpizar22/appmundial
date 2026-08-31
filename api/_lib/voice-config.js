@@ -16,22 +16,49 @@ export const REALTIME_SESSION_SECONDS = Number(process.env.REALTIME_SESSION_SECO
 // OpenAI Realtime y cuanto quiera absorber el negocio — no hay un numero "correcto" universal.
 export const REALTIME_SECONDS_LIMIT_PER_HOUR = Number(process.env.REALTIME_SECONDS_LIMIT_PER_HOUR) || REALTIME_SESSION_SECONDS * 5
 
-// Server-side VAD tuning (session.audio.input.turn_detection). `threshold` (0-1) is
-// mic-energy sensitivity — lower catches quieter speech but also more background noise;
-// `prefix_padding_ms` keeps a bit of audio before the detected speech onset so the first
-// word isn't clipped; `silence_duration_ms` is how long the user must be silent before the
-// turn is considered over (the equivalent of the old SILENCE_HOLD_MS, now enforced
-// server-side instead of by our own RMS loop). `type: 'semantic_vad'` with an `eagerness`
-// field is the alternative mode if `server_vad`'s fixed silence window proves too twitchy
-// on background noise/coughs — see the Phase 4 notes.
-export const REALTIME_TURN_DETECTION = {
-  type: 'server_vad',
-  threshold: 0.5,
-  prefix_padding_ms: 300,
-  silence_duration_ms: 700,
+// Server-side turn detection (session.audio.input.turn_detection). Two modes, pick ONE by
+// changing which constant REALTIME_TURN_DETECTION points to at the bottom of this block —
+// both are kept fully written out so switching back and forth while testing is a one-line
+// change, not a rewrite.
+//
+// SEMANTIC_VAD (default): the model itself judges whether the user actually finished a
+// thought, instead of reacting to a fixed volume threshold — this is what makes it
+// tolerant of background noise, short coughs, or a pause mid-sentence, none of which read
+// as "done talking" semantically the way they do to a raw amplitude gate.
+//   - `eagerness`: the only knob. 'low' waits longer / needs more confidence before
+//     deciding the user is done (most tolerant of noise — use this if it's still cutting
+//     too eagerly). 'high' cuts faster (more responsive, but closer to server_vad's
+//     twitchiness). 'auto' lets OpenAI balance it. 'medium' is in between.
+//
+// SERVER_VAD (fallback): a fixed mic-energy threshold, same style as the original
+// client-side VAD this replaced. Use this instead if semantic_vad's server-side judgment
+// call ever feels wrong for this use case, or you want deterministic, purely
+// volume-based behavior.
+//   - `threshold` (0-1): mic-energy sensitivity. RAISE this if quiet background noise
+//     keeps triggering speech detection (less sensitive to soft sounds); LOWER it if the
+//     user's own quiet speech isn't being picked up.
+//   - `silence_duration_ms`: how long the user must be silent before the turn is
+//     considered over. RAISE this to give more room for pauses/coughs mid-sentence
+//     without ending the turn (trades off against making the assistant wait longer after
+//     the user actually finishes).
+//   - `prefix_padding_ms`: audio kept before the detected speech onset, so the first word
+//     isn't clipped. Rarely needs tuning.
+const REALTIME_TURN_DETECTION_SEMANTIC_VAD = {
+  type: 'semantic_vad',
+  eagerness: 'low',
   create_response: true,
   interrupt_response: true,
 }
+const REALTIME_TURN_DETECTION_SERVER_VAD = {
+  type: 'server_vad',
+  threshold: 0.65,          // subido desde .5 — menos sensible a ruido de fondo bajo
+  prefix_padding_ms: 300,
+  silence_duration_ms: 900, // subido desde 700 — mas margen antes de cerrar el turno
+  create_response: true,
+  interrupt_response: true,
+}
+export const REALTIME_TURN_DETECTION = REALTIME_TURN_DETECTION_SEMANTIC_VAD
+// Para volver a server_vad: export const REALTIME_TURN_DETECTION = REALTIME_TURN_DETECTION_SERVER_VAD
 
 export const REALTIME_INSTRUCTIONS = `Eres el asistente de voz de Nasus Labs, un estudio de soluciones tecnológicas a medida. Respondes preguntas sobre inteligencia artificial, automatización, WhatsApp, desarrollo web y sistemas de datos. Eres directo, profesional y cálido. Tus respuestas son breves, con un máximo de tres oraciones, porque se escuchan en voz.
 
