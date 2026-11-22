@@ -16,9 +16,9 @@ const regions = [
   { id: 'web', number: '04', label: 'Web', coordinate: 'W 73.01° · ESTRUCTURAS' },
   { id: 'datos', number: '05', label: 'Datos', coordinate: 'N 31.90° · CARTOGRAFÍA' },
 ]
-// 52 + 1 + 3329142391. El 1 tras el codigo de pais es la forma heredada para moviles
+// 52 + 1 + 3329621602 (linea de la WhatsApp Cloud API: entra al CRM de nasus.lat). El 1 tras el codigo de pais es la forma heredada para moviles
 // mexicanos y sigue siendo la que resuelve de forma mas fiable en wa.me.
-const WHATSAPP_URL = 'https://wa.me/5213329142391?text=' + encodeURIComponent('Hola Nasus, vengo del sitio y quiero platicar sobre un proyecto.')
+const WHATSAPP_URL = 'https://wa.me/5213329621602?text=' + encodeURIComponent('Hola Nasus, vengo del sitio y quiero platicar sobre un proyecto.')
 const caseStudies = [
   { number: '01', title: 'THEIA', subtitle: 'E-commerce + fulfillment conectado.', description: 'Tienda funcional con catálogo, variantes, pagos y operación de fulfillment integrados.', tags: 'Next.js · Supabase · Printful · Mercado Pago' },
   { number: '02', title: 'NASUS ASSISTANT', subtitle: 'IA conversacional + voz.', description: 'Asistente capaz de responder por texto y voz e integrarse con servicios mediante APIs.', tags: 'AI · Voice · APIs · ElevenLabs' },
