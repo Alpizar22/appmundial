@@ -158,10 +158,10 @@ LIVE_DAILY_SECONDS / LIVE_MONTHLY_SECONDS      # 2400 / 9000 — topes globales
 ```
 
 `api/live-session.js` **falla cerrado a propósito**: sin credenciales de Upstash el
-limitador lanza y el endpoint responde 503 antes de mintear el token. Eso es intencional,
+limitador lanza y el endpoint responde 503 antes de abrir la sesión. Eso es intencional,
 no un bug.
 
 Límite: no es un conteo de requests, es un presupuesto de segundos reservados por hora y
-por IP (hasheada) — cada sesión cobra `REALTIME_SESSION_SECONDS` contra ese presupuesto,
-porque el costo real de una sesión Realtime depende de cuánto dura, no de si el endpoint
+por IP (hasheada) — cada sesión cobra `LIVE_SESSION_SECONDS` contra ese presupuesto,
+porque el costo real de una sesión de voz depende de cuánto dura, no de si el endpoint
 se llamó una vez.
