@@ -45,3 +45,16 @@ export async function consumeVoiceTurn(req, now = Date.now(), scope = 'voice', a
     retryAfter: Math.max(1, Number(ttl) || secondsUntilNextHour),
   }
 }
+
+// Presupuesto global compartido por todos los visitantes (p. ej. segundos de voz por dia o
+// por mes). A diferencia de consumeVoiceTurn, la llave no depende de la IP. Igual que aquel,
+// el contador sube de forma atomica y el llamador decide si se pasa del limite.
+export async function consumeBudget(key, ttlSeconds, amount, limit) {
+  const [count] = await getRedis().eval(SCRIPT, [`world-regions:${key}`], [String(ttlSeconds), String(amount)])
+  return { allowed: Number(count) <= limit, count: Number(count) }
+}
+
+// Devuelve lo reservado cuando la sesion no llego a abrirse. Nunca lanza: es limpieza.
+export async function refundBudget(key, amount) {
+  try { await getRedis().decrby(`world-regions:${key}`, amount) } catch { /* limpieza best-effort */ }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Logo from './components/Logo'
 import Orb from './components/Orb'
 import { useVoiceAssistant } from './voice/useVoiceAssistant'
 import { voiceStateLabel } from './voice/voiceMachine'
@@ -81,7 +82,7 @@ export default function App() {
   return <main className={voiceState === 'idle' ? 'experience' : 'experience is-speaking'}>
     <div className="noise" />
     <header className="topbar">
-      <a className="brand" href="#top" aria-label="Nasus, inicio"><span className="brand__mark"><i /><i /><i /></span>NASUS</a>
+      <a className="brand" href="#top" aria-label="Nasus, inicio"><Logo /></a>
       <div className="topbar__actions"><span className="topbar__coordinate">WORLD / NL-001</span><a className="contact-trigger" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">CONTACTO <i>↗</i></a></div>
     </header>
 
@@ -111,7 +112,7 @@ export default function App() {
         <button type="button" className="cases-panel__close" onClick={() => setVoiceConsentOpen(false)} aria-label="Cerrar aviso de voz">×</button>
         <p className="eyebrow">ASISTENTE DE VOZ</p>
         <h2 id="voice-consent-title">Tu voz activa la experiencia.</h2>
-        <p>Usaremos el reconocimiento de voz de tu navegador. La transcripción se procesa con inteligencia artificial para generar una respuesta y convertirla en audio.</p>
+        <p>Hablarás en vivo con un asistente de inteligencia artificial (OpenAI). Tu voz se envía en tiempo real para generar la respuesta hablada; Nasus no guarda tu grabación.</p>
         <small>El navegador solicitará permiso antes de abrir el micrófono. Podrás detenerlo en cualquier momento.</small>
         <button type="button" className="voice-consent__accept" onClick={acceptVoiceConsent}>CONTINUAR Y ACTIVAR <i>→</i></button>
         <span className="voice-consent__privacy">POLÍTICA DE PRIVACIDAD · CONTENIDO PENDIENTE</span>

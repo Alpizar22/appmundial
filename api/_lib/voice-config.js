@@ -1,65 +1,30 @@
-// --- OpenAI Realtime (voice-to-voice) ---------------------------------------------------
-// Shape verified against https://developers.openai.com/api/reference/resources/realtime/subresources/client_secrets
-// (2026-08-31). Re-check before shipping if OpenAI's docs have moved on since.
-export const OPENAI_REALTIME_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime'
-export const OPENAI_REALTIME_VOICE = process.env.OPENAI_REALTIME_VOICE || 'verse'
-
-// Techo de duracion por sesion (expires_after.seconds al mintear el token). La sesion ya se
-// cierra sola al terminar response.done (un intercambio por toque, ver useVoiceAssistant.js),
-// asi que este valor es solo el margen de seguridad para ESE intercambio, no una conversacion
-// larga — no hace falta reservar los 600s (10 min) que tendria sentido para una sesion
-// continua de varios turnos.
-export const REALTIME_SESSION_SECONDS = Number(process.env.REALTIME_SESSION_SECONDS) || 180
-// Presupuesto de segundos reservados por IP por hora (ver api/_lib/rate-limit.js): cobra por
-// la exposicion de costo maxima de cada sesion, no por cuantas veces se llamo al endpoint.
-// 900s = 5 sesiones de REALTIME_SESSION_SECONDS. Ajustar segun el costo real por minuto de
-// OpenAI Realtime y cuanto quiera absorber el negocio — no hay un numero "correcto" universal.
-export const REALTIME_SECONDS_LIMIT_PER_HOUR = Number(process.env.REALTIME_SECONDS_LIMIT_PER_HOUR) || REALTIME_SESSION_SECONDS * 5
-
-// Server-side turn detection (session.audio.input.turn_detection). Two modes, pick ONE by
-// changing which constant REALTIME_TURN_DETECTION points to at the bottom of this block —
-// both are kept fully written out so switching back and forth while testing is a one-line
-// change, not a rewrite.
-//
-// SEMANTIC_VAD (default): the model itself judges whether the user actually finished a
-// thought, instead of reacting to a fixed volume threshold — this is what makes it
-// tolerant of background noise, short coughs, or a pause mid-sentence, none of which read
-// as "done talking" semantically the way they do to a raw amplitude gate.
-//   - `eagerness`: the only knob. 'low' waits longer / needs more confidence before
-//     deciding the user is done (most tolerant of noise — use this if it's still cutting
-//     too eagerly). 'high' cuts faster (more responsive, but closer to server_vad's
-//     twitchiness). 'auto' lets OpenAI balance it. 'medium' is in between.
-//
-// SERVER_VAD (fallback): a fixed mic-energy threshold, same style as the original
-// client-side VAD this replaced. Use this instead if semantic_vad's server-side judgment
-// call ever feels wrong for this use case, or you want deterministic, purely
-// volume-based behavior.
-//   - `threshold` (0-1): mic-energy sensitivity. RAISE this if quiet background noise
-//     keeps triggering speech detection (less sensitive to soft sounds); LOWER it if the
-//     user's own quiet speech isn't being picked up.
-//   - `silence_duration_ms`: how long the user must be silent before the turn is
-//     considered over. RAISE this to give more room for pauses/coughs mid-sentence
-//     without ending the turn (trades off against making the assistant wait longer after
-//     the user actually finishes).
-//   - `prefix_padding_ms`: audio kept before the detected speech onset, so the first word
-//     isn't clipped. Rarely needs tuning.
-const REALTIME_TURN_DETECTION_SEMANTIC_VAD = {
-  type: 'semantic_vad',
-  eagerness: 'low',
-  create_response: true,
-  interrupt_response: true,
+// --- OpenAI GPT-Live (voz en vivo por WebRTC) -------------------------------------------
+// Mismo patron que nasus.lat: el navegador manda su oferta SDP a /api/live-session y el
+// servidor la intercambia con OpenAI usando OPENAI_API_KEY (nunca llega al cliente).
+// Precio de referencia: US$0.05 por minuto activo; el modelo "backend" cuesta centavos.
+// Los topes se ajustan con variables de entorno, sin tocar codigo. El tope DURO de gasto es
+// el limite mensual del proyecto en el panel de OpenAI; esto es la primera linea de defensa.
+const intFromEnv = (name, fallback, min, max) => {
+  const n = Number.parseInt(process.env[name] ?? '', 10)
+  return Number.isFinite(n) && n >= min && n <= max ? n : fallback
 }
-const REALTIME_TURN_DETECTION_SERVER_VAD = {
-  type: 'server_vad',
-  threshold: 0.65,          // subido desde .5 — menos sensible a ruido de fondo bajo
-  prefix_padding_ms: 300,
-  silence_duration_ms: 900, // subido desde 700 — mas margen antes de cerrar el turno
-  create_response: true,
-  interrupt_response: true,
-}
-export const REALTIME_TURN_DETECTION = REALTIME_TURN_DETECTION_SEMANTIC_VAD
-// Para volver a server_vad: export const REALTIME_TURN_DETECTION = REALTIME_TURN_DETECTION_SERVER_VAD
 
-export const REALTIME_INSTRUCTIONS = `Eres el asistente de voz de Nasus Labs, un estudio de soluciones tecnológicas a medida. Respondes preguntas sobre inteligencia artificial, automatización, WhatsApp, desarrollo web y sistemas de datos. Eres directo, profesional y cálido. Tus respuestas son breves, con un máximo de tres oraciones, porque se escuchan en voz.
+export const LIVE_MODEL = process.env.LIVE_MODEL || 'gpt-live-1.1'
+export const LIVE_BACKEND_MODEL = process.env.LIVE_BACKEND_MODEL || 'gpt-5.6-luna'
+export const LIVE_VOICE = process.env.LIVE_VOICE || 'marin'
 
-No uses markdown, encabezados, viñetas ni símbolos de formato — hablas, no escribes. Si preguntan por precios o proyectos específicos, invita a contactar directamente con Nasus Labs. Responde siempre en español.`
+// Segundos que se reservan por sesion y que el cliente respeta como maximo.
+export const LIVE_SESSION_SECONDS = intFromEnv('LIVE_SESSION_SECONDS', 90, 30, 300)
+// Tras cuantos segundos sin voz la sesion pasa a espera (mas barata).
+export const LIVE_IDLE_TIMEOUT_S = 15
+// Segundos reservados por IP por hora (4 sesiones completas por defecto).
+export const LIVE_SECONDS_LIMIT_PER_HOUR = intFromEnv('LIVE_SECONDS_LIMIT_PER_HOUR', LIVE_SESSION_SECONDS * 4, 30, 100_000)
+// Segundos reservados en total por dia / por mes: 2400 s = 40 min ~ US$2; 9000 s = 150 min ~ US$7.5.
+export const LIVE_DAILY_SECONDS = intFromEnv('LIVE_DAILY_SECONDS', 2400, 60, 100_000)
+export const LIVE_MONTHLY_SECONDS = intFromEnv('LIVE_MONTHLY_SECONDS', 9000, 60, 1_000_000)
+
+export const LIVE_INSTRUCTIONS = `Eres el asistente de voz de Nasus, una agencia mexicana de soluciones tecnologicas artesanales. Respondes preguntas sobre inteligencia artificial, automatizacion, WhatsApp, desarrollo web y sistemas de datos. Eres directo, profesional y calido, como una persona real en una llamada. Tus respuestas son breves, con un maximo de tres oraciones, porque se escuchan en voz; deja que la persona hable y, si te interrumpe, para y escuchala.
+
+No uses markdown, encabezados, vinetas ni simbolos de formato: hablas, no escribes. Si preguntan por precios o proyectos especificos, no inventes cifras: invitalos a escribir por WhatsApp al 33 2914 2391 o entrar a nasus.lat. Responde en el idioma en que te hable la persona; si no queda claro, usa espanol de Mexico.`
+
+export const LIVE_BACKEND_INSTRUCTIONS = `Respondes dudas sobre Nasus para una conversacion hablada: respuestas breves, claras y sin formato. Servicios: CRM con agentes de IA, automatizacion de procesos, asistentes de WhatsApp, paginas web y apps a la medida, y sistemas de datos. No inventes precios ni plazos; para eso, WhatsApp 33 2914 2391 o nasus.lat.`

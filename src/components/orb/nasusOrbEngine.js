@@ -7,10 +7,11 @@ import { REGION_ANCHORS, WORLD_HOTSPOTS, cameraTargetForAnchor, projectAnchor, s
 // primitives: Fibonacci sphere, value-noise drift, depth projection, proximity
 // web and travelling signals. See THIRD_PARTY_NOTICES.md.
 
-const GOLD_ACTIVE = '#d6a64b'
-const GOLD_MUTED = '#c4a882'
-const TEXT_IVORY = '#e8e6e3'
-const SMOKE_SECONDARY = '#8d9199'
+const GOLD_ACTIVE = '#c4a882'
+const GOLD_MUTED = '#a88b5c'
+const TEXT_IVORY = '#f6f3ec'
+const SMOKE_SECONDARY = '#8e8c99'
+const VOICE_ACCENT = '#00f2ff'
 const WORLD_SPIN = .018
 const camera = [
   { zoom:.72, yaw:0, pitch:-.08, x:0, y:0 }, { zoom:1.08, yaw:.75, pitch:.18, x:-.13, y:.05 },
@@ -279,7 +280,7 @@ function paintWhatsappWorld(ctx,nodes,hub,weight,time,model) {
   const routes=[...model.whatsappLinks.values()].filter(edge=>edge.hubLink&&edge.alpha>.02).map(edge=>byIndex.get(edge.b)).filter(Boolean)
   for(let packet=0;packet<(mobileWhatsapp?10:18)&&routes.length;packet++){const node=routes[(packet*7)%routes.length],phase=frac(time*(.078+(packet%5)*.008)+packet*.113),progress=packet%2?1-phase:phase,envelope=Math.sin(phase*Math.PI)**1.3,x=lerp(hub.x,node.x,progress),y=lerp(hub.y,node.y,progress),z=lerp(hub.z,node.z,progress),packetDepth=.05+.95*Math.max(0,(z+1)/2)**1.7;ctx.fillStyle=rgba(packet%3===0?GOLD_ACTIVE:TEXT_IVORY,envelope*packetDepth*strength);ctx.beginPath();ctx.arc(x,y,.85+packetDepth*1.15,0,Math.PI*2);ctx.fill()}
 
-  ctx.fillStyle=rgba('#090a0d',.96*strength);ctx.beginPath();ctx.arc(hub.x,hub.y,22,0,Math.PI*2);ctx.fill();ctx.strokeStyle=rgba(GOLD_ACTIVE,.98*strength);ctx.lineWidth=1.45;ctx.beginPath();ctx.arc(hub.x,hub.y,21,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=rgba(TEXT_IVORY,.88*strength);ctx.lineWidth=1.25;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.arc(hub.x,hub.y,12.5,0,Math.PI*2);ctx.moveTo(hub.x-7,hub.y+10);ctx.lineTo(hub.x-10,hub.y+15);ctx.lineTo(hub.x-3.5,hub.y+12);ctx.stroke();ctx.beginPath();ctx.moveTo(hub.x-5,hub.y-5);ctx.bezierCurveTo(hub.x-3,hub.y+1,hub.x+1,hub.y+5,hub.x+6,hub.y+6);ctx.lineTo(hub.x+8,hub.y+3);ctx.lineTo(hub.x+4,hub.y);ctx.lineTo(hub.x+2,hub.y+2);ctx.bezierCurveTo(hub.x,hub.y+1,hub.x-2,hub.y-1,hub.x-3,hub.y-3);ctx.lineTo(hub.x-1,hub.y-5);ctx.closePath();ctx.stroke();ctx.lineCap='butt';ctx.lineJoin='miter'
+  ctx.fillStyle=rgba('#07070c',.96*strength);ctx.beginPath();ctx.arc(hub.x,hub.y,22,0,Math.PI*2);ctx.fill();ctx.strokeStyle=rgba(GOLD_ACTIVE,.98*strength);ctx.lineWidth=1.45;ctx.beginPath();ctx.arc(hub.x,hub.y,21,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=rgba(TEXT_IVORY,.88*strength);ctx.lineWidth=1.25;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.arc(hub.x,hub.y,12.5,0,Math.PI*2);ctx.moveTo(hub.x-7,hub.y+10);ctx.lineTo(hub.x-10,hub.y+15);ctx.lineTo(hub.x-3.5,hub.y+12);ctx.stroke();ctx.beginPath();ctx.moveTo(hub.x-5,hub.y-5);ctx.bezierCurveTo(hub.x-3,hub.y+1,hub.x+1,hub.y+5,hub.x+6,hub.y+6);ctx.lineTo(hub.x+8,hub.y+3);ctx.lineTo(hub.x+4,hub.y);ctx.lineTo(hub.x+2,hub.y+2);ctx.bezierCurveTo(hub.x,hub.y+1,hub.x-2,hub.y-1,hub.x-3,hub.y-3);ctx.lineTo(hub.x-1,hub.y-5);ctx.closePath();ctx.stroke();ctx.lineCap='butt';ctx.lineJoin='miter'
 }
 
 function paintWebTower(ctx,node,weight,time,buildState) {
@@ -402,8 +403,8 @@ export function renderNasusOrb(ctx,model,{width,height,time,progress,regionalFoc
   // Cuantizado a decimas: el color de los nodos alimenta la cache de sprites de glow, y un tono
   // continuo la haria crecer sin limite. Diez pasos sobre un fundido de ~0.4s no se distinguen.
   const voiceTint=Math.round(model.voiceTint*10)/10
-  const orbIvory=mixHex(TEXT_IVORY,GOLD_ACTIVE,voiceTint)
-  const orbSmoke=mixHex(SMOKE_SECONDARY,GOLD_ACTIVE,voiceTint)
+  const orbIvory=mixHex(TEXT_IVORY,VOICE_ACCENT,voiceTint)
+  const orbSmoke=mixHex(SMOKE_SECONDARY,VOICE_ACCENT,voiceTint)
   // Retraccion sostenida entre fases. Sin esto el orbe se hundia con la voz y rebotaba hacia
   // fuera en cuanto el turno pasaba a transcribirse, porque solo listening y speaking tenian
   // termino de hundido. El arco es: hundir al hablar -> mantener al transcribir -> relajar

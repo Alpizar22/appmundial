@@ -12,12 +12,9 @@ export const VOICE_STATUS = Object.freeze({
 
 // Estados en los que la sesion esta trabajando y podria quedarse colgada si una peticion
 // nunca resuelve. El vigilante global del hook los usa como red de seguridad.
-export const TRANSIENT_STATUSES = Object.freeze([
-  VOICE_STATUS.ACTIVATING,
-  VOICE_STATUS.TRANSCRIBING,
-  VOICE_STATUS.PROCESSING,
-  VOICE_STATUS.GENERATING_VOICE,
-])
+// PROCESSING no entra: con GPT-Live es un estado inferido (la persona dejo de hablar y aun no
+// suena la respuesta) y el propio hook lo devuelve a LISTENING si la respuesta no llega.
+export const TRANSIENT_STATUSES = Object.freeze([VOICE_STATUS.ACTIVATING])
 
 export const initialVoiceSession = Object.freeze({ status: VOICE_STATUS.IDLE, transcript: '', responseText: '', error: null })
 
@@ -35,7 +32,8 @@ export function voiceSessionReducer(state, action) {
     // Si ya estabamos escuchando, es un no-op.
     case 'SPEECH_STARTED': return { ...state, status: VOICE_STATUS.LISTENING }
     case 'PLAYBACK_STARTED': return { ...state, status: VOICE_STATUS.SPEAKING }
-    case 'PLAYBACK_ENDED':
+    // GPT-Live es una conversacion continua: al terminar de hablar el agente se vuelve a escuchar.
+    case 'PLAYBACK_ENDED': return { ...state, status: VOICE_STATUS.LISTENING }
     case 'STOP': return { ...state, status: VOICE_STATUS.SETTLING }
     case 'SETTLED':
     case 'RESET': return { ...initialVoiceSession }

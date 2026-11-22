@@ -1,20 +1,27 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { initialVoiceSession, TRANSIENT_STATUSES, VOICE_STATUS, voiceSessionReducer } from './voiceMachine'
 
-// --- OpenAI Realtime, vía WebRTC --------------------------------------------------------
-// Turn-taking (VAD) ahora vive en el servidor de OpenAI (session.audio.input.turn_detection,
-// configurado en api/realtime-session.js) — este archivo ya no calcula RMS para decidir
-// cuándo termina un turno, solo para pintar el nivel de entrada/salida que consume el orbe.
-// La detección de "el asistente ya está sonando" sí sigue siendo local (ver
-// OUTPUT_SPEAKING_LEVEL más abajo): la documentación de OpenAI no confirma un evento propio
-// de "el audio de salida empezó a sonar" para el transporte WebRTC, así que se usa el mismo
-// analisis de energía que ya existía para el nivel de salida, con un umbral bajo.
-const OUTPUT_SPEAKING_LEVEL = 0.03
+// --- OpenAI GPT-Live, vía WebRTC ---------------------------------------------------------
+// El navegador manda su oferta SDP a /api/live-session; el servidor la intercambia con OpenAI
+// (la llave nunca sale del servidor) y devuelve la respuesta. La conversacion es continua:
+// GPT-Live decide los turnos. Este archivo solo traduce eventos y niveles de audio a:
+//   - `session.status`  -> el modo del orbe (listening / processing / speaking ...)
+//   - `signals`         -> inputLevel / outputLevel / activationImpulse, un ref mutado en sitio
+//                          que el orbe lee cada frame sin provocar re-render.
+//
+// Eventos del data channel `oai-events` que usamos (el resto se ignora):
+//   session.started, session.closed, session.input_transcript.delta, session.output_transcript.delta
 
-// --- Redes de seguridad --------------------------------------------------------------------
-const LISTENING_IDLE_MS = 15_000   // nunca llego input_audio_buffer.speech_started
-const SESSION_WATCHDOG_MS = 40_000 // cualquier estado transitorio que no resuelva
-const TOKEN_REQUEST_TIMEOUT_MS = 10_000
+const USER_TALKING_LEVEL = 0.12     // nivel de mic que cuenta como "la persona esta hablando"
+const USER_DONE_MS = 750            // silencio tras hablar => la respuesta esta en camino (procesando)
+const PROCESSING_GIVEUP_MS = 12_000 // si no suena nada, volver a escuchar
+const AGENT_ON_LEVEL = 0.03         // nivel de salida que cuenta como "el agente esta hablando"
+const AGENT_OFF_MS = 900            // silencio de salida que cierra la intervencion del agente
+const AUTO_CLOSE_MS = 9_000         // tras responder, sin que la persona hable: cerrar (ahorra costo)
+const CONNECT_TIMEOUT_MS = 12_000
+const CLOSE_GRACE_MS = 400          // margen para que session.close llegue antes de cortar WebRTC
+const DEFAULT_MAX_SECONDS = 90
+const WATCHDOG_MS = 40_000
 
 const permissionError = error => {
   if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') return ['microphone_denied', 'Permiso de micrófono rechazado.']
@@ -29,46 +36,37 @@ export function useVoiceAssistant() {
   const micStreamRef = useRef(null)
   const pcRef = useRef(null)
   const dcRef = useRef(null)
-  const inputContextRef = useRef(null)
+  const audioContextRef = useRef(null)
   const inputAnalyserRef = useRef(null)
-  const outputContextRef = useRef(null)
   const outputAnalyserRef = useRef(null)
-  const outputSourceRef = useRef(null)
+  const sourcesRef = useRef([])
   const audioRef = useRef(null)
-  const inputFrameRef = useRef(0)
-  const outputFrameRef = useRef(0)
-  const settlingTimerRef = useRef(0)
-  const idleTimerRef = useRef(0)
-  const heardSpeechRef = useRef(false)
-  const respondingRef = useRef(false) // true entre response.created y el primer nivel de salida audible
+  const frameRef = useRef(0)
+  const timersRef = useRef({ connect: 0, limit: 0, close: 0, settle: 0, auto: 0 })
+  const liveRef = useRef({ started: false, userTalking: false, lastUserLoud: 0, agentSpeaking: false, lastAgentLoud: 0, processingSince: 0, responding: false })
   const statusRef = useRef(session.status)
   statusRef.current = session.status
 
-  const stopInputMeter = useCallback(() => {
-    cancelAnimationFrame(inputFrameRef.current)
-    inputAnalyserRef.current?.disconnect?.()
-    inputAnalyserRef.current = null
-    if (inputContextRef.current && inputContextRef.current.state !== 'closed') inputContextRef.current.close().catch(() => {})
-    inputContextRef.current = null
-    signalsRef.current.inputLevel = 0
+  const clearTimers = useCallback(() => {
+    const t = timersRef.current
+    window.clearTimeout(t.connect); window.clearTimeout(t.limit); window.clearTimeout(t.close); window.clearTimeout(t.auto)
+    t.connect = t.limit = t.close = t.auto = 0
   }, [])
 
-  const stopOutputMeter = useCallback(() => {
-    cancelAnimationFrame(outputFrameRef.current)
-    outputSourceRef.current?.disconnect?.()
-    outputAnalyserRef.current?.disconnect?.()
-    outputSourceRef.current = null
+  const stopMeters = useCallback(() => {
+    cancelAnimationFrame(frameRef.current)
+    sourcesRef.current.forEach(node => node.disconnect?.())
+    sourcesRef.current = []
+    inputAnalyserRef.current = null
     outputAnalyserRef.current = null
+    signalsRef.current.inputLevel = 0
     signalsRef.current.outputLevel = 0
   }, [])
 
-  // Cierra la sesion Realtime por completo: peer connection, data channel, pistas del
-  // microfono, medidores de nivel y temporizadores. Es el equivalente al viejo
-  // stopCapture+stopOutput combinados, porque ahora todo vive en la misma conexion.
+  // Cierra todo: peer connection, data channel, mic, medidores y temporizadores.
   const teardown = useCallback(() => {
-    window.clearTimeout(idleTimerRef.current)
-    stopInputMeter()
-    stopOutputMeter()
+    clearTimers()
+    stopMeters()
     dcRef.current?.close?.()
     dcRef.current = null
     pcRef.current?.getSenders?.().forEach(sender => sender.track?.stop())
@@ -79,206 +77,225 @@ export function useVoiceAssistant() {
     setMicrophoneActive(false)
     const audio = audioRef.current
     if (audio) { audio.pause(); audio.srcObject = null }
-  }, [stopInputMeter, stopOutputMeter])
+    liveRef.current = { started: false, userTalking: false, lastUserLoud: 0, agentSpeaking: false, lastAgentLoud: 0, processingSince: 0, responding: false }
+  }, [clearTimers, stopMeters])
 
-  const settle = useCallback(() => {
+  const settleNow = useCallback(() => {
     teardown()
     dispatch({ type: 'STOP' })
-    window.clearTimeout(settlingTimerRef.current)
-    settlingTimerRef.current = window.setTimeout(() => dispatch({ type: 'SETTLED' }), 650)
+    window.clearTimeout(timersRef.current.settle)
+    timersRef.current.settle = window.setTimeout(() => dispatch({ type: 'SETTLED' }), 650)
   }, [teardown])
+
+  // Cierre ordenado: avisa a GPT-Live (para que deje de cobrar) y corta unos ms despues.
+  const settle = useCallback(() => {
+    const channel = dcRef.current
+    if (channel?.readyState === 'open') {
+      try { channel.send(JSON.stringify({ type: 'session.close' })) } catch { /* el corte de abajo cierra igual */ }
+      dispatch({ type: 'STOP' })
+      window.clearTimeout(timersRef.current.close)
+      timersRef.current.close = window.setTimeout(settleNow, CLOSE_GRACE_MS)
+      return
+    }
+    settleNow()
+  }, [settleNow])
 
   const fail = useCallback((code, message) => {
     teardown()
     dispatch({ type: 'FAIL', code, message })
   }, [teardown])
 
-  // Debe ejecutarse dentro del gesto de clic y ANTES de cualquier await, o iOS bloquea el
-  // audio. El <audio> y el AudioContext de salida se crean aqui; el analizador se conecta
-  // despues, en cuanto pc.ontrack entregue el stream remoto.
-  const unlockOutput = useCallback(() => {
+  // Debe ejecutarse dentro del gesto de clic y ANTES de cualquier await, o iOS bloquea el audio.
+  const unlockAudio = useCallback(() => {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext
     if (!AudioContextClass) return
     const audio = audioRef.current || new Audio()
     audio.autoplay = true
     audio.playsInline = true
     audioRef.current = audio
-    const context = outputContextRef.current || new AudioContextClass()
-    outputContextRef.current = context
-    context.resume().catch(() => {})
+    if (!audioContextRef.current || audioContextRef.current.state === 'closed') audioContextRef.current = new AudioContextClass()
+    audioContextRef.current.resume().catch(() => {})
   }, [])
 
-  const attachOutputAnalyser = useCallback(remoteStream => {
-    const context = outputContextRef.current
-    if (!context) return
+  const makeAnalyser = (context, stream, fftSize, smoothing) => {
     const analyser = context.createAnalyser()
-    analyser.fftSize = 256
-    analyser.smoothingTimeConstant = 0.72
-    const source = context.createMediaStreamSource(remoteStream)
-    // No se conecta a destination: la reproduccion real la hace el <audio> via srcObject.
-    // Este grafo paralelo existe solo para medir energia.
-    source.connect(analyser)
-    outputSourceRef.current = source
-    outputAnalyserRef.current = analyser
+    analyser.fftSize = fftSize
+    analyser.smoothingTimeConstant = smoothing
+    const source = context.createMediaStreamSource(stream)
+    source.connect(analyser) // sin conectar a destination: solo mide; la reproduccion la hace <audio>
+    sourcesRef.current.push(source, analyser)
+    return analyser
+  }
 
-    const samples = new Uint8Array(analyser.frequencyBinCount)
-    const measure = () => {
-      if (!outputAnalyserRef.current) return
-      analyser.getByteFrequencyData(samples)
-      let sum = 0
-      for (const value of samples) sum += value
-      const level = Math.min(1, (sum / samples.length) / 96)
-      signalsRef.current.outputLevel = level
-      if (respondingRef.current && level >= OUTPUT_SPEAKING_LEVEL) {
-        respondingRef.current = false
-        dispatch({ type: 'PLAYBACK_STARTED' })
+  // Un solo bucle por frame: mide mic y salida, escribe `signals` y deduce los estados que
+  // GPT-Live no anuncia por evento (cuando suena el agente y cuando "piensa").
+  const startMeterLoop = useCallback(() => {
+    const inputSamples = new Uint8Array(512)
+    const outputSamples = new Uint8Array(128)
+    const tick = () => {
+      const now = performance.now()
+      const live = liveRef.current
+      const signals = signalsRef.current
+
+      const inputAnalyser = inputAnalyserRef.current
+      if (inputAnalyser) {
+        inputAnalyser.getByteTimeDomainData(inputSamples)
+        let sum = 0
+        for (const value of inputSamples) { const n = (value - 128) / 128; sum += n * n }
+        signals.inputLevel = Math.min(1, Math.sqrt(sum / inputSamples.length) * 4.2)
       }
-      outputFrameRef.current = requestAnimationFrame(measure)
+      const outputAnalyser = outputAnalyserRef.current
+      if (outputAnalyser) {
+        outputAnalyser.getByteFrequencyData(outputSamples)
+        let sum = 0
+        for (const value of outputSamples) sum += value
+        signals.outputLevel = Math.min(1, (sum / outputSamples.length) / 96)
+      }
+
+      if (live.started) {
+        const status = statusRef.current
+        const talking = signals.inputLevel >= USER_TALKING_LEVEL && signals.outputLevel < AGENT_ON_LEVEL
+        if (talking) {
+          live.lastUserLoud = now
+          if (!live.userTalking) { live.userTalking = true; window.clearTimeout(timersRef.current.auto); if (status !== VOICE_STATUS.LISTENING) dispatch({ type: 'SPEECH_STARTED' }) }
+        }
+        // La persona dejo de hablar: la respuesta esta en camino.
+        if (live.userTalking && now - live.lastUserLoud > USER_DONE_MS && !live.agentSpeaking) {
+          live.userTalking = false
+          live.processingSince = now
+          dispatch({ type: 'RESPONSE_STARTED' })
+        }
+        if (status === VOICE_STATUS.PROCESSING && !live.agentSpeaking && live.processingSince && now - live.processingSince > PROCESSING_GIVEUP_MS) {
+          live.processingSince = 0
+          dispatch({ type: 'SPEECH_STARTED' }) // vuelve a LISTENING
+        }
+        // El agente suena / termina de sonar.
+        if (signals.outputLevel >= AGENT_ON_LEVEL) {
+          live.lastAgentLoud = now
+          if (!live.agentSpeaking) { live.agentSpeaking = true; live.userTalking = false; live.processingSince = 0; window.clearTimeout(timersRef.current.auto); dispatch({ type: 'PLAYBACK_STARTED' }) }
+        } else if (live.agentSpeaking && now - live.lastAgentLoud > AGENT_OFF_MS) {
+          live.agentSpeaking = false
+          dispatch({ type: 'PLAYBACK_ENDED' })
+          // Conversacion continua, pero si la persona no contesta se cierra para no gastar.
+          window.clearTimeout(timersRef.current.auto)
+          timersRef.current.auto = window.setTimeout(() => { if (!liveRef.current.userTalking) settle() }, AUTO_CLOSE_MS)
+        }
+      }
+      frameRef.current = requestAnimationFrame(tick)
     }
-    measure()
-  }, [])
+    cancelAnimationFrame(frameRef.current)
+    frameRef.current = requestAnimationFrame(tick)
+  }, [settle])
 
-  const startInputMeter = useCallback(stream => {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext
-    const context = new AudioContextClass()
-    inputContextRef.current = context
-    const analyser = context.createAnalyser()
-    analyser.fftSize = 512
-    analyser.smoothingTimeConstant = 0.78
-    context.createMediaStreamSource(stream).connect(analyser)
-    inputAnalyserRef.current = analyser
-
-    const samples = new Uint8Array(analyser.frequencyBinCount)
-    const measure = () => {
-      if (!inputAnalyserRef.current) return
-      analyser.getByteTimeDomainData(samples)
-      let sum = 0
-      for (const value of samples) { const normalized = (value - 128) / 128; sum += normalized * normalized }
-      signalsRef.current.inputLevel = Math.min(1, Math.sqrt(sum / samples.length) * 4.2)
-      inputFrameRef.current = requestAnimationFrame(measure)
-    }
-    measure()
-  }, [])
-
-  // Mensajes del data channel "oai-events". Solo se manejan los tipos que necesitamos;
-  // cualquier otro se ignora (compatibilidad hacia adelante si OpenAI agrega eventos).
-  const handleRealtimeEvent = useCallback(event => {
+  const handleEvent = useCallback(event => {
     let message
     try { message = JSON.parse(event.data) } catch { return }
+    const live = liveRef.current
     switch (message.type) {
-      case 'input_audio_buffer.speech_started':
-        heardSpeechRef.current = true
-        window.clearTimeout(idleTimerRef.current)
-        dispatch({ type: 'SPEECH_STARTED' })
+      case 'session.started':
+        window.clearTimeout(timersRef.current.connect)
+        live.started = true
+        dispatch({ type: 'PERMISSION_GRANTED' })
+        startMeterLoop()
+        // Tope de duracion del lado del cliente (el servidor ya reservo ese tiempo).
+        timersRef.current.limit = window.setTimeout(settle, (liveRef.current.maxSeconds || DEFAULT_MAX_SECONDS) * 1000)
+        // Si nadie habla en un rato, no dejar la sesion abierta.
+        timersRef.current.auto = window.setTimeout(() => { if (!liveRef.current.userTalking && !liveRef.current.agentSpeaking) settle() }, AUTO_CLOSE_MS * 2)
         break
-      case 'response.created':
-        respondingRef.current = true
-        dispatch({ type: 'RESPONSE_STARTED' })
+      case 'session.input_transcript.delta':
+        window.clearTimeout(timersRef.current.auto)
+        if (statusRef.current !== VOICE_STATUS.LISTENING && !live.agentSpeaking) dispatch({ type: 'SPEECH_STARTED' })
         break
-      case 'response.done':
-        respondingRef.current = false
-        dispatch({ type: 'PLAYBACK_ENDED' })
-        window.clearTimeout(settlingTimerRef.current)
-        settlingTimerRef.current = window.setTimeout(() => { teardown(); dispatch({ type: 'SETTLED' }) }, 700)
+      case 'session.output_transcript.delta':
+        // El texto de la respuesta llega antes que el audio: ya esta "pensando" en voz alta.
+        if (!live.agentSpeaking && statusRef.current === VOICE_STATUS.LISTENING) { live.processingSince = performance.now(); dispatch({ type: 'RESPONSE_STARTED' }) }
+        break
+      case 'session.closed':
+        settleNow()
         break
       case 'error':
-        fail(message.error?.code || 'realtime_error', message.error?.message || 'La sesión de voz encontró un error.')
+        fail(message.error?.code || 'live_error', message.error?.message || 'La sesión de voz encontró un error.')
         break
       default:
         break
     }
-  }, [fail, teardown])
+  }, [fail, settle, settleNow, startMeterLoop])
 
   const start = useCallback(async () => {
     if (statusRef.current !== VOICE_STATUS.IDLE && statusRef.current !== VOICE_STATUS.ERROR) return settle()
     signalsRef.current.activationImpulse += 1
-    unlockOutput()
+    unlockAudio()
     dispatch({ type: 'ACTIVATE' })
 
-    if (typeof RTCPeerConnection === 'undefined') {
-      return fail('webrtc_unsupported', 'Este navegador no permite conexiones de voz en tiempo real.')
-    }
-
-    let clientSecret
-    try {
-      const response = await fetch('/api/realtime-session', { method: 'POST', signal: AbortSignal.timeout(TOKEN_REQUEST_TIMEOUT_MS) })
-      const payload = await response.json().catch(() => ({}))
-      if (!response.ok) {
-        const error = new Error(payload?.error?.message || 'No fue posible iniciar la sesión de voz.')
-        error.code = payload?.error?.code || 'realtime_session_failed'
-        throw error
-      }
-      clientSecret = payload.clientSecret
-      if (!clientSecret) throw Object.assign(new Error('Respuesta de sesión inválida.'), { code: 'realtime_session_failed' })
-    } catch (error) {
-      return fail(error?.code || 'realtime_session_failed', error?.message || 'No fue posible iniciar la sesión de voz.')
-    }
+    if (typeof RTCPeerConnection === 'undefined') return fail('webrtc_unsupported', 'Este navegador no permite conexiones de voz en tiempo real.')
 
     let stream
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        video: false,
-      })
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false })
     } catch (error) {
       const [code, message] = permissionError(error)
       return fail(code, message)
     }
     micStreamRef.current = stream
     setMicrophoneActive(true)
-    startInputMeter(stream)
 
     try {
       const pc = new RTCPeerConnection()
       pcRef.current = pc
-      pc.ontrack = event => { attachOutputAnalyser(event.streams[0]); if (audioRef.current) audioRef.current.srcObject = event.streams[0] }
-      stream.getTracks().forEach(track => pc.addTrack(track, stream))
+      const context = audioContextRef.current
+      if (context) inputAnalyserRef.current = makeAnalyser(context, stream, 512, 0.78)
 
-      const dc = pc.createDataChannel('oai-events')
-      dcRef.current = dc
-      dc.onmessage = handleRealtimeEvent
-      dc.onopen = () => {
-        dispatch({ type: 'PERMISSION_GRANTED' })
-        heardSpeechRef.current = false
-        idleTimerRef.current = window.setTimeout(() => {
-          if (!heardSpeechRef.current) fail('no_speech_detected', 'No se captó tu voz. Revisa el micrófono e intenta de nuevo.')
-        }, LISTENING_IDLE_MS)
-      }
-      dc.onerror = () => fail('realtime_connection_failed', 'Se perdió la conexión de voz.')
-
-      const offer = await pc.createOffer()
-      await pc.setLocalDescription(offer)
-
-      // Shape verificado contra https://developers.openai.com/api/docs/guides/realtime-webrtc
-      const sdpResponse = await fetch('https://api.openai.com/v1/realtime/calls', {
-        method: 'POST',
-        body: offer.sdp,
-        headers: { Authorization: `Bearer ${clientSecret}`, 'Content-Type': 'application/sdp' },
+      pc.addEventListener('track', trackEvent => {
+        const remote = new MediaStream([trackEvent.track])
+        if (audioRef.current) { audioRef.current.srcObject = remote; audioRef.current.play?.().catch(() => {}) }
+        if (audioContextRef.current) outputAnalyserRef.current = makeAnalyser(audioContextRef.current, remote, 256, 0.72)
       })
-      if (!sdpResponse.ok) throw new Error(`sdp_exchange_failed:${sdpResponse.status}`)
-      const answerSdp = await sdpResponse.text()
-      await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp })
+      stream.getAudioTracks().forEach(track => pc.addTrack(track, stream))
+
+      const channel = pc.createDataChannel('oai-events')
+      dcRef.current = channel
+      channel.onmessage = handleEvent
+      channel.onclose = () => { if (dcRef.current === channel && liveRef.current.started) settleNow() }
+
+      timersRef.current.connect = window.setTimeout(() => fail('live_connect_timeout', 'No pude conectar la voz. Intenta de nuevo.'), CONNECT_TIMEOUT_MS)
+
+      await pc.setLocalDescription(await pc.createOffer())
+      // GPT-Live recibe el SDP completo: se espera a que termine la recoleccion de candidatos ICE.
+      if (pc.iceGatheringState !== 'complete') {
+        await new Promise(resolve => {
+          const onChange = () => { if (pc.iceGatheringState !== 'complete') return; pc.removeEventListener('icegatheringstatechange', onChange); resolve() }
+          pc.addEventListener('icegatheringstatechange', onChange)
+          onChange()
+        })
+      }
+      const sdp = pc.localDescription?.sdp
+      if (!sdp) throw new Error('sin_sdp')
+
+      const response = await fetch('/api/live-session', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sdp }) })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok || !payload.sdp) {
+        return fail(payload?.error?.code || 'live_session_failed', payload?.error?.message || 'No fue posible iniciar la sesión de voz.')
+      }
+      liveRef.current.maxSeconds = Number(payload.maxSeconds) || DEFAULT_MAX_SECONDS
+      await pc.setRemoteDescription({ type: 'answer', sdp: payload.sdp })
     } catch (error) {
       console.error('[voice] WebRTC:', error instanceof Error ? error.message : 'unknown_error')
-      return fail('realtime_connection_failed', 'No fue posible conectar la sesión de voz.')
+      return fail('live_connection_failed', 'No fue posible conectar la sesión de voz.')
     }
-  }, [attachOutputAnalyser, fail, handleRealtimeEvent, settle, startInputMeter, unlockOutput])
+  }, [fail, handleEvent, settle, settleNow, unlockAudio])
 
-  // Vigilante global: cualquier estado transitorio que no resuelva termina la sesion con un
-  // mensaje en vez de dejarla colgada. Se re-arma en cada cambio de estado.
+  // Vigilante: la activacion que no resuelve termina con un mensaje en vez de quedar colgada.
   useEffect(() => {
     if (!TRANSIENT_STATUSES.includes(session.status)) return undefined
-    const timer = window.setTimeout(
-      () => fail('session_stalled', 'La sesión dejó de responder. Intenta de nuevo.'),
-      SESSION_WATCHDOG_MS,
-    )
+    const timer = window.setTimeout(() => fail('session_stalled', 'La sesión dejó de responder. Intenta de nuevo.'), WATCHDOG_MS)
     return () => window.clearTimeout(timer)
   }, [session.status, fail])
 
   useEffect(() => () => {
-    window.clearTimeout(settlingTimerRef.current)
+    window.clearTimeout(timersRef.current.settle)
     teardown()
-    if (outputContextRef.current && outputContextRef.current.state !== 'closed') outputContextRef.current.close().catch(() => {})
+    const context = audioContextRef.current
+    if (context && context.state !== 'closed') context.close().catch(() => {})
   }, [teardown])
 
   return { session, signals: signalsRef.current, microphoneActive, start, stop: settle }

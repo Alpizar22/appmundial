@@ -36,8 +36,8 @@ src/components/orb/regions/
     regionAnchors.js                      REGION_ANCHORS + proyección
     iaSubworld.js  automationSubworld.js  dataSubworld.js
 src/voice/voiceMachine.js                 máquina de estados aislada
-src/voice/useVoiceAssistant.js            WebRTC, medidores de nivel, señales
-api/realtime-session.js                   emite el token efímero de OpenAI Realtime
+src/voice/useVoiceAssistant.js            GPT-Live por WebRTC, medidores de nivel, señales
+api/live-session.js                       intercambia el SDP con OpenAI GPT-Live
 api/_lib/                                 rate-limit, voice-config
 ```
 
@@ -106,31 +106,36 @@ canvas se sincroniza con su caja vía `ResizeObserver`, no solo con `window.resi
 
 ## Asistente de voz
 
-Voz-a-voz nativo: **WebRTC directo entre el navegador y OpenAI Realtime**, sin servidor
-intermedio de audio (antes del 2026-08-31 era una cadena ElevenLabs STT → Claude sin
-streaming → ElevenLabs TTS, todo por HTTP bloqueante — se migró para eliminar el silencio
-muerto de 4-8s que generaba esa cadena). `api/realtime-session.js` es el único hop por
-conversación: solo emite un token efímero; todo lo demás (VAD, turno, la respuesta del
-modelo, su audio hablado) vive en la sesión en vivo navegador↔OpenAI.
+Voz en vivo con **OpenAI GPT-Live** (`gpt-live-1.1`, mismo patrón que nasus.lat), por WebRTC.
+El navegador manda su oferta SDP a `POST /api/live-session`; ese endpoint (único hop del
+servidor) la intercambia con `https://api.openai.com/v1/live/sessions` usando `OPENAI_API_KEY`
+y devuelve la respuesta SDP + `maxSeconds`. La llave nunca llega al cliente.
 
-Flujo: tocar el orbe → consentimiento (una vez, en `localStorage`) → `POST
-/api/realtime-session` (token efímero) → `getUserMedia` → `RTCPeerConnection` (pista del
-mic + data channel `oai-events`) → intercambio SDP contra `/v1/realtime/calls` → sesión en
-vivo. La detección de fin de turno es del lado de OpenAI (`REALTIME_TURN_DETECTION` en
-`voice-config.js`), no del cliente.
+Flujo: tocar el orbe → consentimiento (una vez, `localStorage`) → `getUserMedia` →
+`RTCPeerConnection` (mic + data channel `oai-events`) → esperar ICE completo → SDP al servidor →
+`session.started`. Es una conversación continua: GPT-Live decide los turnos
+(`wake_policy: speech`, `idle_timeout_s: 15`). Eventos usados: `session.started`,
+`session.closed`, `session.input_transcript.delta`, `session.output_transcript.delta`.
 
-`voiceMachine.js` mantiene los estados aislados del renderer. `useVoiceAssistant`
-devuelve `signals` como un **ref mutado en sitio**, no estado de React: el orbe lo lee
-cada frame sin provocar re-render. `inputLevel`/`outputLevel` se miden con `AnalyserNode`
-igual que antes (mic y pista remota de WebRTC respectivamente) — ya no deciden el fin de
-turno, solo alimentan la deformación visual.
+`useVoiceAssistant` traduce niveles de audio y eventos a los modos del orbe
+(`listening` / `processing` / `speaking`) con **un solo bucle rAF**: mide el mic y la pista
+remota con `AnalyserNode`, escribe `signals` (ref mutado en sitio que el orbe lee cada frame,
+sin re-render) y deduce lo que GPT-Live no anuncia por evento: el agente suena (nivel de salida),
+la persona terminó de hablar (silencio de mic ⇒ `processing`, que vuelve a `listening` a los 12 s
+si no llega respuesta). Tras responder, si nadie habla en 9 s se envía `session.close`.
 
-En iOS el `AudioContext` se desbloquea dentro del gesto de clic, **antes de cualquier
-`await`**. Mover ese desbloqueo después de un `await` rompe el audio en Safari.
+En iOS el `AudioContext` se desbloquea dentro del gesto de clic, **antes de cualquier `await`**.
 
-En reposo el asistente no consume nada: la conexión WebRTC, los `AnalyserNode` y sus
-bucles de rAF se crean en `start()` y se destruyen al parar. La sesión se cierra sola al
-terminar la respuesta (un intercambio por toque).
+Costos (fallan cerrado; sin llave o sin Upstash no se abre sesión): se reservan
+`LIVE_SESSION_SECONDS` por sesión contra (a) un presupuesto por IP/hora, (b) un tope global
+diario y (c) uno mensual, todo en Upstash; si OpenAI falla se devuelve lo reservado. El tope duro
+real es el límite mensual del proyecto en el panel de OpenAI.
+
+## Estética
+
+Misma paleta y tipografía que nasus.lat: fondo `#050508`, papel `#f6f3ec`, dorado `#c4a882`,
+cian `#00f2ff` (tinte del orbe cuando hay voz, `VOICE_ACCENT`). Títulos en **Chakra Petch** y
+texto/datos en **Space Mono**. Logo: lápiz entre corchetes + NASUS en bloque (`components/Logo.jsx`).
 
 ## Variables de entorno
 
@@ -143,16 +148,16 @@ UPSTASH_REDIS_REST_URL
 UPSTASH_REDIS_REST_TOKEN
 ```
 
-Opcionales, con default en `api/_lib/voice-config.js` si se omiten:
+Opcionales, con default en `api/_lib/voice-config.js`:
 
 ```
-OPENAI_REALTIME_MODEL             # default 'gpt-realtime'
-OPENAI_REALTIME_VOICE             # default 'verse'
-REALTIME_SESSION_SECONDS          # default 180 — techo de duración por sesión (expires_after)
-REALTIME_SECONDS_LIMIT_PER_HOUR   # default 900 — presupuesto de segundos reservados por IP/hora
+LIVE_MODEL / LIVE_BACKEND_MODEL / LIVE_VOICE   # gpt-live-1.1 / gpt-5.6-luna / marin
+LIVE_SESSION_SECONDS                           # 90  — duración máxima por sesión
+LIVE_SECONDS_LIMIT_PER_HOUR                    # 360 — segundos reservados por IP/hora
+LIVE_DAILY_SECONDS / LIVE_MONTHLY_SECONDS      # 2400 / 9000 — topes globales
 ```
 
-`api/realtime-session.js` **falla cerrado a propósito**: sin credenciales de Upstash el
+`api/live-session.js` **falla cerrado a propósito**: sin credenciales de Upstash el
 limitador lanza y el endpoint responde 503 antes de mintear el token. Eso es intencional,
 no un bug.
 
